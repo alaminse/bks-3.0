@@ -1,0 +1,60 @@
+<!-- Delete Confirmation -->
+<form id="delete-form-{{ $item->id }}" action="{{ route('items.destroy', $item) }}" method="POST" class="d-inline">
+    @csrf
+    @method('DELETE')
+    <button type="button" class="btn btn-danger"
+            onclick="confirmDelete('delete-form-{{ $item->id }}', '{{ $item->name }}')">
+        Delete
+    </button>
+</form>
+
+<!-- Form Submit Confirmation -->
+<form id="update-form" action="{{ route('items.update', $item) }}" method="POST">
+    @csrf
+    @method('PUT')
+    <!-- form fields -->
+    <button type="button" class="btn btn-primary"
+            onclick="confirmFormSubmit('update-form', {title: 'Update Item?', text: 'Changes will be saved'})">
+        Update
+    </button>
+</form>
+
+<!-- Show success after redirect (in controller, use session flash) -->
+@if(session('success'))
+    <script>
+        showSuccess('Success!', '{{ session('success') }}');
+    </script>
+@endif
+
+@if(session('error'))
+    <script>
+        showError('Error!', '{{ session('error') }}');
+    </script>
+@endif
+
+<!-- Toast Notification -->
+<button onclick="showToast('Item saved successfully!', 'success')">Show Toast</button>
+
+<!-- Custom Confirmation -->
+<button onclick="confirmAction({
+    title: 'Publish Post?',
+    text: 'This will make your post public',
+    icon: 'question',
+    confirmButtonText: 'Yes, publish!',
+    onConfirm: () => {
+        // Your custom action here
+        console.log('Published!');
+    }
+})">Publish</button>
+
+<!-- Input Prompt -->
+<button onclick="promptInput({
+    title: 'Enter reason',
+    inputPlaceholder: 'Why are you rejecting this?',
+    onSubmit: (value) => {
+        console.log('Reason:', value);
+        // Submit to server
+    }
+})">Reject</button>
+
+

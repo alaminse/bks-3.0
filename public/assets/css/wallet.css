@@ -1,0 +1,155 @@
+/* Wallet Custom Styles */
+
+/* Soft Badge Colors */
+.bg-soft-primary {
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+.bg-soft-success {
+    background-color: rgba(25, 135, 84, 0.1);
+}
+
+.bg-soft-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.bg-soft-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+.bg-soft-info {
+    background-color: rgba(13, 202, 240, 0.1);
+}
+
+.bg-soft-secondary {
+    background-color: rgba(108, 117, 125, 0.1);
+}
+
+.bg-pending {
+    background-color: rgba(247, 203, 115);
+}
+
+.bg-approved {
+    background-color: rgba(223, 255, 0);
+}
+
+.bg-rejected {
+    background-color: rgba(209,66,73);
+}
+
+/* Icon Shapes */
+.icon-shape {
+    width: 48px;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-shape.text-lg {
+    font-size: 1.25rem;
+}
+
+/* Card Hover Effect */
+.card:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease-in-out;
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+}
+
+/* Transaction Row Hover */
+.table-hover tbody tr:hover {
+    background-color: rgba(0,0,0,.02);
+    cursor: pointer;
+}
+
+/* Balance Display Animation */
+@keyframes balanceUpdate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.balance-updated {
+    animation: balanceUpdate 0.3s ease-in-out;
+}
+
+/* Badge Pills */
+.badge-pill {
+    border-radius: 50rem;
+    padding: 0.35em 0.65em;
+    font-weight: 600;
+}
+
+/* Transaction Type Icons */
+.transaction-icon {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+/* Responsive Table */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+
+    .icon-shape {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+}
+
+/* Loading Spinner for Balance Update */
+.balance-loading {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Empty State */
+.empty-state {
+    padding: 3rem 1.5rem;
+    text-align: center;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    color: #6c757d;
+    opacity: 0.3;
+}
+
+/* Filter Card */
+.filter-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.filter-card .form-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+}
+
+/* Transaction Amount Colors */
+.amount-credit {
+    color: #198754 !important;
+    font-weight: 700;
+}
+
+.amount-debit {
+    color: #dc3545 !important;
+    font-weight: 700;
+}
+
+/* Quick Action Buttons */
+.quick-action-btn {
+    transition: all 0.3s ease;
+}
+
+.quick-action-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}

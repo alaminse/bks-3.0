@@ -51,6 +51,11 @@ class DashboardController extends Controller
                 ->where('status', 'approved')
                 ->whereDate('submitted_at', today())
                 ->count(),
+                 // ← এটা যোগ করো
+            'tasks_total' => UserPackage::where('user_id', $user->id)
+                ->where('status', 'active')
+                ->where('valid_until', '>', now())
+                ->sum('daily_task_limit'),
         ];
 
         // Total earnings (all time)

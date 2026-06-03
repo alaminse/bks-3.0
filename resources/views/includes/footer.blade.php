@@ -1,40 +1,47 @@
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-<!-- Popper -->
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
-
-<!-- Bootstrap -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
-
-<!-- SweetAlert2 JS -->
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <!-- Custom SweetAlert Helper -->
 <script src="{{ asset('assets/js/sweetalert-helper.js') }}"></script>
 
 @stack('scripts')
 
 <script>
-    $(document).ready(function () {
-        $('#navbarDropdown').mouseenter(function () {
-            $('.dropdown-menu').stop(true, true).slideDown(300);
-        });
-
-        $('.dropdown-menu').mouseleave(function () {
-            $(this).stop(true, true).slideUp(300);
-        });
+function confirmFormSubmit(formId, opts = {}) {
+    Swal.fire({
+        title:             opts.title       || 'Are you sure?',
+        text:              opts.text        || '',
+        icon:              opts.icon        || 'question',
+        showCancelButton:  true,
+        confirmButtonText: opts.confirmText || 'Yes',
+        cancelButtonText:  opts.cancelText  || 'Cancel',
+    }).then(result => {
+        if (result.isConfirmed) {
+            document.getElementById(formId).submit();
+        }
     });
+}
 
-    // Show success after redirect (in controller, use session flash)
-    @if(session('success'))
-        showSuccess('Success!', '{{ session('success') }}');
-    @endif
+function confirmLogout() {
+    confirmFormSubmit('logout-form', {
+        title:       'Logout?',
+        text:        'Are you sure you want to logout?',
+        confirmText: 'Yes, Logout',
+        icon:        'warning'
+    });
+}
 
-    @if(session('error'))
-        showError('Error!', '{{ session('error') }}');
-    @endif
+@if(session('success'))
+    Swal.fire({ icon:'success', title:'Success', text:'{{ session('success') }}', timer:3000, showConfirmButton:false });
+@endif
+
+@if(session('error'))
+    Swal.fire({ icon:'error', title:'Error', text:'{{ session('error') }}' });
+@endif
 </script>
-</body>
 
+</body>
 </html>

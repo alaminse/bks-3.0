@@ -21,23 +21,39 @@ class WalletController extends Controller
      */
     public function index()
     {
-        $userId = Auth::id();
-        // Wallet data
         $wallet = Auth::user()?->wallet;
 
-        // Total earned calculation (credit transaction sum)
+        $totalEarned = $wallet
+            ? $wallet->transactions()
+                ->where('direction', 'credit')
+                ->whereIn('type', ['task', 'referral'])
+                ->sum('amount')
+            : 0;
 
-        $totalEarned = $wallet ? $wallet->transactions()
-            ->where('direction', 'credit')
-            ->whereIn('type', ['task', 'referral'])
-            ->sum('amount') : 0;
+        $totalDeposits = $wallet
+            ? $wallet->transactions()
+                ->where('type', 'deposit')
+                ->where('direction', 'credit')
+                ->sum('amount')
+            : 0;
 
-        // Recent transactions (last 10)
-        $transactions = $wallet ? $wallet->transactions()
-            ->orderBy('created_at', 'desc')
-            ->paginate(10) : collect();
+        $totalWithdrawals = $wallet
+            ? $wallet->transactions()
+                ->where('type', 'withdraw')
+                ->sum('amount')
+            : 0;
 
-        return view('frontend.wallet.index', compact('wallet', 'totalEarned', 'transactions'));
+        $transactions = $wallet
+            ? $wallet->transactions()->latest()->paginate(10)
+            : collect();
+
+        return view('frontend.wallet.index', compact(
+            'wallet',
+            'totalEarned',
+            'totalDeposits',
+            'totalWithdrawals',
+            'transactions'
+        ));
     }
 
     /**
@@ -78,7 +94,7 @@ class WalletController extends Controller
         $transactions = $query
             ->orderByDesc('created_at')
             ->paginate(20);
-    
+
 
         // Count per type from ALL transactions (unfiltered)
         $typeCounts = $wallet->transactions()
@@ -87,7 +103,10 @@ class WalletController extends Controller
             ->pluck('count', 'type')
             ->toArray();
 
-        return view('frontend.wallet.transactions', compact('wallet', 'transactions'));
+        return view('frontend.wallet.transactions', compact(
+            'wallet', 'transactions', 'typeCounts'
+        ));
+
     }
 
     /**

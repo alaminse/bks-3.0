@@ -120,7 +120,7 @@
             <div class="cy-card">
                 <div class="ccy-inner">
                     <div class="ccy-top">
-                        <div class="ccy-logo">EARN WAVE</div>
+                        <div class="ccy-logo">Top Trade</div>
                         <div class="ccy-dots">·· USDT</div>
                     </div>
                     <div class="ccy-bal-lbl">Balance</div>

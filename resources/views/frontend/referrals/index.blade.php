@@ -290,11 +290,11 @@
 
         <div class="rf-share-strip">
             <span class="rf-share-lbl">Share via</span>
-            <a href="https://wa.me/?text={{ urlencode('Join me on EarnWave and start earning! '.$user->getReferralLink()) }}"
+            <a href="https://wa.me/?text={{ urlencode('Join me on toptrade and start earning! '.$user->getReferralLink()) }}"
                target="_blank" class="rf-share-btn"><i class="bi bi-whatsapp"></i> WhatsApp</a>
-            <a href="https://t.me/share/url?url={{ urlencode($user->getReferralLink()) }}&text={{ urlencode('Join EarnWave and earn daily!') }}"
+            <a href="https://t.me/share/url?url={{ urlencode($user->getReferralLink()) }}&text={{ urlencode('Join toptrade and earn daily!') }}"
                target="_blank" class="rf-share-btn"><i class="bi bi-telegram"></i> Telegram</a>
-            <a href="https://twitter.com/intent/tweet?text={{ urlencode('Earn daily with EarnWave! '.$user->getReferralLink()) }}"
+            <a href="https://twitter.com/intent/tweet?text={{ urlencode('Earn daily with toptrade! '.$user->getReferralLink()) }}"
                target="_blank" class="rf-share-btn"><i class="bi bi-twitter-x"></i> Twitter</a>
             <button class="rf-share-btn" onclick="copyLink(); alert('Link copied!')">
                 <i class="bi bi-link-45deg"></i> Copy Link

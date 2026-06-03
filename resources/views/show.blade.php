@@ -2,852 +2,831 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ $package->name }} — TopTrade</title>
+    <title>{{ $package->name }} — Package Details</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/png" href="{{ asset('assets/images/favicon.png') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('assets/css/landing.css') }}">
 
     <style>
-    /* ════════════════════════════════════════════
-       TOPTRADE — PLAN DETAIL PAGE
-       Palette: Charcoal + Antique Gold
-       Fonts: DM Serif + IBM Plex Mono + Syne
-    ════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════
+       PACKAGE DETAIL PAGE — CYBERPUNK
+       Extends landing.css design system
+    ═══════════════════════════════════════════════════ */
 
-    :root {
-        --gold:        #C9A84C;
-        --gold-light:  #E8C97A;
-        --gold-dim:    #8A6F2E;
-        --gold-faint:  rgba(201,168,76,0.08);
-        --gold-mist:   rgba(201,168,76,0.14);
-        --ink:         #0C0C0E;
-        --ink-2:       #131316;
-        --ink-3:       #1A1A1F;
-        --ink-4:       #222228;
-        --border:      rgba(255,255,255,0.07);
-        --border-mid:  rgba(255,255,255,0.11);
-        --border-gold: rgba(201,168,76,0.22);
-        --border-gold-b: rgba(201,168,76,0.45);
-        --text:        #D4D4DC;
-        --text-dim:    #7A7A88;
-        --text-faint:  #3E3E48;
-        --green:       #4CAF82;
-        --green-bg:    rgba(76,175,130,0.08);
-        --green-bdr:   rgba(76,175,130,0.25);
-        --red:         #D95F5F;
-        --red-bg:      rgba(217,95,95,0.08);
-        --red-bdr:     rgba(217,95,95,0.25);
-        --blue:        #5B8EF0;
-        --blue-bg:     rgba(91,142,240,0.08);
-        --amber:       #E8A24A;
-        --font-serif:  'DM Serif Display', serif;
-        --font-mono:   'IBM Plex Mono', monospace;
-        --font-sans:   'Syne', sans-serif;
-    }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-        background: var(--ink);
-        color: var(--text);
-        font-family: var(--font-sans);
-        font-size: 15px;
-        line-height: 1.6;
-        overflow-x: hidden;
+    /* ── PAGE BG ── */
+    .pkg-page {
+        background: var(--bg, #000814);
         min-height: 100vh;
+        padding-bottom: 5rem;
     }
 
-    /* Subtle grain */
-    body::before {
-        content: '';
-        position: fixed; inset: 0;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
-        pointer-events: none; z-index: 9000; opacity: 0.5;
-    }
-
-    a { color: var(--gold); text-decoration: none; transition: color 0.2s; }
-    a:hover { color: var(--gold-light); }
-
-    /* ── NAVBAR ── */
-    .tt-nav {
-        position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-        background: rgba(12,12,14,0.95);
-        backdrop-filter: blur(16px);
-        border-bottom: 1px solid var(--border);
-        height: 64px;
-        display: flex; align-items: center;
-    }
-    .tt-nav-inner {
-        max-width: 1240px; margin: 0 auto; padding: 0 1.5rem;
-        width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem;
-    }
-    .tt-brand {
-        font-family: var(--font-serif);
-        font-size: 1.25rem; color: #fff; text-decoration: none; letter-spacing: 0.01em;
-        white-space: nowrap;
-    }
-    .tt-brand em { color: var(--gold); font-style: normal; }
-    .tt-brand img { max-height: 30px; }
-    .tt-nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
-    .tt-nav-links a {
-        color: var(--text-dim); text-decoration: none;
-        font-family: var(--font-mono); font-size: 0.68rem; font-weight: 400;
-        letter-spacing: 0.1em; text-transform: uppercase; transition: color 0.2s;
-    }
-    .tt-nav-links a:hover { color: var(--gold); }
-    .tt-nav-actions { display: flex; align-items: center; gap: 0.65rem; }
-    .tt-btn-ghost {
-        font-family: var(--font-mono); font-size: 0.68rem; font-weight: 400;
-        letter-spacing: 0.08em; text-transform: uppercase;
-        color: var(--text-dim); border: 1px solid var(--border-mid);
-        background: transparent; padding: 0.45rem 1rem; text-decoration: none; transition: all 0.2s;
-    }
-    .tt-btn-ghost:hover { color: var(--gold); border-color: var(--border-gold); }
-    .tt-btn-solid {
-        font-family: var(--font-mono); font-size: 0.68rem; font-weight: 500;
-        letter-spacing: 0.08em; text-transform: uppercase;
-        color: var(--ink); background: var(--gold); border: 1px solid var(--gold);
-        padding: 0.45rem 1rem; text-decoration: none; transition: all 0.2s;
-    }
-    .tt-btn-solid:hover { background: var(--gold-light); border-color: var(--gold-light); color: var(--ink); }
-    .tt-hamburger { display: none; background: none; border: 1px solid var(--border-mid); padding: 6px 8px; cursor: pointer; }
-    .tt-hamburger span { display: block; width: 18px; height: 1.5px; background: var(--text-dim); margin: 4px 0; transition: all 0.3s; }
-
-    .nav-spacer { height: 64px; }
-
-    /* ── BREADCRUMB HEADER ── */
-    .plan-header {
-        background: var(--ink-2);
-        border-bottom: 1px solid var(--border);
-        padding: 2.25rem 0 1.75rem;
+    /* ── BREADCRUMB HERO ── */
+    .pkg-hero {
+        background: linear-gradient(180deg, rgba(0,71,255,0.08) 0%, transparent 100%);
+        border-bottom: 1px solid rgba(0,245,255,0.1);
+        padding: 2.5rem 0 1.5rem;
+        margin-bottom: 2.5rem;
         position: relative; overflow: hidden;
     }
-    .plan-header::before {
+    .pkg-hero::before {
         content: '';
-        position: absolute; top: 0; left: 0; right: 0; height: 1px;
-        background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+        position: absolute; top:0; left:0; right:0; height:2px;
+        background: linear-gradient(90deg, transparent, var(--primary,#00f5ff), transparent);
     }
-    .plan-header::after {
-        content: '';
-        position: absolute; top: -60px; right: -60px;
-        width: 240px; height: 240px;
-        background: radial-gradient(circle, rgba(201,168,76,0.05), transparent 65%);
-        pointer-events: none;
-    }
-    .plan-header-inner { position: relative; z-index: 1; }
-
-    .tt-breadcrumb {
+    .pkg-hero-inner { position: relative; z-index: 1; }
+    .pkg-breadcrumb {
         display: flex; align-items: center; gap: 0.5rem;
-        font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.12em;
-        text-transform: uppercase; color: var(--text-faint); margin-bottom: 1.1rem;
+        font-family: 'Orbitron', monospace;
+        font-size: 0.52rem; letter-spacing: 2px; text-transform: uppercase;
+        color: var(--text-muted, #4b5563); margin-bottom: 1rem;
     }
-    .tt-breadcrumb a { color: var(--text-dim); transition: color 0.2s; }
-    .tt-breadcrumb a:hover { color: var(--gold); }
-    .tt-breadcrumb i { font-size: 0.5rem; }
-
-    .plan-title-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-    .plan-title {
-        font-family: var(--font-serif);
-        font-size: clamp(1.5rem, 3.5vw, 2.2rem);
-        font-weight: 400; color: #fff; letter-spacing: 0; margin: 0;
+    .pkg-breadcrumb a { color: var(--primary, #00f5ff); text-decoration: none; transition: opacity .2s; }
+    .pkg-breadcrumb a:hover { opacity: 0.7; }
+    .pkg-breadcrumb i { font-size: 0.45rem; }
+    .pkg-hero-title {
+        font-family: 'Orbitron', monospace;
+        font-size: clamp(1.4rem, 3.5vw, 2rem);
+        font-weight: 900; color: #fff;
+        letter-spacing: 2px; margin: 0 0 0.5rem;
     }
-    .plan-status {
+    .pkg-hero-title span { color: var(--primary, #00f5ff); }
+    .pkg-status-badge {
         display: inline-flex; align-items: center; gap: 0.4rem;
-        font-family: var(--font-mono); font-size: 0.58rem; font-weight: 400;
-        letter-spacing: 0.1em; text-transform: uppercase;
+        font-family: 'Orbitron', monospace;
+        font-size: 0.5rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
         padding: 0.25rem 0.7rem; border: 1px solid;
+        clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
     }
-    .plan-status.active   { color: var(--green); border-color: var(--green-bdr); background: var(--green-bg); }
-    .plan-status.inactive { color: var(--text-faint); border-color: var(--border); background: transparent; }
-    .plan-status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+    .pkg-status-badge.active   { color: #34d399; border-color: rgba(52,211,153,0.4); background: rgba(52,211,153,0.07); }
+    .pkg-status-badge.inactive { color: #6b7280; border-color: rgba(107,114,128,0.4); background: rgba(107,114,128,0.07); }
+    .pkg-status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: blink 1.8s infinite; }
+    @keyframes blink { 0%,100%{opacity:1}50%{opacity:.3} }
 
-    /* ── KEY METRICS BAR ── */
-    .metrics-bar {
-        display: grid; grid-template-columns: repeat(4, 1fr);
-        border: 1px solid var(--border);
-        background: var(--border);
-        gap: 1px; margin: 2rem 0;
-    }
-    @media(max-width:575px) { .metrics-bar { grid-template-columns: 1fr 1fr; } }
-
-    .metric-cell {
-        background: var(--ink-2);
-        padding: 1.5rem 1.25rem;
-        display: flex; align-items: center; gap: 1rem;
-        transition: background 0.2s;
-    }
-    .metric-cell:hover { background: var(--ink-3); }
-    .metric-icon {
-        width: 38px; height: 38px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 0.95rem; flex-shrink: 0; border: 1px solid;
-    }
-    .metric-icon.gold   { color: var(--gold); border-color: var(--border-gold); background: var(--gold-faint); }
-    .metric-icon.green  { color: var(--green); border-color: var(--green-bdr); background: var(--green-bg); }
-    .metric-icon.amber  { color: var(--amber); border-color: rgba(232,162,74,0.3); background: rgba(232,162,74,0.08); }
-    .metric-icon.blue   { color: var(--blue); border-color: rgba(91,142,240,0.3); background: var(--blue-bg); }
-    .metric-lbl {
-        font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.1em;
-        text-transform: uppercase; color: var(--text-faint); margin-bottom: 0.2rem;
-    }
-    .metric-val {
-        font-family: var(--font-mono); font-size: 1.15rem; font-weight: 500; color: #fff; line-height: 1;
-    }
-
-    /* ── MAIN GRID ── */
-    .plan-grid {
+    /* ── LAYOUT ── */
+    .pkg-grid {
         display: grid;
         grid-template-columns: 1fr 320px;
-        gap: 1.5rem; align-items: start;
-        padding: 2rem 0 5rem;
+        gap: 1.5rem;
+        align-items: start;
     }
-    @media(max-width:1199px) { .plan-grid { grid-template-columns: 1fr 290px; } }
-    @media(max-width:991px)  { .plan-grid { grid-template-columns: 1fr; } }
+    @media(max-width:1199px){ .pkg-grid { grid-template-columns: 1fr 290px; } }
+    @media(max-width:991px)  { .pkg-grid { grid-template-columns: 1fr; } }
 
-    /* ── PANELS ── */
-    .plan-panel {
-        background: var(--ink-2);
-        border: 1px solid var(--border);
-        margin-bottom: 1.25rem;
+    /* ── SHARED PANEL ── */
+    .pkg-panel {
+        background: rgba(2,6,23,0.85);
+        border: 1px solid rgba(255,255,255,0.08);
         position: relative; overflow: hidden;
+        margin-bottom: 1.25rem;
     }
-    .plan-panel::before {
+    .pkg-panel::before {
         content: '';
-        position: absolute; top: 0; left: 0; right: 0; height: 1px;
-        background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
-        opacity: 0; transition: opacity 0.3s;
+        position: absolute; top:0; left:0; right:0; height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(0,245,255,0.25), transparent);
     }
-    .plan-panel:hover::before { opacity: 1; }
-
-    .panel-head {
+    .pkg-panel-head {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 0.85rem 1.4rem;
-        background: var(--ink-3); border-bottom: 1px solid var(--border);
+        padding: 0.9rem 1.4rem;
+        background: rgba(255,255,255,0.03);
+        border-bottom: 1px solid rgba(255,255,255,0.06);
         flex-wrap: wrap; gap: 0.5rem;
     }
-    .panel-title {
-        font-family: var(--font-mono); font-size: 0.68rem; font-weight: 400;
-        letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold);
+    .pkg-panel-title {
+        font-family: 'Orbitron', monospace;
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 2px;
+        text-transform: uppercase; color: var(--primary, #00f5ff);
         margin: 0; display: flex; align-items: center; gap: 0.5rem;
     }
-    .panel-body { padding: 1.5rem 1.4rem; }
+    .pkg-panel-body { padding: 1.5rem 1.4rem; }
 
     /* ── DESCRIPTION ── */
-    .plan-desc {
-        font-family: var(--font-sans);
-        font-size: 1rem; color: var(--text-dim); line-height: 1.8; margin: 0;
+    .pkg-desc {
+        font-family: 'Rajdhani', sans-serif;
+        font-size: 1.05rem; color: rgba(255,255,255,0.65); line-height: 1.7;
+        margin: 0;
     }
 
-    /* ── EARNING GRID ── */
-    .earn-grid {
+    /* ── STAT GRID ── */
+    .pkg-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.06);
+        margin-bottom: 1.25rem;
+    }
+    @media(max-width:575px){ .pkg-stats { grid-template-columns: 1fr 1fr; } }
+
+    .pkg-stat {
+        background: rgba(2,6,23,0.9);
+        padding: 1.5rem 1rem;
+        text-align: center;
+        position: relative; overflow: hidden;
+        transition: background .25s;
+    }
+    .pkg-stat:hover { background: rgba(0,245,255,0.04); }
+    .pkg-stat::before {
+        content: '';
+        position: absolute; top:0; left:0; right:0; height:2px;
+        background: var(--sc, rgba(0,245,255,0.4));
+        transform: scaleX(0); transition: transform .4s;
+    }
+    .pkg-stat:hover::before { transform: scaleX(1); }
+    .pkg-stat-icon {
+        font-size: 1.5rem; margin-bottom: 0.5rem; display: block;
+        filter: drop-shadow(0 0 6px currentColor);
+    }
+    .pkg-stat-val {
+        font-family: 'Orbitron', monospace;
+        font-size: 1.3rem; font-weight: 900; color: #fff; line-height: 1;
+        margin-bottom: 0.3rem; display: block;
+    }
+    .pkg-stat-lbl {
+        font-family: 'Orbitron', monospace;
+        font-size: 0.46rem; letter-spacing: 2px; text-transform: uppercase;
+        color: #4b5563;
+    }
+
+    /* ── EARNINGS TABLE ── */
+    .pkg-earn-grid {
         display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;
+        margin-bottom: 1.25rem;
     }
-    @media(max-width:575px) { .earn-grid { grid-template-columns: 1fr; } }
+    @media(max-width:575px){ .pkg-earn-grid { grid-template-columns: 1fr; } }
 
-    .earn-row {
+    .pkg-earn-row {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 0.58rem 0; border-bottom: 1px solid var(--border);
-        font-size: 0.88rem;
+        padding: 0.55rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        font-family: 'Rajdhani', sans-serif; font-size: 0.9rem;
     }
-    .earn-row:last-child { border-bottom: none; }
-    .earn-key { color: var(--text-dim); }
-    .earn-val { font-family: var(--font-mono); font-size: 0.88rem; font-weight: 500; color: #fff; }
-    .earn-val.green { color: var(--green); }
-    .earn-val.gold  { color: var(--gold); }
-    .earn-val.blue  { color: var(--blue); }
-    .earn-val.red   { color: var(--red); }
+    .pkg-earn-row:last-child { border-bottom: none; }
+    .pkg-earn-key { color: #6b7280; }
+    .pkg-earn-val { font-weight: 700; color: #fff; font-size: 0.92rem; }
+    .pkg-earn-val.green  { color: #34d399; }
+    .pkg-earn-val.cyan   { color: var(--primary, #00f5ff); }
+    .pkg-earn-val.blue   { color: #60a5fa; }
+    .pkg-earn-val.red    { color: #f87171; }
 
-    /* ROI callout */
-    .roi-callout {
+    /* ROI box */
+    .pkg-roi {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 1.1rem 1.25rem; margin-top: 1.25rem;
-        background: var(--green-bg);
-        border: 1px solid var(--green-bdr); border-left: 3px solid var(--green);
+        padding: 1rem 1.25rem;
+        background: rgba(52,211,153,0.06);
+        border: 1px solid rgba(52,211,153,0.25);
+        border-left: 3px solid #34d399;
+        margin-top: 1rem;
     }
-    .roi-label {
-        font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.12em;
-        text-transform: uppercase; color: var(--green);
-        display: flex; align-items: center; gap: 0.5rem;
+    .pkg-roi-label {
+        font-family: 'Orbitron', monospace;
+        font-size: 0.58rem; letter-spacing: 1.5px; text-transform: uppercase;
+        color: #34d399; display: flex; align-items: center; gap: 0.5rem;
     }
-    .roi-val {
-        font-family: var(--font-serif); font-size: 1.8rem; font-weight: 400; color: var(--green);
-        font-style: italic;
+    .pkg-roi-val {
+        font-family: 'Orbitron', monospace;
+        font-size: 1.6rem; font-weight: 900; color: #34d399;
+        text-shadow: 0 0 20px rgba(52,211,153,0.4);
     }
 
     /* ── FEATURES ── */
-    .features-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem 1.25rem; }
-    @media(max-width:575px) { .features-grid { grid-template-columns: 1fr; } }
-    .feature-item {
+    .pkg-features { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem 1rem; }
+    @media(max-width:575px){ .pkg-features { grid-template-columns: 1fr; } }
+
+    .pkg-feature-item {
         display: flex; align-items: flex-start; gap: 0.6rem;
-        font-size: 0.9rem; color: var(--text-dim); padding: 0.25rem 0;
+        font-family: 'Rajdhani', sans-serif; font-size: 0.92rem; color: rgba(255,255,255,0.7);
     }
-    .feature-item i { color: var(--green); font-size: 0.8rem; margin-top: 0.2rem; flex-shrink: 0; }
+    .pkg-feature-item i { color: #34d399; font-size: 0.85rem; margin-top: 0.15rem; flex-shrink: 0; }
 
     /* ── HOW IT WORKS ── */
-    .steps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    @media(max-width:575px) { .steps-grid { grid-template-columns: 1fr; } }
-    .step-item {
-        display: flex; gap: 1rem; align-items: flex-start;
-        padding: 1.1rem; background: var(--ink-3); border: 1px solid var(--border);
-        transition: border-color 0.2s;
-    }
-    .step-item:hover { border-color: var(--border-gold); }
-    .step-num {
-        font-family: var(--font-serif); font-size: 1.4rem; font-weight: 400; color: var(--gold-dim);
-        line-height: 1; flex-shrink: 0; width: 28px; text-align: center; font-style: italic;
-    }
-    .step-title { font-size: 0.88rem; font-weight: 700; color: #fff; margin-bottom: 0.2rem; }
-    .step-desc { font-size: 0.8rem; color: var(--text-dim); margin: 0; }
+    .pkg-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media(max-width:575px){ .pkg-steps { grid-template-columns: 1fr; } }
 
-    /* ── STATS TABLE ── */
-    .stats-cells { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); }
-    .stat-cell {
-        background: var(--ink-2); padding: 1.4rem 1rem; text-align: center;
-        transition: background 0.2s;
+    .pkg-step {
+        display: flex; gap: 0.85rem; align-items: flex-start;
+        padding: 1rem;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.06);
+        transition: border-color .25s, background .25s;
     }
-    .stat-cell:hover { background: var(--ink-3); }
-    .stat-cell-icon { font-size: 1.4rem; display: block; margin-bottom: 0.5rem; }
-    .stat-cell-val {
-        font-family: var(--font-mono); font-size: 1.1rem; font-weight: 500; color: #fff;
-        display: block; margin-bottom: 0.25rem;
+    .pkg-step:hover { border-color: rgba(0,245,255,0.2); background: rgba(0,245,255,0.03); }
+    .pkg-step-num {
+        font-family: 'Orbitron', monospace;
+        font-size: 0.7rem; font-weight: 900; color: var(--primary, #00f5ff);
+        width: 28px; height: 28px; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        border: 1px solid rgba(0,245,255,0.3);
+        background: rgba(0,245,255,0.07);
+        clip-path: polygon(4px 0,100% 0,calc(100% - 4px) 100%,0 100%);
     }
-    .stat-cell-lbl {
-        font-family: var(--font-mono); font-size: 0.55rem; letter-spacing: 0.12em;
-        text-transform: uppercase; color: var(--text-faint);
+    .pkg-step-body { flex: 1; min-width: 0; }
+    .pkg-step-title {
+        font-family: 'Orbitron', monospace;
+        font-size: 0.62rem; font-weight: 700; letter-spacing: 1px;
+        color: #fff; margin-bottom: 0.25rem;
     }
+    .pkg-step-desc { font-family: 'Rajdhani', sans-serif; font-size: 0.85rem; color: #6b7280; margin: 0; }
+
+    /* ── PACKAGE STATS (subscribers) ── */
+    .pkg-subs { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: rgba(255,255,255,0.06); }
+    .pkg-sub-item {
+        background: rgba(2,6,23,0.9); padding: 1.25rem 1rem; text-align: center;
+        transition: background .2s;
+    }
+    .pkg-sub-item:hover { background: rgba(0,245,255,0.03); }
+    .pkg-sub-icon { font-size: 1.6rem; display: block; margin-bottom: 0.5rem; }
+    .pkg-sub-val {
+        font-family: 'Orbitron', monospace; font-size: 1.1rem; font-weight: 900;
+        color: #fff; margin-bottom: 0.25rem; display: block;
+    }
+    .pkg-sub-lbl { font-family: 'Orbitron', monospace; font-size: 0.46rem; letter-spacing: 2px; text-transform: uppercase; color: #4b5563; }
 
     /* ── RIGHT SIDEBAR ── */
 
     /* price card */
-    .price-card {
-        background: linear-gradient(135deg, #12100A, #1C180A, #0C0C0E);
-        border: 1px solid var(--border-gold);
-        margin-bottom: 1.25rem; position: relative; overflow: hidden;
+    .pkg-price-card {
+        background: linear-gradient(135deg, #000d2e, #010e24, #011a3e);
+        border: 1px solid rgba(0,245,255,0.15);
+        position: relative; overflow: hidden;
+        margin-bottom: 1.25rem;
     }
-    .price-card::before {
+    .pkg-price-card::before {
         content: '';
-        position: absolute; top: 0; left: 0; right: 0; height: 1px;
-        background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        position: absolute; top:0; left:0; right:0; height:2px;
+        background: linear-gradient(90deg, transparent, var(--primary,#00f5ff), transparent);
     }
-    .price-card::after {
+    .pkg-price-card::after {
         content: '';
-        position: absolute; top: -60px; right: -60px;
+        position: absolute; top:-80px; right:-80px;
         width: 200px; height: 200px;
-        background: radial-gradient(circle, rgba(201,168,76,0.08), transparent 65%);
+        background: radial-gradient(circle, rgba(0,71,255,0.15), transparent 65%);
         pointer-events: none;
     }
-    .price-card-inner { padding: 1.75rem 1.5rem; position: relative; z-index: 1; }
-
-    .price-eyebrow {
-        font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.16em;
-        text-transform: uppercase; color: var(--gold-dim); display: block; margin-bottom: 0.35rem;
+    .pkg-price-inner { padding: 1.75rem 1.5rem; position: relative; z-index: 1; }
+    .pkg-price-lbl {
+        font-family: 'Orbitron', monospace; font-size: 0.5rem; letter-spacing: 4px;
+        text-transform: uppercase; color: var(--primary, #00f5ff); opacity: 0.8;
+        display: block; margin-bottom: 0.35rem;
     }
-    .price-amount {
-        font-family: var(--font-mono); font-size: 2.5rem; font-weight: 500;
-        color: #fff; line-height: 1; display: block; margin-bottom: 0.3rem;
+    .pkg-price-val {
+        font-family: 'Orbitron', monospace; font-size: 2.4rem; font-weight: 900;
+        color: #fff; line-height: 1;
+        text-shadow: 0 0 30px rgba(0,245,255,0.2);
+        display: block; margin-bottom: 0.3rem;
     }
-    .price-note { font-size: 0.82rem; color: var(--text-dim); font-family: var(--font-sans); }
+    .pkg-price-sub { font-family: 'Rajdhani', sans-serif; font-size: 0.85rem; color: #4b5563; }
 
-    .buy-btn {
+    /* buy button */
+    .pkg-buy-btn {
         display: flex; align-items: center; justify-content: center; gap: 0.6rem;
         width: 100%;
-        font-family: var(--font-mono); font-size: 0.72rem; font-weight: 500;
-        letter-spacing: 0.1em; text-transform: uppercase;
+        font-family: 'Orbitron', monospace;
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
         padding: 0.9rem 1.5rem;
-        background: var(--gold); color: var(--ink);
-        border: none; cursor: pointer; text-decoration: none;
-        transition: all 0.2s; margin-top: 1.5rem; margin-bottom: 0.65rem;
+        background: linear-gradient(135deg, var(--primary,#00f5ff), #0047ff);
+        color: #000; border: none; cursor: pointer;
+        clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+        transition: all 0.3s; text-decoration: none;
+        margin-top: 1.25rem; margin-bottom: 0.75rem;
     }
-    .buy-btn:hover { background: var(--gold-light); color: var(--ink); transform: translateY(-1px); }
-    .buy-btn.login-btn { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(91,142,240,0.3); }
-    .buy-btn.login-btn:hover { background: rgba(91,142,240,0.15); }
+    .pkg-buy-btn:hover {
+        box-shadow: 0 0 30px rgba(0,245,255,0.4), 0 0 60px rgba(0,245,255,0.15);
+        transform: translateY(-2px); color: #000;
+    }
+    .pkg-buy-btn.login { background: linear-gradient(135deg, #60a5fa, #0047ff); }
 
-    .back-btn {
-        display: flex; align-items: center; justify-content: center; gap: 0.45rem;
+    .pkg-back-btn {
+        display: flex; align-items: center; justify-content: center; gap: 0.5rem;
         width: 100%;
-        font-family: var(--font-mono); font-size: 0.62rem; font-weight: 400;
-        letter-spacing: 0.08em; text-transform: uppercase;
-        padding: 0.55rem 1rem;
-        background: transparent; border: 1px solid var(--border-mid);
-        color: var(--text-dim); text-decoration: none; transition: all 0.2s;
+        font-family: 'Orbitron', monospace;
+        font-size: 0.58rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+        padding: 0.6rem 1rem;
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.1);
+        color: #6b7280; text-decoration: none;
+        clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+        transition: all 0.2s;
     }
-    .back-btn:hover { border-color: var(--border-gold); color: var(--gold); }
+    .pkg-back-btn:hover { border-color: rgba(0,245,255,0.3); color: var(--primary, #00f5ff); }
 
-    /* sidebar panels */
-    .side-panel { background: var(--ink-2); border: 1px solid var(--border); margin-bottom: 1.25rem; }
-    .side-panel-head { padding: 0.82rem 1.25rem; background: var(--ink-3); border-bottom: 1px solid var(--border); }
-    .side-panel-title { font-family: var(--font-mono); font-size: 0.68rem; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin: 0; display: flex; align-items: center; gap: 0.5rem; }
-    .side-panel-body { padding: 1.1rem 1.25rem; }
-
-    /* summary rows */
-    .summary-row {
+    /* payment summary */
+    .pkg-summary-row {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 0.58rem 0; border-bottom: 1px solid var(--border);
-        font-size: 0.875rem;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        font-family: 'Rajdhani', sans-serif; font-size: 0.9rem;
     }
-    .summary-row:last-child { border-bottom: none; }
-    .summary-key { color: var(--text-dim); }
-    .summary-val { font-family: var(--font-mono); font-size: 0.82rem; font-weight: 500; color: #fff; }
-    .summary-free { color: var(--green) !important; }
-    .summary-total {
+    .pkg-summary-row:last-child { border-bottom: none; }
+    .pkg-summary-key { color: #6b7280; }
+    .pkg-summary-val { color: #fff; font-weight: 700; }
+    .pkg-summary-total-row {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 0.82rem 0 0; margin-top: 0.25rem; border-top: 1px solid var(--border-mid);
+        padding: 0.85rem 0 0;
+        margin-top: 0.25rem;
+        border-top: 1px solid rgba(255,255,255,0.1);
     }
-    .summary-total-key { font-family: var(--font-mono); font-size: 0.65rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: #fff; }
-    .summary-total-val { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 500; color: var(--gold); }
+    .pkg-summary-total-key {
+        font-family: 'Orbitron', monospace; font-size: 0.6rem; font-weight: 700;
+        letter-spacing: 1px; text-transform: uppercase; color: #fff;
+    }
+    .pkg-summary-total-val {
+        font-family: 'Orbitron', monospace; font-size: 1rem; font-weight: 900;
+        color: var(--primary, #00f5ff);
+        text-shadow: 0 0 12px rgba(0,245,255,0.3);
+    }
 
     /* what you get */
-    .get-item {
+    .pkg-get-item {
         display: flex; align-items: flex-start; gap: 0.6rem;
-        padding: 0.5rem 0; border-bottom: 1px solid var(--border);
-        font-size: 0.875rem; color: var(--text-dim);
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        font-family: 'Rajdhani', sans-serif; font-size: 0.88rem; color: rgba(255,255,255,0.75);
     }
-    .get-item:last-child { border-bottom: none; }
-    .get-item i { color: var(--green); font-size: 0.8rem; margin-top: 0.2rem; flex-shrink: 0; }
+    .pkg-get-item:last-child { border-bottom: none; }
+    .pkg-get-item i { color: #34d399; font-size: 0.85rem; margin-top: 0.12rem; flex-shrink: 0; }
 
-    /* ── FAQ ── */
-    .faq-section { padding: 2.5rem 0 5rem; }
-    .faq-heading {
-        font-family: var(--font-serif); font-size: clamp(1.2rem, 2.5vw, 1.8rem); font-weight: 400;
-        color: #fff; margin-bottom: 1.75rem; display: flex; align-items: center; gap: 0.75rem;
+    /* ── FAQ SECTION ── */
+    .pkg-faq { margin-top: 2.5rem; }
+    .pkg-faq-title {
+        font-family: 'Orbitron', monospace;
+        font-size: clamp(1rem, 2.5vw, 1.3rem); font-weight: 900;
+        color: #fff; letter-spacing: 2px; margin-bottom: 1.5rem;
+        display: flex; align-items: center; gap: 0.65rem;
     }
-    .faq-heading-line { flex: 1; height: 1px; background: var(--border); }
+    .pkg-faq-title i { color: var(--primary, #00f5ff); }
 
-    .faq-item { border-bottom: 1px solid var(--border); }
-    .faq-question {
-        width: 100%; text-align: left; background: none; border: none; cursor: pointer;
-        padding: 1.25rem 0; display: flex; align-items: center; justify-content: space-between;
-        font-family: var(--font-sans); font-size: 0.95rem; font-weight: 600; color: #fff;
-        gap: 1.5rem; transition: color 0.2s;
+    .accordion-item {
+        background: rgba(2,6,23,0.85) !important;
+        border: 1px solid rgba(255,255,255,0.07) !important;
+        border-radius: 0 !important;
+        margin-bottom: 4px;
+        overflow: hidden;
+        position: relative;
     }
-    .faq-question:hover { color: var(--gold); }
-    .faq-icon { color: var(--gold-dim); font-size: 1.1rem; flex-shrink: 0; transition: transform 0.3s; }
-    .faq-question.open .faq-icon { transform: rotate(45deg); color: var(--gold); }
-    .faq-answer {
-        font-size: 0.9rem; color: var(--text-dim); line-height: 1.8;
-        max-height: 0; overflow: hidden; transition: max-height 0.4s ease, padding 0.3s;
+    .accordion-item::before {
+        content: '';
+        position: absolute; top:0; left:0; bottom:0; width:2px;
+        background: linear-gradient(to bottom, transparent, rgba(0,245,255,0.3), transparent);
+        opacity: 0; transition: opacity .3s;
     }
-    .faq-answer.open { max-height: 300px; padding-bottom: 1.25rem; }
+    .accordion-item:hover::before,
+    .accordion-item:has(.accordion-button:not(.collapsed))::before { opacity: 1; }
+
+    .accordion-button {
+        font-family: 'Rajdhani', sans-serif !important;
+        font-size: 0.95rem !important; font-weight: 600 !important;
+        background: rgba(2,6,23,0.85) !important;
+        color: rgba(255,255,255,0.8) !important;
+        padding: 1rem 1.25rem !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+    .accordion-button::after {
+        filter: invert(1) sepia(1) saturate(3) hue-rotate(160deg) !important;
+    }
+    .accordion-button:not(.collapsed) {
+        background: rgba(0,245,255,0.04) !important;
+        color: var(--primary, #00f5ff) !important;
+        border-bottom: 1px solid rgba(0,245,255,0.15) !important;
+    }
+    .accordion-body {
+        background: rgba(1,6,20,0.9) !important;
+        color: rgba(255,255,255,0.55) !important;
+        font-family: 'Rajdhani', sans-serif !important;
+        font-size: 0.92rem !important; line-height: 1.7 !important;
+        padding: 1rem 1.25rem 1.25rem !important;
+    }
 
     /* ── FOOTER ── */
-    .plan-footer {
-        background: var(--ink-2);
-        border-top: 1px solid var(--border);
-        padding: 1.75rem 0; text-align: center;
+    .pkg-footer {
+        background: rgba(0,0,0,0.6);
+        border-top: 1px solid rgba(255,255,255,0.06);
+        padding: 2rem 0;
+        margin-top: 4rem;
+        text-align: center;
     }
-    .footer-brand { font-family: var(--font-serif); font-size: 1.1rem; color: #fff; margin-bottom: 0.5rem; }
-    .footer-brand em { color: var(--gold); font-style: normal; }
-    .footer-copy { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-faint); letter-spacing: 0.06em; margin-bottom: 0.85rem; }
-    .footer-links { display: flex; justify-content: center; gap: 1.75rem; flex-wrap: wrap; }
-    .footer-links a {
-        font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.1em;
-        text-transform: uppercase; color: var(--text-faint); text-decoration: none; transition: color 0.2s;
+    .pkg-footer-text { font-family: 'Rajdhani', sans-serif; font-size: 0.88rem; color: #4b5563; margin-bottom: 0.75rem; }
+    .pkg-footer-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; }
+    .pkg-footer-links a {
+        font-family: 'Orbitron', monospace; font-size: 0.5rem; letter-spacing: 2px;
+        text-transform: uppercase; color: #4b5563; text-decoration: none; transition: color .2s;
     }
-    .footer-links a:hover { color: var(--gold); }
-
-    /* ── CONTAINER ── */
-    .tt-container { max-width: 1240px; margin: 0 auto; padding: 0 1.5rem; }
+    .pkg-footer-links a:hover { color: var(--primary, #00f5ff); }
 
     /* ── RESPONSIVE ── */
-    @media(max-width:991px) {
-        .tt-nav-links { display: none; }
-        .tt-hamburger { display: block; }
+    @media(max-width:767px){
+        .pkg-panel-body { padding: 1.1rem; }
+        .pkg-price-inner { padding: 1.25rem 1.1rem; }
+        .pkg-price-val { font-size: 1.8rem; }
     }
-    @media(max-width:767px) {
-        .panel-body { padding: 1.1rem; }
-        .price-card-inner { padding: 1.25rem 1.1rem; }
-        .price-amount { font-size: 1.9rem; }
-        .metric-cell { padding: 1.1rem 0.85rem; gap: 0.65rem; }
-    }
-    @media(max-width:575px) {
-        .plan-title { font-size: 1.5rem; }
-        .faq-heading { font-size: 1.2rem; }
-        .stats-cells { grid-template-columns: 1fr 1fr 1fr; }
+    @media(max-width:575px){
+        .pkg-subs { grid-template-columns: repeat(3,1fr); }
+        .pkg-hero { padding: 1.75rem 0 1rem; margin-bottom: 1.5rem; }
     }
     </style>
 </head>
-<body>
 
-<!-- ── NAVBAR ── -->
-<nav class="tt-nav">
-    <div class="tt-nav-inner">
-        <a class="tt-brand" href="{{ route('welcome') }}">
-            <img src="{{ asset('assets/images/logo.png') }}" alt="TopTrade" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-            <span style="display:none">Top<em>Trade</em></span>
-        </a>
-        <ul class="tt-nav-links">
-            <li><a href="{{ route('welcome') }}#how">How It Works</a></li>
-            <li><a href="{{ route('welcome') }}#plans">Plans</a></li>
-            <li><a href="{{ route('welcome') }}#sources">Revenue</a></li>
-            <li><a href="{{ route('welcome') }}#faq">FAQ</a></li>
-        </ul>
-        <div class="tt-nav-actions">
-            @auth
-                <a href="{{ route('dashboard') }}" class="tt-btn-solid">Dashboard</a>
-            @else
-                <a href="{{ route('login') }}" class="tt-btn-ghost">Sign In</a>
-                <a href="{{ route('register') }}" class="tt-btn-solid">Open Account</a>
-            @endauth
-        </div>
-        <button class="tt-hamburger d-lg-none" aria-label="Menu">
-            <span></span><span></span><span></span>
-        </button>
-    </div>
-</nav>
-<div class="nav-spacer"></div>
+<body class="pkg-page">
 
-<!-- ── PLAN HEADER ── -->
-<div class="plan-header">
-    <div class="tt-container plan-header-inner">
-        <div class="tt-breadcrumb">
-            <a href="{{ route('welcome') }}">Home</a>
-            <i class="bi bi-chevron-right"></i>
-            <a href="{{ route('welcome') }}#plans">Trading Plans</a>
-            <i class="bi bi-chevron-right"></i>
-            <span style="color:var(--text-faint)">{{ $package->name }}</span>
-        </div>
-        <div class="plan-title-row">
-            <h1 class="plan-title">{{ $package->name }}</h1>
-            <span class="plan-status {{ $package->is_active ? 'active' : 'inactive' }}">
-                <span class="plan-status-dot"></span>
-                {{ $package->is_active ? 'Active' : 'Inactive' }}
-            </span>
-        </div>
-    </div>
-</div>
-
-<!-- ── METRICS BAR ── -->
-<div class="tt-container">
-    <div class="metrics-bar">
-        <div class="metric-cell">
-            <div class="metric-icon gold"><i class="bi bi-currency-dollar"></i></div>
-            <div>
-                <div class="metric-lbl">Plan Price</div>
-                <div class="metric-val">${{ number_format($package->price, 2) }}</div>
+    {{-- ══ NAVBAR ══ --}}
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ route('welcome') }}">
+                <img src="{{ asset('assets/images/logo.png') }}" alt="{{ config('app.name') }}" onerror="this.style.display='none'">
+            </a>
+            <button class="navbar-toggler border-0" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div id="nav" class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+                    <li class="nav-item"><a class="nav-link" href="{{ route('welcome') }}#how">Protocol</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('welcome') }}#packages">Tiers</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('welcome') }}#partners">Ecosystem</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('welcome') }}#faq">Support</a></li>
+                    @auth
+                        <li class="nav-item ms-lg-2">
+                            <a class="btn-cyber-solid" href="{{ route('dashboard') }}">Dashboard</a>
+                        </li>
+                    @else
+                        <li class="nav-item ms-lg-2">
+                            <a class="btn-cyber" href="{{ route('login') }}"><span>Sign In</span></a>
+                        </li>
+                        <li class="nav-item ms-lg-1">
+                            <a class="btn-cyber-solid" href="{{ route('register') }}">Join Now</a>
+                        </li>
+                    @endauth
+                </ul>
             </div>
         </div>
-        <div class="metric-cell">
-            <div class="metric-icon green"><i class="bi bi-list-check"></i></div>
-            <div>
-                <div class="metric-lbl">Sessions / Day</div>
-                <div class="metric-val">{{ $package->daily_tasks }}</div>
+    </nav>
+    <div style="height:80px;"></div>
+
+    {{-- ══ HERO STRIP ══ --}}
+    <div class="pkg-hero">
+        <div class="container pkg-hero-inner">
+            <div class="pkg-breadcrumb">
+                <a href="{{ route('welcome') }}">Home</a>
+                <i class="bi bi-chevron-right"></i>
+                <a href="{{ route('welcome') }}#packages">Packages</a>
+                <i class="bi bi-chevron-right"></i>
+                <span style="color:rgba(255,255,255,0.4);">{{ $package->name }}</span>
             </div>
-        </div>
-        <div class="metric-cell">
-            <div class="metric-icon amber"><i class="bi bi-cash-coin"></i></div>
-            <div>
-                <div class="metric-lbl">Daily Return</div>
-                <div class="metric-val">${{ number_format($package->daily_earning, 2) }}</div>
-            </div>
-        </div>
-        <div class="metric-cell">
-            <div class="metric-icon blue"><i class="bi bi-calendar-check"></i></div>
-            <div>
-                <div class="metric-lbl">Duration</div>
-                <div class="metric-val">{{ $package->duration_days === 0 ? '∞ Unlimited' : $package->duration_days . 'd' }}</div>
+
+            <div class="d-flex align-items-center flex-wrap gap-3">
+                <h1 class="pkg-hero-title">
+                    <span>{{ $package->name }}</span>
+                </h1>
+                <span class="pkg-status-badge {{ $package->is_active ? 'active' : 'inactive' }}">
+                    <span class="pkg-status-dot"></span>
+                    {{ $package->is_active ? 'Active' : 'Inactive' }}
+                </span>
             </div>
         </div>
     </div>
-</div>
 
-<!-- ── MAIN CONTENT ── -->
-<div class="tt-container">
-    <div class="plan-grid">
-
-        <!-- ════ LEFT ════ -->
-        <div>
-
-            <!-- Overview -->
-            <div class="plan-panel">
-                <div class="panel-head">
-                    <h2 class="panel-title"><i class="bi bi-info-circle"></i> Plan Overview</h2>
-                </div>
-                <div class="panel-body">
-                    <p class="plan-desc">{{ $package->description }}</p>
-                </div>
+    {{-- ══ KEY STATS BAR ══ --}}
+    <div class="container mb-4">
+        <div class="pkg-stats">
+            <div class="pkg-stat" style="--sc: rgba(0,245,255,0.5);">
+                <i class="bi bi-currency-dollar pkg-stat-icon" style="color: var(--primary, #00f5ff);"></i>
+                <span class="pkg-stat-val">${{ number_format($package->price, 2) }}</span>
+                <span class="pkg-stat-lbl">Package Price</span>
             </div>
+            <div class="pkg-stat" style="--sc: rgba(52,211,153,0.5);">
+                <i class="bi bi-list-check pkg-stat-icon" style="color: #34d399;"></i>
+                <span class="pkg-stat-val">{{ $package->daily_tasks }}</span>
+                <span class="pkg-stat-lbl">Tasks / Day</span>
+            </div>
+            <div class="pkg-stat" style="--sc: rgba(251,191,36,0.5);">
+                <i class="bi bi-cash-coin pkg-stat-icon" style="color: #fbbf24;"></i>
+                <span class="pkg-stat-val">${{ number_format($package->daily_earning, 2) }}</span>
+                <span class="pkg-stat-lbl">Daily Earning</span>
+            </div>
+            <div class="pkg-stat" style="--sc: rgba(96,165,250,0.5);">
+                <i class="bi bi-calendar-check pkg-stat-icon" style="color: #60a5fa;"></i>
+                <span class="pkg-stat-val">{{ $package->duration_days === 0 ? 'Unlimited' : '' }}</span>
+                <span class="pkg-stat-lbl">Days Validity</span>
+            </div>
+        </div>
+    </div>
 
-            <!-- Earning Potential -->
-            <div class="plan-panel">
-                <div class="panel-head">
-                    <h2 class="panel-title"><i class="bi bi-graph-up-arrow"></i> Return Breakdown</h2>
-                </div>
-                <div class="panel-body">
-                    <div class="earn-grid">
-                        <div>
-                            <div class="earn-row">
-                                <span class="earn-key">Per-session return</span>
-                                <span class="earn-val green">${{ number_format($package->per_task_earning, 2) }}</span>
-                            </div>
-                            <div class="earn-row">
-                                <span class="earn-key">Daily ceiling</span>
-                                <span class="earn-val gold">${{ number_format($package->daily_earning, 2) }}</span>
-                            </div>
-                            <div class="earn-row">
-                                <span class="earn-key">30-day potential</span>
-                                <span class="earn-val blue">${{ number_format($package->daily_earning * 30, 2) }}</span>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="earn-row">
-                                <span class="earn-key">Total potential</span>
-                                <span class="earn-val green">${{ number_format($package->total_earning_potential, 2) }}</span>
-                            </div>
-                            <div class="earn-row">
-                                <span class="earn-key">Activation cost</span>
-                                <span class="earn-val red">−${{ number_format($package->price, 2) }}</span>
-                            </div>
-                            <div class="earn-row">
-                                <span class="earn-key">Net profit</span>
-                                <span class="earn-val green">${{ number_format($package->total_earning_potential - $package->price, 2) }}</span>
-                            </div>
-                        </div>
+    {{-- ══ MAIN CONTENT ══ --}}
+    <div class="container">
+        <div class="pkg-grid">
+
+            {{-- ════ LEFT COLUMN ════ --}}
+            <div>
+
+                {{-- Description --}}
+                <div class="pkg-panel">
+                    <div class="pkg-panel-head">
+                        <h2 class="pkg-panel-title"><i class="bi bi-info-circle-fill"></i> Package Overview</h2>
                     </div>
-                    <div class="roi-callout">
-                        <div class="roi-label">
-                            <i class="bi bi-graph-up"></i> Total Return on Investment
-                        </div>
-                        <div class="roi-val">{{ number_format($package->roi_percentage, 1) }}%</div>
+                    <div class="pkg-panel-body">
+                        <p class="pkg-desc">{{ $package->description }}</p>
                     </div>
                 </div>
-            </div>
 
-            <!-- Features -->
-            @if($package->features)
-            <div class="plan-panel">
-                <div class="panel-head">
-                    <h2 class="panel-title"><i class="bi bi-star"></i> Plan Features</h2>
-                </div>
-                <div class="panel-body">
-                    <div class="features-grid">
-                        @foreach(explode("\n", $package->features) as $feature)
-                            @if(trim($feature))
-                                <div class="feature-item">
-                                    <i class="bi bi-check2-circle"></i>
-                                    <span>{{ trim($feature) }}</span>
+                {{-- Earning Potential --}}
+                <div class="pkg-panel">
+                    <div class="pkg-panel-head">
+                        <h2 class="pkg-panel-title"><i class="bi bi-graph-up-arrow"></i> Earning Potential</h2>
+                    </div>
+                    <div class="pkg-panel-body">
+                        <div class="pkg-earn-grid">
+                            <div>
+                                <div class="pkg-earn-row">
+                                    <span class="pkg-earn-key">Per Task Earning</span>
+                                    <span class="pkg-earn-val green">${{ number_format($package->per_task_earning, 2) }}</span>
                                 </div>
-                            @endif
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-            @endif
-
-            <!-- How It Works -->
-            <div class="plan-panel">
-                <div class="panel-head">
-                    <h2 class="panel-title"><i class="bi bi-lightning-charge"></i> How It Works</h2>
-                </div>
-                <div class="panel-body">
-                    <div class="steps-grid">
-                        <div class="step-item">
-                            <div class="step-num">1</div>
+                                <div class="pkg-earn-row">
+                                    <span class="pkg-earn-key">Daily Maximum</span>
+                                    <span class="pkg-earn-val cyan">${{ number_format($package->daily_earning, 2) }}</span>
+                                </div>
+                                <div class="pkg-earn-row">
+                                    <span class="pkg-earn-key">Monthly Potential</span>
+                                    <span class="pkg-earn-val blue">${{ number_format($package->daily_earning * 30, 2) }}</span>
+                                </div>
+                            </div>
                             <div>
-                                <div class="step-title">Activate Plan</div>
-                                <p class="step-desc">Fund your account and activate this trading plan with one click</p>
+                                {{-- <div class="pkg-earn-row">
+                                    <span class="pkg-earn-key">Total ({{ $package->duration_days }}d)</span>
+                                    <span class="pkg-earn-val green">${{ number_format($package->total_earning_potential, 2) }}</span>
+                                </div> --}}
+                                <div class="pkg-earn-row">
+                                    <span class="pkg-earn-key">Investment</span>
+                                    <span class="pkg-earn-val red">−${{ number_format($package->price, 2) }}</span>
+                                </div>
+                                {{-- <div class="pkg-earn-row">
+                                    <span class="pkg-earn-key">Net Profit</span>
+                                    <span class="pkg-earn-val green">${{ number_format($package->total_earning_potential - $package->price, 2) }}</span>
+                                </div> --}}
                             </div>
                         </div>
-                        <div class="step-item">
-                            <div class="step-num">2</div>
-                            <div>
-                                <div class="step-title">Expert Desk Trades</div>
-                                <p class="step-desc">Our analysts run up to {{ $package->daily_tasks }} daily sessions on your allocation</p>
+                        <div class="pkg-roi">
+                            <div class="pkg-roi-label">
+                                <i class="bi bi-graph-up"></i> Return on Investment (ROI)
                             </div>
-                        </div>
-                        <div class="step-item">
-                            <div class="step-num">3</div>
-                            <div>
-                                <div class="step-title">Profits Credit Daily</div>
-                                <p class="step-desc">Up to ${{ number_format($package->daily_earning, 2) }} credited to your balance each day</p>
-                            </div>
-                        </div>
-                        <div class="step-item">
-                            <div class="step-num">4</div>
-                            <div>
-                                <div class="step-title">Withdraw Anytime</div>
-                                <p class="step-desc">Move profits to your USDT TRC20 wallet with no lock-in</p>
-                            </div>
+                            <div class="pkg-roi-val">{{ number_format($package->roi_percentage, 1) }}%</div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Statistics -->
-            <div class="plan-panel">
-                <div class="panel-head">
-                    <h2 class="panel-title"><i class="bi bi-bar-chart"></i> Plan Statistics</h2>
-                </div>
-                <div class="stats-cells">
-                    <div class="stat-cell">
-                        <span class="stat-cell-icon" style="color:var(--gold)">👥</span>
-                        <span class="stat-cell-val">{{ $package->total_subscribers ?? 0 }}</span>
-                        <span class="stat-cell-lbl">Total Investors</span>
+                {{-- Features --}}
+                @if($package->features)
+                <div class="pkg-panel">
+                    <div class="pkg-panel-head">
+                        <h2 class="pkg-panel-title"><i class="bi bi-star-fill"></i> Package Features</h2>
                     </div>
-                    <div class="stat-cell">
-                        <span class="stat-cell-icon" style="color:var(--green)">✓</span>
-                        <span class="stat-cell-val">{{ $package->active_subscribers ?? 0 }}</span>
-                        <span class="stat-cell-lbl">Active Now</span>
-                    </div>
-                    <div class="stat-cell">
-                        <span class="stat-cell-icon" style="color:var(--amber)">★</span>
-                        <span class="stat-cell-val">4.8</span>
-                        <span class="stat-cell-lbl">Avg. Rating</span>
+                    <div class="pkg-panel-body">
+                        <div class="pkg-features">
+                            @foreach(explode("\n", $package->features) as $feature)
+                                @if(trim($feature))
+                                    <div class="pkg-feature-item">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                        <span>{{ trim($feature) }}</span>
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
                     </div>
                 </div>
-            </div>
+                @endif
 
-        </div><!-- /left -->
+                {{-- How it Works --}}
+                <div class="pkg-panel">
+                    <div class="pkg-panel-head">
+                        <h2 class="pkg-panel-title"><i class="bi bi-lightning-charge-fill"></i> How It Works</h2>
+                    </div>
+                    <div class="pkg-panel-body">
+                        <div class="pkg-steps">
+                            <div class="pkg-step">
+                                <div class="pkg-step-num">1</div>
+                                <div class="pkg-step-body">
+                                    <div class="pkg-step-title">Purchase Package</div>
+                                    <p class="pkg-step-desc">Buy this package with your wallet balance</p>
+                                </div>
+                            </div>
+                            <div class="pkg-step">
+                                <div class="pkg-step-num">2</div>
+                                <div class="pkg-step-body">
+                                    <div class="pkg-step-title">Complete Daily Tasks</div>
+                                    <p class="pkg-step-desc">Do up to {{ $package->daily_tasks }} tasks per day</p>
+                                </div>
+                            </div>
+                            <div class="pkg-step">
+                                <div class="pkg-step-num">3</div>
+                                <div class="pkg-step-body">
+                                    <div class="pkg-step-title">Earn Daily</div>
+                                    <p class="pkg-step-desc">Earn up to ${{ number_format($package->daily_earning, 2) }} per day</p>
+                                </div>
+                            </div>
+                            <div class="pkg-step">
+                                <div class="pkg-step-num">4</div>
+                                <div class="pkg-step-body">
+                                    <div class="pkg-step-title">Withdraw Anytime</div>
+                                    <p class="pkg-step-desc">Withdraw earnings whenever you want</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        <!-- ════ RIGHT SIDEBAR ════ -->
-        <div>
-            <div class="sticky-top" style="top:80px;">
+                {{-- Package Stats --}}
+                <div class="pkg-panel">
+                    <div class="pkg-panel-head">
+                        <h2 class="pkg-panel-title"><i class="bi bi-bar-chart-fill"></i> Package Statistics</h2>
+                    </div>
+                    <div class="pkg-subs">
+                        <div class="pkg-sub-item">
+                            <i class="bi bi-people-fill pkg-sub-icon" style="color:var(--primary,#00f5ff);"></i>
+                            <span class="pkg-sub-val">{{ $package->total_subscribers ?? 0 }}</span>
+                            <span class="pkg-sub-lbl">Total Subscribers</span>
+                        </div>
+                        <div class="pkg-sub-item">
+                            <i class="bi bi-check-circle-fill pkg-sub-icon" style="color:#34d399;"></i>
+                            <span class="pkg-sub-val">{{ $package->active_subscribers ?? 0 }}</span>
+                            <span class="pkg-sub-lbl">Active Now</span>
+                        </div>
+                        <div class="pkg-sub-item">
+                            <i class="bi bi-star-fill pkg-sub-icon" style="color:#fbbf24;"></i>
+                            <span class="pkg-sub-val">4.8/5</span>
+                            <span class="pkg-sub-lbl">User Rating</span>
+                        </div>
+                    </div>
+                </div>
 
-                <!-- Price Card -->
-                <div class="price-card">
-                    <div class="price-card-inner">
-                        <span class="price-eyebrow">One-Time Activation · No Renewal</span>
-                        <span class="price-amount">${{ number_format($package->price, 2) }}</span>
-                        <span class="price-note">USDT · TRC20 · Instant start</span>
+            </div>{{-- /left --}}
 
-                        @auth
-                            <form id="purchase-form-{{ $package->slug }}"
-                                  action="{{ route('packages.purchase', $package->slug) }}"
-                                  method="POST">
-                                @csrf
-                                <button type="submit" class="buy-btn">
-                                    <i class="bi bi-lightning-charge-fill"></i> Activate Plan
-                                </button>
-                            </form>
-                        @else
-                            <a href="{{ route('login') }}" class="buy-btn login-btn">
-                                <i class="bi bi-box-arrow-in-right"></i> Sign In to Activate
+            {{-- ════ RIGHT SIDEBAR ════ --}}
+            <div>
+
+                {{-- Price + Buy (sticky) --}}
+                <div class="sticky-top" style="top:96px;">
+
+                    <div class="pkg-price-card">
+                        <div class="pkg-price-inner">
+                            <span class="pkg-price-lbl">One-time Investment</span>
+                            <span class="pkg-price-val">${{ number_format($package->price, 2) }}</span>
+                            <span class="pkg-price-sub">USDT · Instant Activation</span>
+
+                            @auth
+                                <form id="purchase-form-{{ $package->slug }}"
+                                    action="{{ route('packages.purchase', $package->slug) }}"
+                                    method="POST">
+                                    @csrf
+                                    <button type="submit" class="pkg-buy-btn">
+                                        <i class="bi bi-cart-check-fill"></i> Purchase Now
+                                    </button>
+                                </form>
+                            @else
+                                <a href="{{ route('login') }}" class="pkg-buy-btn login">
+                                    <i class="bi bi-box-arrow-in-right"></i> Login to Purchase
+                                </a>
+                            @endauth
+
+                            <a href="{{ route('welcome') }}#packages" class="pkg-back-btn">
+                                <i class="bi bi-arrow-left"></i> All Packages
                             </a>
-                        @endauth
-
-                        <a href="{{ route('welcome') }}#plans" class="back-btn">
-                            <i class="bi bi-arrow-left"></i> View All Plans
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Payment Summary -->
-                <div class="side-panel">
-                    <div class="side-panel-head">
-                        <h3 class="side-panel-title"><i class="bi bi-receipt"></i> Payment Summary</h3>
-                    </div>
-                    <div class="side-panel-body">
-                        <div class="summary-row">
-                            <span class="summary-key">Plan price</span>
-                            <span class="summary-val">${{ number_format($package->price, 2) }}</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-key">Processing fee</span>
-                            <span class="summary-val summary-free">$0.00 — Free</span>
-                        </div>
-                        <div class="summary-total">
-                            <span class="summary-total-key">Total Due</span>
-                            <span class="summary-total-val">${{ number_format($package->price, 2) }}</span>
                         </div>
                     </div>
-                </div>
 
-                <!-- What You Get -->
-                <div class="side-panel">
-                    <div class="side-panel-head">
-                        <h3 class="side-panel-title"><i class="bi bi-gift"></i> What's Included</h3>
+                    {{-- Payment Summary --}}
+                    <div class="pkg-panel">
+                        <div class="pkg-panel-head">
+                            <h3 class="pkg-panel-title"><i class="bi bi-receipt"></i> Payment Summary</h3>
+                        </div>
+                        <div class="pkg-panel-body" style="padding-top:1rem;padding-bottom:1rem;">
+                            <div class="pkg-summary-row">
+                                <span class="pkg-summary-key">Package Price</span>
+                                <span class="pkg-summary-val">${{ number_format($package->price, 2) }}</span>
+                            </div>
+                            <div class="pkg-summary-row">
+                                <span class="pkg-summary-key">Processing Fee</span>
+                                <span class="pkg-summary-val" style="color:#34d399;">$0.00 — FREE</span>
+                            </div>
+                            <div class="pkg-summary-total-row">
+                                <span class="pkg-summary-total-key">Total</span>
+                                <span class="pkg-summary-total-val">${{ number_format($package->price, 2) }}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="side-panel-body">
-                        <div class="get-item"><i class="bi bi-check2-circle"></i><span>{{ $package->daily_tasks }} daily trading sessions</span></div>
-                        <div class="get-item"><i class="bi bi-check2-circle"></i><span>Up to ${{ number_format($package->daily_earning, 2) }} daily return</span></div>
-                        <div class="get-item"><i class="bi bi-check2-circle"></i><span>{{ $package->duration_days === 0 ? 'Unlimited' : $package->duration_days . '-day' }} plan duration</span></div>
-                        <div class="get-item"><i class="bi bi-check2-circle"></i><span>Total potential: ${{ number_format($package->total_earning_potential, 2) }}</span></div>
-                        <div class="get-item"><i class="bi bi-check2-circle"></i><span>{{ number_format($package->roi_percentage, 1) }}% ROI</span></div>
-                        <div class="get-item"><i class="bi bi-check2-circle"></i><span>Instant activation after payment</span></div>
-                        <div class="get-item"><i class="bi bi-check2-circle"></i><span>Zero fees on withdrawals</span></div>
+
+                    {{-- What You Get --}}
+                    <div class="pkg-panel">
+                        <div class="pkg-panel-head">
+                            <h3 class="pkg-panel-title"><i class="bi bi-gift-fill"></i> What You Get</h3>
+                        </div>
+                        <div class="pkg-panel-body" style="padding-top:1rem;padding-bottom:1rem;">
+                            <div class="pkg-get-item">
+                                <i class="bi bi-check2-circle"></i>
+                                <span>{{ $package->daily_tasks }} daily tasks</span>
+                            </div>
+                            <div class="pkg-get-item">
+                                <i class="bi bi-check2-circle"></i>
+                                <span>Up to ${{ number_format($package->daily_earning, 2) }}/day earning</span>
+                            </div>
+                            <div class="pkg-get-item">
+                                <i class="bi bi-check2-circle"></i>
+                                <span>{{ $package->duration_days === 0 ? 'Unlimited' : '' }} days access</span>
+                            </div>
+                            <div class="pkg-get-item">
+                                <i class="bi bi-check2-circle"></i>
+                                <span>Total potential: ${{ number_format($package->total_earning_potential, 2) }}</span>
+                            </div>
+                            <div class="pkg-get-item">
+                                <i class="bi bi-check2-circle"></i>
+                                <span>ROI: {{ number_format($package->roi_percentage, 1) }}%</span>
+                            </div>
+                            <div class="pkg-get-item">
+                                <i class="bi bi-check2-circle"></i>
+                                <span>Instant activation after purchase</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>{{-- /sticky --}}
+            </div>{{-- /right --}}
+        </div>{{-- /grid --}}
+
+        {{-- ══ FAQ ══ --}}
+        <div class="pkg-faq">
+            <h2 class="pkg-faq-title">
+                <i class="bi bi-question-circle-fill"></i> Frequently Asked Questions
+            </h2>
+            <div class="accordion" id="faqAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                            How does this package work?
+                        </button>
+                    </h2>
+                    <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            After purchasing, you can complete up to {{ $package->daily_tasks }} tasks per day.
+                            Each completed task earns you money, up to ${{ number_format($package->daily_earning, 2) }} per day.
+                            The package stays active for {{ $package->duration_days === 0 ? 'Unlimited' : '' }} days.
+                        </div>
                     </div>
                 </div>
-
-                <!-- Trust indicators -->
-                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;padding:0.25rem 0">
-                    <span style="font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.08em;color:var(--text-faint);border:1px solid var(--border);padding:0.28rem 0.65rem">USDT TRC20</span>
-                    <span style="font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.08em;color:var(--text-faint);border:1px solid var(--border);padding:0.28rem 0.65rem">Zero Fees</span>
-                    <span style="font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.08em;color:var(--text-faint);border:1px solid var(--border);padding:0.28rem 0.65rem">Secure</span>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                            Can I buy multiple packages at once?
+                        </button>
+                    </h2>
+                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Yes! You can purchase multiple different packages simultaneously. You can only have one active subscription of the same package at a time — once it expires you can re-purchase it.
+                        </div>
+                    </div>
                 </div>
-
-            </div>
-        </div><!-- /right -->
-
-    </div><!-- /grid -->
-
-    <!-- ── FAQ ── -->
-    <div class="faq-section">
-        <h2 class="faq-heading">
-            Frequently Asked Questions
-            <span class="faq-heading-line"></span>
-        </h2>
-        <div>
-            <div class="faq-item">
-                <button class="faq-question" onclick="toggleFaq(this)">How does this plan work? <i class="bi bi-plus faq-icon"></i></button>
-                <div class="faq-answer">After activating, our trading desk runs up to {{ $package->daily_tasks }} sessions per day on your allocated capital. Each session credits your balance automatically — no action required from you. The plan stays active for {{ $package->duration_days === 0 ? 'an unlimited period' : $package->duration_days . ' days' }}.</div>
-            </div>
-            <div class="faq-item">
-                <button class="faq-question" onclick="toggleFaq(this)">Can I activate multiple plans at once? <i class="bi bi-plus faq-icon"></i></button>
-                <div class="faq-answer">Yes. You can run multiple different plans simultaneously — each adds its own daily session pool and earning ceiling. You cannot hold two identical plans at once, but combining different plans is fully supported.</div>
-            </div>
-            <div class="faq-item">
-                <button class="faq-question" onclick="toggleFaq(this)">How fast are withdrawals processed? <i class="bi bi-plus faq-icon"></i></button>
-                <div class="faq-answer">Withdrawal requests are reviewed by our finance team and typically complete within 1–6 hours. Funds transfer directly to your USDT TRC20 wallet. TopTrade charges zero withdrawal fees.</div>
-            </div>
-            <div class="faq-item">
-                <button class="faq-question" onclick="toggleFaq(this)">What happens when the plan expires? <i class="bi bi-plus faq-icon"></i></button>
-                <div class="faq-answer">When the plan duration ends, daily profit credits for that plan stop. Your accumulated balance remains safely in your wallet and can be withdrawn anytime. You can re-activate the same plan or upgrade to a higher tier.</div>
-            </div>
-            <div class="faq-item">
-                <button class="faq-question" onclick="toggleFaq(this)">Is there a referral program? <i class="bi bi-plus faq-icon"></i></button>
-                <div class="faq-answer">Every registered account gets a unique referral link from day one. When someone signs up through your link and activates any plan, you earn a referral commission instantly. There is no cap on referrals.</div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                            When can I withdraw my earnings?
+                        </button>
+                    </h2>
+                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            You can withdraw anytime after completing tasks — there's no lock-in period. KYC verification is required before your first withdrawal.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                            What happens after {{ $package->duration_days === 0 ? 'Unlimited' : '' }} days?
+                        </button>
+                    </h2>
+                    <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Your package expires after {{ $package->duration_days === 0 ? 'Unlimited' : '' }} days. You can repurchase the same package or choose a different one. All accumulated earnings remain yours to withdraw.
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
 
-</div><!-- /container -->
+    </div>{{-- /container --}}
 
-<!-- ── FOOTER ── -->
-<footer class="plan-footer">
-    <div class="tt-container">
-        <div class="footer-brand">Top<em>Trade</em></div>
-        <div class="footer-copy">© {{ date('Y') }} TopTrade — All Rights Reserved.</div>
-        <div class="footer-links">
-            <a href="{{ route('welcome') }}#how">How It Works</a>
-            <a href="{{ route('welcome') }}#plans">Plans</a>
-            <a href="{{ route('welcome') }}#faq">FAQ</a>
-            <a href="{{ route('welcome') }}#contact">Contact</a>
-            <a href="#">Terms</a>
-            <a href="#">Privacy</a>
+    {{-- ══ FOOTER ══ --}}
+    <footer class="pkg-footer">
+        <div class="container">
+            <p class="pkg-footer-text">© {{ date('Y') }} {{ config('app.name') }}. All Rights Reserved.</p>
+            <div class="pkg-footer-links">
+                <a href="{{ route('welcome') }}#faq">FAQ</a>
+                <a href="{{ route('welcome') }}#contact">Contact</a>
+                <a href="#">Terms</a>
+                <a href="#">Privacy</a>
+            </div>
         </div>
-    </div>
-</footer>
+    </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"></script>
-<script>
-function toggleFaq(btn) {
-    const answer = btn.nextElementSibling;
-    const icon = btn.querySelector('.faq-icon');
-    const isOpen = answer.classList.contains('open');
-    document.querySelectorAll('.faq-answer.open').forEach(a => {
-        a.classList.remove('open');
-        a.previousElementSibling.classList.remove('open');
-        a.previousElementSibling.querySelector('.faq-icon').classList.replace('bi-dash','bi-plus');
-    });
-    if (!isOpen) {
-        answer.classList.add('open');
-        btn.classList.add('open');
-        icon.classList.replace('bi-plus','bi-dash');
-    }
-}
-</script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"></script>
 </body>
 </html>

@@ -1,451 +1,498 @@
 @extends('layouts.app')
-@section('title', 'Referral Dashboard')
+@section('title', 'Referrals')
+@section('page-title', 'Referrals')
 
 @section('css')
 <style>
-/* ═══════════════════════════════════════════
-   REFERRAL PAGE — Cyberpunk New Layout
-═══════════════════════════════════════════ */
+    .rf-grid {
+        display: grid;
+        grid-template-columns: 1fr 280px;
+    }
 
-/* ── 2-COL HERO ── */
-.rf-hero {
-    display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 1.1rem;
-    margin-bottom: 1.5rem;
-}
-@media(max-width:1100px){ .rf-hero { grid-template-columns:1fr; } }
-
-/* LEFT — link card */
-.rf-link-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    position: relative; overflow: hidden;
-}
-.rf-link-card::before {
-    content: '';
-    position: absolute; top:0; left:0; right:0; height:2px;
-    background: linear-gradient(90deg, transparent, var(--cyan), var(--blue), transparent);
-}
-.rf-link-inner { padding: 1.5rem 1.5rem 1.25rem; }
-.rf-link-eyebrow {
-    font-family:'Orbitron',monospace; font-size:.48rem; letter-spacing:4px;
-    text-transform:uppercase; color:rgba(0,245,255,.5); margin-bottom:.35rem;
-}
-.rf-link-title {
-    font-family:'Orbitron',monospace; font-size:1rem; font-weight:900;
-    color:#fff; letter-spacing:1px; margin-bottom:1rem;
-}
-.rf-link-title span { color:var(--cyan); }
-
-/* input row */
-.rf-input-row {
-    display: flex; gap: 0; margin-bottom: .85rem;
-}
-.rf-input {
-    flex: 1;
-    background: var(--surface2) !important;
-    border: 1px solid var(--border) !important;
-    border-right: none !important;
-    border-radius: 0 !important;
-    color: var(--text-dim) !important;
-    font-family: 'Orbitron', monospace !important;
-    font-size: .58rem !important;
-    letter-spacing: 1px;
-    padding: .75rem 1rem !important;
-}
-.rf-input:focus { outline: none; border-color: var(--cyan) !important; box-shadow: none !important; }
-.rf-copy-btn {
-    display: flex; align-items: center; gap: .4rem;
-    font-family:'Orbitron',monospace; font-size:.58rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
-    padding: .75rem 1.25rem; cursor: pointer; border: none; flex-shrink: 0;
-    background: linear-gradient(135deg, var(--cyan), var(--blue));
-    color: var(--black);
-    clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
-    transition: all .25s; position:relative; overflow:hidden;
-}
-.rf-copy-btn::after { content:''; position:absolute; inset:0; background:rgba(255,255,255,.12); transform:scaleX(0); transform-origin:left; transition:transform .25s; }
-.rf-copy-btn:hover::after { transform:scaleX(1); }
-.rf-copy-btn:hover { box-shadow:var(--glow-cyan-lg); }
-
-/* commission note */
-.rf-comm-note {
-    display: flex; align-items: center; gap: .6rem;
-    background: rgba(0,245,255,.05);
-    border: 1px solid rgba(0,245,255,.18);
-    padding: .65rem 1rem;
-}
-.rf-comm-pct {
-    font-family:'Orbitron',monospace; font-size:1.1rem; font-weight:900;
-    color:var(--cyan); text-shadow:var(--glow-cyan); flex-shrink:0;
-}
-.rf-comm-desc { font-family:'Rajdhani',sans-serif; font-size:.85rem; color:var(--text-muted); line-height:1.4; }
-.rf-comm-desc strong { color:#fff; font-family:'Orbitron',monospace; font-size:.6rem; letter-spacing:.5px; }
-
-/* social share strip */
-.rf-share-strip {
-    border-top: 1px solid var(--border);
-    padding: .85rem 1.5rem;
-    background: rgba(0,0,0,.2);
-    display: flex; align-items: center; gap: .65rem; flex-wrap: wrap;
-}
-.rf-share-lbl { font-family:'Orbitron',monospace; font-size:.46rem; letter-spacing:3px; text-transform:uppercase; color:var(--text-muted); margin-right:.25rem; flex-shrink:0; }
-.rf-share-btn {
-    display: inline-flex; align-items: center; gap: .35rem;
-    font-family:'Orbitron',monospace; font-size:.5rem; font-weight:700; letter-spacing:1px; text-transform:uppercase;
-    padding: .32rem .75rem; border: 1px solid var(--border);
-    color:var(--text-dim); background:var(--surface2); text-decoration:none;
-    clip-path: polygon(4px 0,100% 0,calc(100% - 4px) 100%,0 100%);
-    transition: all .2s;
-}
-.rf-share-btn:hover { color:var(--cyan); border-color:var(--cyan); background:rgba(0,245,255,.05); }
-
-/* RIGHT — stat column */
-.rf-stats-col { display: flex; flex-direction: column; gap: .75rem; }
-
-.rf-stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    display: flex; align-items: center; gap: 1rem;
-    padding: 1rem 1.25rem;
-    position: relative; overflow: hidden;
-    transition: border-color .3s, transform .3s;
-    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
-}
-.rf-stat-card:hover { border-color:var(--border-bright); transform:translateX(4px); }
-.rf-stat-card::before {
-    content: '';
-    position: absolute; top:0; left:0; bottom:0; width:3px;
-    background: var(--sc, var(--cyan));
-}
-
-.rf-stat-ico {
-    width: 44px; height: 44px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem; flex-shrink: 0;
-}
-.rf-stat-val {
-    font-family:'Orbitron',monospace; font-size:1.2rem; font-weight:900;
-    line-height:1; display:block; margin-bottom:.2rem;
-}
-.rf-stat-lbl {
-    font-family:'Orbitron',monospace; font-size:.44rem; letter-spacing:2px; text-transform:uppercase; color:var(--text-muted);
-}
-.rf-stat-badge {
-    margin-left: auto; flex-shrink: 0;
-    font-family:'Orbitron',monospace; font-size:.44rem; font-weight:700; letter-spacing:1px; text-transform:uppercase;
-    padding: .18rem .55rem; border: 1px solid;
-    clip-path: polygon(3px 0,100% 0,calc(100% - 3px) 100%,0 100%);
-}
-
-/* ── SECTION LABEL ── */
-.rf-sec { font-family:'Orbitron',monospace; font-size:.5rem; letter-spacing:4px; text-transform:uppercase; color:var(--text-muted); display:flex; align-items:center; gap:.75rem; margin-bottom:1rem; margin-top:1.5rem; }
-.rf-sec::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,var(--border),transparent); }
-
-/* ── TABLES ── */
-.rf-panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    position: relative; overflow: hidden;
-    margin-bottom: 1.25rem;
-}
-.rf-panel::before {
-    content:'';
-    position:absolute; top:0; left:0; right:0; height:2px;
-    background:linear-gradient(90deg, transparent, var(--cyan), transparent);
-}
-.rf-panel-hd {
-    display:flex; align-items:center; justify-content:space-between;
-    padding:.85rem 1.25rem;
-    background:var(--surface2);
-    border-bottom:1px solid var(--border);
-}
-.rf-panel-title {
-    font-family:'Orbitron',monospace; font-size:.65rem; font-weight:700; letter-spacing:2px; text-transform:uppercase;
-    color:var(--cyan); margin:0; display:flex; align-items:center; gap:.5rem;
-}
-.rf-count {
-    font-family:'Orbitron',monospace; font-size:.5rem; letter-spacing:1.5px; text-transform:uppercase;
-    color:var(--text-muted); border:1px solid var(--border); padding:.22rem .65rem;
-    clip-path:polygon(4px 0,100% 0,calc(100% - 4px) 100%,0 100%);
-}
-
-/* referral list — custom rows, NOT table */
-.rf-list {}
-.rf-row {
-    display: grid;
-    grid-template-columns: 32px 1fr 1fr auto auto;
-    align-items: center;
-    gap: .75rem;
-    padding: .85rem 1.25rem;
-    border-bottom: 1px solid var(--border);
-    transition: background .2s;
-}
-.rf-row:last-child { border-bottom:none; }
-.rf-row:hover { background:rgba(0,245,255,.025); }
-@media(max-width:767px){ .rf-row { grid-template-columns:32px 1fr auto; } .rf-row .rf-col-email,.rf-row .rf-col-date { display:none; } }
-
-.rf-row-num { font-family:'Orbitron',monospace; font-size:.58rem; color:var(--text-muted); text-align:center; }
-
-.rf-user-avatar {
-    width:32px; height:32px; border-radius:50%;
-    background:linear-gradient(135deg,var(--blue),rgba(0,245,255,.4));
-    display:flex; align-items:center; justify-content:center;
-    font-family:'Orbitron',monospace; font-size:.62rem; font-weight:900; color:#fff;
-    flex-shrink:0; border:1px solid var(--border);
-}
-.rf-col-user { display:flex; align-items:center; gap:.65rem; }
-.rf-user-name  { font-family:'Orbitron',monospace; font-size:.65rem; font-weight:700; color:#fff; display:block; }
-.rf-user-email { font-family:'Rajdhani',sans-serif; font-size:.78rem; color:var(--text-muted); display:block; }
-.rf-col-email  { font-family:'Rajdhani',sans-serif; font-size:.82rem; color:var(--text-muted); }
-.rf-col-date   { font-family:'Orbitron',monospace; font-size:.58rem; color:var(--text-dim); }
-
-.rf-badge {
-    display:inline-flex; align-items:center; gap:.28rem;
-    font-family:'Orbitron',monospace; font-size:.46rem; font-weight:700; letter-spacing:1px; text-transform:uppercase;
-    padding:.22rem .6rem; border:1px solid;
-    clip-path:polygon(4px 0,100% 0,calc(100% - 4px) 100%,0 100%);
-}
-.rf-badge.active   { color:var(--cyan);       border-color:rgba(0,245,255,.4);   background:rgba(0,245,255,.07); }
-.rf-badge.pending  { color:var(--warning);    border-color:rgba(251,191,36,.4);  background:rgba(251,191,36,.07); }
-.rf-badge.inactive { color:var(--text-muted); border-color:var(--border);        background:var(--surface2); }
-
-.rf-earn { font-family:'Orbitron',monospace; font-size:.75rem; font-weight:900; color:var(--cyan); }
-
-/* commission rows */
-.rf-comm-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr auto auto auto;
-    align-items: center;
-    gap: .75rem;
-    padding: .85rem 1.25rem;
-    border-bottom: 1px solid var(--border);
-    transition: background .2s;
-}
-.rf-comm-row:last-child { border-bottom:none; }
-.rf-comm-row:hover { background:rgba(0,245,255,.025); }
-@media(max-width:767px){ .rf-comm-row { grid-template-columns:1fr auto auto; } .rf-comm-row .rf-col-rate { display:none; } }
-
-.rf-from-name { font-family:'Orbitron',monospace; font-size:.65rem; font-weight:700; color:#fff; display:block; }
-.rf-from-date { font-family:'Rajdhani',sans-serif; font-size:.78rem; color:var(--text-muted); display:block; }
-.rf-rate { font-family:'Orbitron',monospace; font-size:.62rem; color:var(--text-dim); }
-.rf-amount { font-family:'Orbitron',monospace; font-size:.8rem; font-weight:900; color:var(--cyan); }
-
-/* empty */
-.rf-empty { text-align:center; padding:3rem 1.5rem; }
-.rf-empty i { font-size:2.5rem; color:var(--cyan); opacity:.12; display:block; margin-bottom:.75rem; }
-.rf-empty p { font-family:'Orbitron',monospace; font-size:.62rem; color:var(--text-muted); margin:0; }
-
-/* pagination override */
-.rf-panel .pagination { margin:.75rem 1.25rem .85rem; justify-content:flex-end; gap:3px; }
-
-@media(max-width:575px){
-    .rf-link-inner { padding:1.1rem; }
-    .rf-share-strip { padding:.75rem 1.1rem; }
-    .rf-stat-val { font-size:.95rem; }
-}
+    @media(max-width: 900px) {
+        .rf-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
 </style>
 @endsection
-
 @section('content')
-@include('includes.header', ['pageTitle' => 'Referral Dashboard'])
 
-{{-- ══════════════════════
-   HERO — Link + Stats
-══════════════════════ --}}
-<div class="rf-hero">
+{{-- PAGE HEADER --}}
+<div class="page-header-bar">
+    <div>
+        <h1><i class="bi bi-people-fill" style="color:var(--accent);font-size:1.1rem;"></i> Referral Dashboard</h1>
+        <p>Invite friends and earn commission on every purchase they make</p>
+    </div>
+</div>
 
-    {{-- LEFT: referral link --}}
-    <div class="rf-link-card">
-        <div class="rf-link-inner">
-            <div class="rf-link-eyebrow">// Referral Programme</div>
-            <div class="rf-link-title">Your <span>Referral</span> Link</div>
+{{-- STATS --}}
+<div class="stats-row" style="margin-bottom:20px;">
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--accent);"><i class="bi bi-people-fill"></i></div>
+        <div class="stat-card-lbl">Total Referrals</div>
+        <div class="stat-card-val" style="color:var(--accent);">{{ $stats['total_referrals'] }}</div>
+        <div class="stat-card-sub"><span class="stat-card-badge badge-neu">All Time</span></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--green);"><i class="bi bi-person-check-fill"></i></div>
+        <div class="stat-card-lbl">Active</div>
+        <div class="stat-card-val" style="color:var(--green);">{{ $stats['active_referrals'] }}</div>
+        <div class="stat-card-sub"><span class="stat-card-badge badge-up">Active</span></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--gold);"><i class="bi bi-hourglass-split"></i></div>
+        <div class="stat-card-lbl">Pending</div>
+        <div class="stat-card-val" style="color:var(--gold);">{{ $stats['pending_referrals'] }}</div>
+        <div class="stat-card-sub"><span class="stat-card-badge badge-neu">Awaiting</span></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--blue);"><i class="bi bi-cash-coin"></i></div>
+        <div class="stat-card-lbl">Total Earned</div>
+        <div class="stat-card-val" style="color:var(--blue);">${{ number_format($stats['total_earnings'], 2) }}</div>
+        <div class="stat-card-sub"><span class="stat-card-badge badge-up">Commission</span></div>
+    </div>
+</div>
 
-            <div class="rf-input-row">
-                <input type="text" id="referralLink" class="rf-input form-control"
-                       value="{{ $user->getReferralLink() }}" readonly>
-                <button class="rf-copy-btn"
-                    onclick="confirmAction({
-                        title: 'Copy referral link?',
-                        text: 'This link will be copied to clipboard',
-                        icon: 'question',
-                        confirmButtonText: 'Copy',
-                        onConfirm: () => {
-                            copyLink();
-                            Swal.fire({ toast:true, position:'top-end', icon:'success', title:'Link copied!', showConfirmButton:false, timer:1500 });
-                        }
-                    })">
-                    <i class="bi bi-clipboard-check"></i> Copy
+{{-- HERO GRID --}}
+<div class="rf-grid">
+
+    {{-- LEFT: REFERRAL LINK --}}
+    <div class="s-card">
+        <div class="s-card-head">
+            <span class="s-card-title"><i class="bi bi-link-45deg"></i> Your Referral Link</span>
+            <span class="rf-comm-badge">
+                <i class="bi bi-percent"></i> 10% Commission
+            </span>
+        </div>
+        <div class="rf-link-body">
+
+            {{-- Link input --}}
+            <div style="margin-bottom:14px;">
+                <div style="font-size:0.72rem;color:var(--muted);margin-bottom:6px;">Share this link with friends</div>
+                <div class="rf-input-row">
+                    <input type="text" id="referralLink"
+                        value="{{ $user->getReferralLink() }}"
+                        readonly class="rf-input">
+                    <button id="copyBtn" onclick="copyLink()" class="rf-copy-btn">
+                        <i class="bi bi-clipboard" id="copyIcon"></i>
+                        <span id="copyText">Copy</span>
+                    </button>
+                </div>
+            </div>
+
+            {{-- Referral code --}}
+            <div class="rf-code-box">
+                <div>
+                    <div class="rf-code-lbl">Your Code</div>
+                    <div class="rf-code-val">{{ $user->referral_code }}</div>
+                </div>
+                <button onclick="copyCode()" class="rf-code-copy">
+                    <i class="bi bi-clipboard"></i> Copy Code
                 </button>
             </div>
 
+            {{-- Commission note --}}
             <div class="rf-comm-note">
                 <div class="rf-comm-pct">10%</div>
                 <div class="rf-comm-desc">
-                    <strong>Commission Rate</strong><br>
-                    Earn 10% commission on every purchase made by users you refer — credited instantly to your wallet
-                </div>
-            </div>
-        </div>
-
-        <div class="rf-share-strip">
-            <span class="rf-share-lbl">Share via</span>
-            <a href="https://wa.me/?text={{ urlencode('Join me on toptrade and start earning! '.$user->getReferralLink()) }}"
-               target="_blank" class="rf-share-btn"><i class="bi bi-whatsapp"></i> WhatsApp</a>
-            <a href="https://t.me/share/url?url={{ urlencode($user->getReferralLink()) }}&text={{ urlencode('Join toptrade and earn daily!') }}"
-               target="_blank" class="rf-share-btn"><i class="bi bi-telegram"></i> Telegram</a>
-            <a href="https://twitter.com/intent/tweet?text={{ urlencode('Earn daily with toptrade! '.$user->getReferralLink()) }}"
-               target="_blank" class="rf-share-btn"><i class="bi bi-twitter-x"></i> Twitter</a>
-            <button class="rf-share-btn" onclick="copyLink(); alert('Link copied!')">
-                <i class="bi bi-link-45deg"></i> Copy Link
-            </button>
-        </div>
-    </div>
-
-    {{-- RIGHT: stats --}}
-    <div class="rf-stats-col">
-        <div class="rf-stat-card" style="--sc:#00f5ff">
-            <div class="rf-stat-ico" style="background:rgba(0,245,255,.1);color:var(--cyan);border:1px solid rgba(0,245,255,.2)">
-                <i class="bi bi-people-fill"></i>
-            </div>
-            <div>
-                <span class="rf-stat-val" style="color:var(--cyan)">{{ $stats['total_referrals'] }}</span>
-                <span class="rf-stat-lbl">Total Referrals</span>
-            </div>
-            <span class="rf-stat-badge" style="color:var(--cyan);border-color:rgba(0,245,255,.3);background:rgba(0,245,255,.07)">All Time</span>
-        </div>
-        <div class="rf-stat-card" style="--sc:#34d399">
-            <div class="rf-stat-ico" style="background:rgba(52,211,153,.1);color:#34d399;border:1px solid rgba(52,211,153,.2)">
-                <i class="bi bi-person-check-fill"></i>
-            </div>
-            <div>
-                <span class="rf-stat-val" style="color:#34d399">{{ $stats['active_referrals'] }}</span>
-                <span class="rf-stat-lbl">Active Referrals</span>
-            </div>
-            <span class="rf-stat-badge" style="color:#34d399;border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.07)">Active</span>
-        </div>
-        <div class="rf-stat-card" style="--sc:var(--warning)">
-            <div class="rf-stat-ico" style="background:rgba(251,191,36,.1);color:var(--warning);border:1px solid rgba(251,191,36,.2)">
-                <i class="bi bi-hourglass-split"></i>
-            </div>
-            <div>
-                <span class="rf-stat-val" style="color:var(--warning)">{{ $stats['pending_referrals'] }}</span>
-                <span class="rf-stat-lbl">Pending</span>
-            </div>
-            <span class="rf-stat-badge" style="color:var(--warning);border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.07)">Awaiting</span>
-        </div>
-        <div class="rf-stat-card" style="--sc:#60a5fa">
-            <div class="rf-stat-ico" style="background:rgba(96,165,250,.1);color:#60a5fa;border:1px solid rgba(96,165,250,.2)">
-                <i class="bi bi-cash-coin"></i>
-            </div>
-            <div>
-                <span class="rf-stat-val" style="color:#60a5fa">${{ number_format($stats['total_earnings'],2) }}</span>
-                <span class="rf-stat-lbl">Total Earned</span>
-            </div>
-            <span class="rf-stat-badge" style="color:#60a5fa;border-color:rgba(96,165,250,.3);background:rgba(96,165,250,.07)">Commissions</span>
-        </div>
-    </div>
-
-</div>
-
-{{-- ══════════════════════
-   REFERRALS LIST
-══════════════════════ --}}
-<div class="rf-panel">
-    <div class="rf-panel-hd">
-        <h2 class="rf-panel-title"><i class="bi bi-people-fill"></i> My Referrals</h2>
-        <span class="rf-count">{{ $referrals->total() }} total</span>
-    </div>
-
-    <div class="rf-list">
-        @forelse($referrals as $ref)
-        <div class="rf-row">
-            <div class="rf-row-num">{{ $loop->iteration }}</div>
-
-            <div class="rf-col-user">
-                <div class="rf-user-avatar">{{ strtoupper(substr($ref->referred->name, 0, 1)) }}</div>
-                <div>
-                    <span class="rf-user-name">{{ $ref->referred->name }}</span>
-                    <span class="rf-user-email">{{ $ref->referred->email }}</span>
+                    Earn <strong style="color:var(--accent);">10% commission</strong> on every package purchase made by users you refer. Credits instantly to your wallet.
                 </div>
             </div>
 
-            <div class="rf-col-email">{{ $ref->referred->email }}</div>
-
-            <div class="rf-col-date">
-                {{ $ref->activated_at?->format('d M Y') ?? '—' }}
+            {{-- Share buttons --}}
+            <div>
+                <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Share via</div>
+                <div class="rf-share-row">
+                    <a href="https://wa.me/?text={{ urlencode('Join me on TopTrade and start earning daily! '.$user->getReferralLink()) }}"
+                        target="_blank" class="rf-share-btn rf-wa">
+                        <i class="bi bi-whatsapp"></i> WhatsApp
+                    </a>
+                    <a href="https://t.me/share/url?url={{ urlencode($user->getReferralLink()) }}&text={{ urlencode('Join TopTrade and earn daily!') }}"
+                        target="_blank" class="rf-share-btn rf-tg">
+                        <i class="bi bi-telegram"></i> Telegram
+                    </a>
+                    <a href="https://twitter.com/intent/tweet?text={{ urlencode('Earn daily with TopTrade! '.$user->getReferralLink()) }}"
+                        target="_blank" class="rf-share-btn rf-tw">
+                        <i class="bi bi-twitter-x"></i> Twitter
+                    </a>
+                </div>
             </div>
-
-            <span class="rf-badge {{ $ref->status === 'active' ? 'active' : ($ref->status === 'pending' ? 'pending' : 'inactive') }}">
-                <i class="bi bi-circle-fill" style="font-size:.38rem"></i>
-                {{ ucfirst($ref->status) }}
-            </span>
-
-            <span class="rf-earn">${{ number_format($ref->earnings->sum('amount'),2) }}</span>
         </div>
-        @empty
-        <div class="rf-empty">
-            <i class="bi bi-people"></i>
-            <p>No referrals yet — share your link to start earning</p>
-        </div>
-        @endforelse
     </div>
 
-    {{ $referrals->links('pagination::bootstrap-5') }}
+    {{-- RIGHT --}}
+    <div class="rf-right-col">
+
+        {{-- How it works --}}
+        <div class="s-card">
+            <div class="s-card-head">
+                <span class="s-card-title"><i class="bi bi-info-circle-fill"></i> How It Works</span>
+            </div>
+            <div class="rf-steps">
+                @foreach([
+                    ['icon'=>'bi-share-fill',      'color'=>'var(--accent)', 'title'=>'Share Your Link',   'desc'=>'Send your link to friends'],
+                    ['icon'=>'bi-person-plus-fill', 'color'=>'var(--green)',  'title'=>'Friend Registers',  'desc'=>'They sign up with your link'],
+                    ['icon'=>'bi-box-seam-fill',    'color'=>'var(--blue)',   'title'=>'They Buy Package',  'desc'=>'Any investment package'],
+                    ['icon'=>'bi-cash-coin',        'color'=>'var(--gold)',   'title'=>'You Earn 10%',      'desc'=>'Instant wallet credit'],
+                ] as $i => $s)
+                <div class="rf-step {{ $i < 3 ? 'rf-step-border' : '' }}">
+                    <div class="rf-step-ico" style="color:{{ $s['color'] }};background:rgba(0,0,0,0.2);">
+                        <i class="bi {{ $s['icon'] }}"></i>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="rf-step-title">{{ $s['title'] }}</div>
+                        <div class="rf-step-desc">{{ $s['desc'] }}</div>
+                    </div>
+                    <div class="rf-step-num">{{ $i+1 }}</div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- Commission Tiers --}}
+        @if($generationSettings->count() > 0)
+        <div class="s-card">
+            <div class="s-card-head">
+                <span class="s-card-title"><i class="bi bi-layers-fill"></i> Commission Tiers</span>
+            </div>
+            <div>
+                @foreach($generationSettings as $gs)
+                @if($gs->is_active)
+                <div class="rf-tier">
+                    <div>
+                        <div style="font-size:0.82rem;font-weight:700;">Gen {{ $gs->generation }}</div>
+                        <div style="font-size:0.68rem;color:var(--muted);">{{ $gs->label }}</div>
+                    </div>
+                    <span class="rf-tier-pct">{{ $gs->commission_rate }}%</span>
+                </div>
+                @endif
+                @endforeach
+            </div>
+        </div>
+        @endif
+
+    </div>
 </div>
 
-{{-- ══════════════════════
-   COMMISSION HISTORY
-══════════════════════ --}}
-<div class="rf-panel">
-    <div class="rf-panel-hd">
-        <h2 class="rf-panel-title"><i class="bi bi-cash-stack"></i> Commission History</h2>
-        <span class="rf-count">{{ $earnings->total() }} records</span>
+{{-- REFERRALS TABLE --}}
+<div class="s-card" style="margin-bottom:20px;">
+    <div class="s-card-head">
+        <span class="s-card-title"><i class="bi bi-people-fill"></i> My Referrals</span>
+        <span style="font-size:0.72rem;color:var(--muted);">{{ $referrals->total() }} total</span>
     </div>
-
-    <div class="rf-list">
-        @forelse($earnings as $earning)
-        <div class="rf-comm-row">
-            <div>
-                <span class="rf-from-name">{{ $earning->referral->referred->name }}</span>
-                <span class="rf-from-date">{{ $earning->created_at->format('d M Y · H:i') }}</span>
-            </div>
-
-            <div class="rf-col-rate">
-                <span class="rf-rate">{{ number_format($earning->commission_rate,2) }}% commission</span>
-            </div>
-
-            <span class="rf-amount">${{ number_format($earning->amount,2) }}</span>
-
-            <span class="rf-badge {{ $earning->status === 'paid' ? 'active' : ($earning->status === 'pending' ? 'pending' : 'inactive') }}">
-                <i class="bi bi-circle-fill" style="font-size:.38rem"></i>
-                {{ ucfirst($earning->status) }}
-            </span>
-        </div>
-        @empty
-        <div class="rf-empty">
-            <i class="bi bi-cash-stack"></i>
-            <p>No commissions yet — they'll appear here when your referrals make purchases</p>
-        </div>
-        @endforelse
+    <div style="overflow-x:auto;">
+        <table class="act-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>User</th>
+                    <th class="rf-hide-sm">Joined</th>
+                    <th>Status</th>
+                    <th style="text-align:right">Earned</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($referrals as $ref)
+                <tr>
+                    <td style="color:var(--muted);font-size:0.72rem;width:36px;">{{ $loop->iteration }}</td>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div class="rf-avatar">
+                                {{ strtoupper(substr($ref->referred->name, 0, 1)) }}
+                            </div>
+                            <div>
+                                <div style="font-weight:700;font-size:0.85rem;">{{ $ref->referred->name }}</div>
+                                <div style="font-size:0.68rem;color:var(--muted);">{{ $ref->referred->email }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="rf-hide-sm">
+                        <div style="font-size:0.78rem;">{{ $ref->activated_at?->format('d M Y') ?? '—' }}</div>
+                        @if($ref->activated_at)
+                        <div style="font-size:0.65rem;color:var(--muted);">{{ $ref->activated_at->diffForHumans() }}</div>
+                        @endif
+                    </td>
+                    <td>
+                        <span class="s-pill {{ $ref->status === 'active' ? 'approved' : ($ref->status === 'pending' ? 'pending' : 'inactive') }}">
+                            {{ ucfirst($ref->status) }}
+                        </span>
+                    </td>
+                    <td style="text-align:right">
+                        <span class="t-reward">${{ number_format($ref->earnings->sum('amount'), 2) }}</span>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state" style="padding:40px 20px;">
+                            <i class="bi bi-people"></i>
+                            <p>No referrals yet</p>
+                            <div style="margin-top:12px;">
+                                <button onclick="copyLink()" class="cy-hbtn primary">
+                                    <i class="bi bi-share-fill"></i> Share Your Link
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
+    @if($referrals->hasPages())
+    <div style="padding:12px 16px;border-top:1px solid var(--border);">{{ $referrals->links() }}</div>
+    @endif
+</div>
 
-    {{ $earnings->links('pagination::bootstrap-5') }}
+{{-- COMMISSION HISTORY --}}
+<div class="s-card">
+    <div class="s-card-head">
+        <span class="s-card-title"><i class="bi bi-cash-stack"></i> Commission History</span>
+        <span style="font-size:0.72rem;color:var(--muted);">{{ $earnings->total() }} records</span>
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="act-table">
+            <thead>
+                <tr>
+                    <th>From</th>
+                    <th>Date</th>
+                    <th class="rf-hide-sm">Gen</th>
+                    <th class="rf-hide-sm">Rate</th>
+                    <th style="text-align:right">Amount</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($earnings as $earn)
+                <tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div class="rf-avatar-sm">
+                                {{ strtoupper(substr($earn->referred->name ?? 'U', 0, 1)) }}
+                            </div>
+                            <span style="font-weight:600;font-size:0.82rem;">{{ $earn->referred->name ?? '—' }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-size:0.78rem;">{{ $earn->created_at->format('d M Y') }}</div>
+                        <div style="font-size:0.65rem;color:var(--muted);">{{ $earn->created_at->format('h:i A') }}</div>
+                    </td>
+                    <td class="rf-hide-sm">
+                        <span style="font-size:0.72rem;background:rgba(0,0,0,0.2);border:1px solid var(--border);border-radius:99px;padding:2px 8px;color:var(--muted);">
+                            Gen {{ $earn->generation }}
+                        </span>
+                    </td>
+                    <td class="rf-hide-sm" style="font-size:0.78rem;color:var(--muted);">
+                        {{ number_format($earn->commission_rate, 2) }}%
+                    </td>
+                    <td style="text-align:right">
+                        <span class="t-reward">+${{ number_format($earn->amount, 2) }}</span>
+                    </td>
+                    <td>
+                        <span class="s-pill {{ $earn->status === 'paid' ? 'approved' : ($earn->status === 'pending' ? 'pending' : 'rejected') }}">
+                            {{ ucfirst($earn->status) }}
+                        </span>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state" style="padding:40px 20px;">
+                            <i class="bi bi-cash-stack"></i>
+                            <p>No commissions yet — they appear when your referrals make purchases</p>
+                        </div>
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+    @if($earnings->hasPages())
+    <div style="padding:12px 16px;border-top:1px solid var(--border);">{{ $earnings->links() }}</div>
+    @endif
 </div>
 
 @endsection
 
 @push('scripts')
+<style>
+/* ── REFERRAL PAGE ── */
+.rf-grid {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 20px;
+    margin-bottom: 24px;
+    align-items: start;
+}
+.rf-right-col { display: flex; flex-direction: column; gap: 16px; }
+.rf-comm-badge {
+    font-size: 0.7rem; color: var(--accent);
+    background: rgba(0,245,212,0.08);
+    border: 1px solid rgba(0,245,212,0.2);
+    border-radius: 99px; padding: 3px 10px;
+    white-space: nowrap;
+}
+.rf-link-body { padding: 18px 20px; }
+.rf-input-row  { display: flex; }
+.rf-input {
+    flex: 1; background: var(--card2) !important;
+    border: 1px solid var(--border2) !important;
+    border-right: none !important;
+    border-radius: 9px 0 0 9px !important;
+    padding: 10px 14px !important;
+    color: var(--muted) !important;
+    font-size: 0.78rem !important;
+    font-family: 'DM Sans', sans-serif !important;
+    outline: none; min-width: 0;
+}
+.rf-copy-btn {
+    padding: 10px 16px; background: var(--accent); color: #000;
+    border: none; border-radius: 0 9px 9px 0;
+    font-size: 0.82rem; font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    white-space: nowrap; flex-shrink: 0; transition: all 0.2s;
+}
+.rf-copy-btn:hover { opacity: 0.9; }
+.rf-copy-btn.copied { background: var(--green); }
+.rf-code-box {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: 9px; padding: 10px 14px; margin-bottom: 14px;
+    gap: 10px;
+}
+.rf-code-lbl { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+.rf-code-val { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--accent); letter-spacing: 3px; }
+.rf-code-copy {
+    background: rgba(0,0,0,0.2); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 7px 12px; color: var(--muted);
+    cursor: pointer; font-size: 0.75rem; font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
+}
+.rf-code-copy:hover { border-color: var(--accent); color: var(--accent); }
+.rf-comm-note {
+    display: flex; align-items: center; gap: 14px;
+    background: rgba(0,245,212,0.05);
+    border: 1px solid rgba(0,245,212,0.15);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;
+    font-size: 0.8rem; color: var(--muted); line-height: 1.6;
+}
+.rf-comm-pct {
+    font-family: 'Syne', sans-serif; font-size: 1.8rem;
+    font-weight: 800; color: var(--accent); flex-shrink: 0; line-height: 1;
+}
+.rf-share-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.rf-share-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 12px; border-radius: 99px;
+    font-size: 0.75rem; font-weight: 600;
+    text-decoration: none; transition: all 0.2s; flex-shrink: 0;
+}
+.rf-wa { border: 1px solid rgba(34,197,94,0.3);  background: rgba(34,197,94,0.08);  color: #22c55e; }
+.rf-wa:hover { background: rgba(34,197,94,0.15); color: #22c55e; }
+.rf-tg { border: 1px solid rgba(14,165,233,0.3); background: rgba(14,165,233,0.08); color: #0ea5e9; }
+.rf-tg:hover { background: rgba(14,165,233,0.15); color: #0ea5e9; }
+.rf-tw { border: 1px solid var(--border2); background: var(--card2); color: var(--muted); }
+.rf-tw:hover { color: var(--text); border-color: var(--border); }
+/* Steps */
+.rf-steps { padding: 8px 0; }
+.rf-step {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 16px;
+}
+.rf-step-border { border-bottom: 1px solid var(--border); }
+.rf-step-ico {
+    width: 30px; height: 30px; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.88rem; flex-shrink: 0;
+}
+.rf-step-title { font-weight: 700; font-size: 0.82rem; margin-bottom: 2px; }
+.rf-step-desc  { font-size: 0.72rem; color: var(--muted); }
+.rf-step-num {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem; font-weight: 800; color: var(--muted); flex-shrink: 0;
+}
+/* Tier */
+.rf-tier {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px; border-bottom: 1px solid var(--border);
+}
+.rf-tier:last-child { border-bottom: none; }
+.rf-tier-pct { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--accent); }
+/* Avatars */
+.rf-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #6366f1);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 0.85rem; color: #000; flex-shrink: 0;
+}
+.rf-avatar-sm {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(0,0,0,0.25); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-size: 0.72rem; font-weight: 800;
+    flex-shrink: 0;
+}
+/* Hide columns */
+.rf-hide-sm {}
+
+/* ── RESPONSIVE ── */
+@media(max-width: 900px) {
+    .rf-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+@media(max-width: 768px) {
+    .rf-hide-sm { display: none !important; }
+    .rf-link-body { padding: 14px; }
+    .rf-comm-note { flex-direction: column; gap: 8px; }
+    .rf-comm-pct  { font-size: 1.4rem; }
+    .rf-code-box  { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .rf-code-copy { width: 100%; justify-content: center; }
+    .rf-share-row { gap: 6px; }
+    .rf-share-btn { font-size: 0.7rem; padding: 6px 10px; }
+    .stats-row    { grid-template-columns: 1fr 1fr; }
+}
+@media(max-width: 480px) {
+    .rf-comm-badge { display: none; }
+    .rf-input      { font-size: 0.72rem !important; padding: 8px 10px !important; }
+    .rf-copy-btn   { padding: 8px 12px; font-size: 0.75rem; }
+    .rf-code-val   { font-size: 0.95rem; letter-spacing: 2px; }
+    .stats-row     { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-card     { padding: 12px; }
+    .stat-card-val { font-size: 1.2rem; }
+}
+</style>
 <script>
 function copyLink() {
-    const input = document.getElementById('referralLink');
-    input.select();
-    input.setSelectionRange(0, 99999);
+    const val = document.getElementById('referralLink').value;
     if (navigator.clipboard) {
-        navigator.clipboard.writeText(input.value);
+        navigator.clipboard.writeText(val);
     } else {
-        document.execCommand('copy');
+        const inp = document.getElementById('referralLink');
+        inp.select(); document.execCommand('copy');
     }
+    const btn  = document.getElementById('copyBtn');
+    const icon = document.getElementById('copyIcon');
+    const txt  = document.getElementById('copyText');
+    btn.classList.add('copied');
+    icon.className = 'bi bi-check2';
+    txt.textContent = 'Copied!';
+    setTimeout(() => {
+        btn.classList.remove('copied');
+        icon.className = 'bi bi-clipboard';
+        txt.textContent = 'Copy';
+    }, 2500);
+}
+function copyCode() {
+    const code = '{{ $user->referral_code }}';
+    if (navigator.clipboard) navigator.clipboard.writeText(code);
+    Swal.fire({ toast:true, position:'top-end', icon:'success', title:'Code copied!', showConfirmButton:false, timer:1500 });
 }
 </script>
 @endpush

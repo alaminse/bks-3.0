@@ -736,3 +736,131 @@
     .wlt-bal-actions { flex-direction: column; }
     .wlt-action-btn { justify-content: center; }
 }
+
+/* ============================================================
+   WALLET — MOBILE OPTIMIZATION
+   ============================================================ */
+
+@media(max-width: 768px) {
+    /* Grids → single column */
+    .wlt-grid,
+    .dep-grid,
+    .wd-grid,
+    .txh-grid { grid-template-columns: 1fr; gap: 14px; }
+
+    /* Wallet hero */
+    .wlt-hero { padding: 20px; }
+    .wlt-bal-amount { font-size: 2rem; }
+    .wlt-hero-inner { flex-direction: column; gap: 14px; }
+    .wlt-mini-stats { flex-direction: row; flex-wrap: wrap; gap: 8px; }
+    .wlt-mini-item  { flex: 1; min-width: 120px; padding: 10px 12px; }
+    .wlt-mini-value { font-size: 0.88rem; }
+
+    /* Chart */
+    .wlt-chart-wrap  { height: 150px; }
+    .wlt-chart-stats { grid-template-columns: repeat(3,1fr); }
+    .wcs-item        { padding: 10px 12px; }
+    .wcs-val         { font-size: 0.85rem; }
+
+    /* Quick actions */
+    .wlt-qa-grid { grid-template-columns: repeat(5,1fr); }
+    .wlt-qa-item { padding: 12px 4px; font-size: 0.58rem; }
+    .wlt-qa-icon { font-size: 1.1rem; }
+
+    /* Quick links */
+    .wlt-ql-grid { grid-template-columns: repeat(2,1fr); }
+
+    /* Table */
+    .wlt-table th,
+    .dep-table th,
+    .wd-table th,
+    .txh-table th { padding: 8px 10px; font-size: 0.6rem; }
+    .wlt-table td,
+    .dep-table td,
+    .wd-table td,
+    .txh-table td { padding: 10px; font-size: 0.8rem; }
+    .wt-desc { max-width: 140px; font-size: 0.78rem; }
+
+    /* Deposit */
+    .dep-panel-body { padding: 14px; }
+    .dep-addr-code  { font-size: 0.78rem; }
+    .dep-bal-val    { font-size: 1.6rem; }
+    .dep-ins-text   { font-size: 0.75rem; }
+    .dep-steps li   { font-size: 0.75rem; }
+
+    /* Withdraw */
+    .wd-panel-body { padding: 14px; }
+    .wd-avail-val  { font-size: 1.6rem; }
+    .wd-stat-row   { grid-template-columns: 1fr 1fr; }
+
+    /* Transactions */
+    .txh-filter-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .txh-right { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+    .txh-stat  { padding: 12px; }
+    .txh-stat-val { font-size: 1.1rem; }
+
+    /* Dep/Wd right sidebar → show above form */
+    .dep-right { order: -1; }
+    .wd-right  { order: -1; }
+}
+
+@media(max-width: 480px) {
+    /* Wallet hero */
+    .wlt-bal-amount { font-size: 1.7rem; }
+    .wlt-bal-actions { gap: 6px; }
+    .wlt-action-btn { padding: 7px 12px; font-size: 0.75rem; }
+
+    /* Chart stats */
+    .wlt-chart-stats { grid-template-columns: repeat(3,1fr); }
+    .wcs-label { font-size: 0.55rem; }
+    .wcs-val   { font-size: 0.82rem; }
+
+    /* Mini stats */
+    .wlt-mini-item  { min-width: 100px; }
+    .wlt-mini-label { font-size: 0.58rem; }
+    .wlt-mini-value { font-size: 0.82rem; }
+
+    /* Cyber card */
+    .cyber-card   { padding: 16px; margin: 10px; }
+    .cc-bal-val   { font-size: 1.3rem; }
+    .cc-user      { font-size: 0.55rem; }
+    .cc-avail-val { font-size: 0.78rem; }
+
+    /* Deposit form */
+    .dep-copy-btn { font-size: 0.75rem; padding: 8px; }
+    .dep-addr-code { font-size: 0.72rem; padding: 8px 10px; }
+    .dep-file-area { padding: 20px 14px; }
+    .dep-file-icon { font-size: 1.5rem; }
+    .dep-btn       { padding: 12px; font-size: 0.85rem; }
+
+    /* Withdraw */
+    .wd-method-box { flex-wrap: wrap; gap: 8px; }
+    .wd-method-tag { margin-left: 0; }
+    .wd-btn        { padding: 12px; font-size: 0.85rem; }
+    .wd-avail-val  { font-size: 1.4rem; }
+
+    /* Tables hide less important columns */
+    .dep-table th:nth-child(5),
+    .dep-table td:nth-child(5) { display: none; } /* Txn ID */
+    .wd-table th:nth-child(4),
+    .wd-table td:nth-child(4)  { display: none; } /* Account */
+
+    /* Transaction filter */
+    .txh-filter-grid { grid-template-columns: 1fr; }
+    .txh-right { grid-template-columns: 1fr; }
+    .txh-filter-body { padding: 12px; }
+    .cy-sel, .cy-inp { padding: 8px 10px; font-size: 0.82rem; }
+
+    /* Page header */
+    .page-header-bar { margin-bottom: 14px; padding-bottom: 12px; }
+    .page-header-bar h1 { font-size: 0.95rem; }
+    .page-header-actions { width: 100%; }
+    .page-header-actions .cy-hbtn { flex: 1; justify-content: center; }
+}
+
+@media(max-width: 380px) {
+    .wlt-bal-amount { font-size: 1.5rem; }
+    .wlt-mini-stats { flex-direction: column; }
+    .dep-method-item { padding: 10px 12px; }
+    .dep-method-name { font-size: 0.8rem; }
+}

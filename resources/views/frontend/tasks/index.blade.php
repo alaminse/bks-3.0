@@ -1,530 +1,400 @@
 @extends('layouts.app')
 @section('title', 'Available Tasks')
-
-@section('css')
-    <style>
-        :root {
-            --tk-cyan: #00f5ff;
-            --tk-blue: #0047ff;
-            --tk-blue2: #0ea5e9;
-            --tk-surface: #050d1a;
-            --tk-surface2: #071224;
-            --tk-border: rgba(0, 245, 255, 0.10);
-            --tk-border2: rgba(0, 245, 255, 0.22);
-            --tk-text: #c8e8ff;
-            --tk-muted: rgba(200, 232, 255, 0.40);
-            --tk-glow-c: 0 0 18px rgba(0, 245, 255, 0.35);
-            --tk-glow-b: 0 0 18px rgba(0, 71, 255, 0.4);
-        }
-
-        .tk-hero {
-            background: var(--tk-surface);
-            border: 1px solid var(--tk-border2);
-            padding: 1.5rem 1.75rem;
-            margin-bottom: 1.25rem;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-        .tk-hero::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--tk-cyan), var(--tk-blue), transparent);
-        }
-        .tk-hero-eyebrow { font-family: 'Orbitron', monospace; font-size: .48rem; letter-spacing: 4px; text-transform: uppercase; color: var(--tk-cyan); margin-bottom: .4rem; opacity: .7; }
-        .tk-hero-title   { font-family: 'Orbitron', monospace; font-size: 1.1rem; font-weight: 900; letter-spacing: 1px; color: #fff; margin-bottom: .25rem; }
-        .tk-hero-sub     { font-family: 'Rajdhani', sans-serif; font-size: .9rem; color: var(--tk-muted); }
-        .tk-hero-right   { display: flex; align-items: center; gap: .65rem; flex-wrap: wrap; }
-        .tk-hero-stat    { background: rgba(0,0,0,.5); border: 1px solid var(--tk-border2); padding: .65rem 1rem; text-align: center; min-width: 90px; position: relative; overflow: hidden; }
-        .tk-hero-stat::before { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--tk-blue), transparent); }
-        .tk-hs-val { font-family: 'Orbitron', monospace; font-size: .9rem; font-weight: 900; display: block; line-height: 1; }
-        .tk-hs-lbl { font-family: 'Orbitron', monospace; font-size: .42rem; letter-spacing: 2px; text-transform: uppercase; color: var(--tk-muted); display: block; margin-top: .3rem; }
-        .tk-layout { display: grid; grid-template-columns: 1fr 300px; gap: 1.25rem; align-items: start; }
-        @media(max-width: 1100px) { .tk-layout { grid-template-columns: 1fr; } }
-        .tk-list-panel { background: var(--tk-surface); border: 1px solid var(--tk-border2); overflow: hidden; position: relative; }
-        .tk-list-panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--tk-cyan), var(--tk-blue), transparent); }
-        .tk-list-head { display: flex; align-items: center; justify-content: space-between; padding: .85rem 1.25rem; background: var(--tk-surface2); border-bottom: 1px solid var(--tk-border2); }
-        .tk-list-title { font-family: 'Orbitron', monospace; font-size: .65rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--tk-cyan); margin: 0; display: flex; align-items: center; gap: .5rem; }
-        .tk-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--tk-cyan); box-shadow: 0 0 8px var(--tk-cyan); animation: blink 1.5s infinite; }
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
-        .tk-list-count { font-family: 'Orbitron', monospace; font-size: .52rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--tk-muted); border: 1px solid var(--tk-border2); padding: .25rem .65rem; background: rgba(0,0,0,.4); }
-        .tk-item { display: grid; grid-template-columns: 44px 1fr auto; gap: .85rem; align-items: start; padding: 1.1rem 1.25rem; border-bottom: 1px solid var(--tk-border); transition: background .2s; border-left: 3px solid transparent; }
-        .tk-item:last-child { border-bottom: none; }
-        .tk-item:hover { background: rgba(0,245,255,.03); }
-        .tk-item.type-ad  { border-left-color: var(--tk-blue); }
-        .tk-item.type-std { border-left-color: rgba(0,245,255,.3); }
-        .tk-item.task-done { opacity: .3; pointer-events: none; }
-        .tk-item-ico { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
-        .type-ad  .tk-item-ico { background: rgba(0,71,255,.15); color: var(--tk-blue2); border: 1px solid rgba(0,71,255,.3); }
-        .type-std .tk-item-ico { background: rgba(0,245,255,.08); color: var(--tk-cyan); border: 1px solid rgba(0,245,255,.2); }
-        .tk-item-title { font-family: 'Orbitron', monospace; font-size: .72rem; font-weight: 700; color: #fff; margin-bottom: .35rem; }
-        .tk-item-tags  { display: flex; gap: .35rem; flex-wrap: wrap; margin-bottom: .5rem; }
-        .tk-tag { display: inline-flex; align-items: center; gap: .25rem; font-family: 'Orbitron', monospace; font-size: .42rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: .18rem .5rem; border: 1px solid; white-space: nowrap; }
-        .tk-tag.pkg    { color: var(--tk-blue2); border-color: rgba(14,165,233,.35); background: rgba(14,165,233,.08); }
-        .tk-tag.ad     { color: var(--tk-cyan);  border-color: rgba(0,245,255,.3);   background: rgba(0,245,255,.05); }
-        .tk-tag.auto   { color: #fff;            border-color: rgba(0,71,255,.4);    background: rgba(0,71,255,.1); }
-        .tk-tag.remain { color: var(--tk-muted); border-color: var(--tk-border2);    background: rgba(0,0,0,.3); }
-        .tk-item-desc { font-family: 'Rajdhani', sans-serif; font-size: .86rem; color: var(--tk-muted); line-height: 1.5; margin-bottom: .5rem; }
-        .tk-item-meta { display: flex; gap: 1rem; flex-wrap: wrap; }
-        .tk-meta-pill { display: flex; align-items: center; gap: .3rem; font-family: 'Orbitron', monospace; font-size: .46rem; letter-spacing: 1px; text-transform: uppercase; color: var(--tk-muted); }
-        .tk-meta-pill i { color: var(--tk-cyan); font-size: .68rem; }
-        .tk-item-action { display: flex; flex-direction: column; align-items: flex-end; gap: .6rem; min-width: 160px; }
-        @media(max-width:600px) { .tk-item { grid-template-columns: 44px 1fr; } .tk-item-action { grid-column: 1/-1; align-items: stretch; } }
-        .tk-reward-num { font-family: 'Orbitron', monospace; font-size: 1.3rem; font-weight: 900; color: var(--tk-cyan); text-shadow: 0 0 16px rgba(0,245,255,.4); line-height: 1; text-align: right; display: block; }
-        .tk-reward-sub { font-family: 'Orbitron', monospace; font-size: .42rem; letter-spacing: 2px; text-transform: uppercase; color: var(--tk-muted); text-align: right; display: block; margin-top: .2rem; }
-        .tk-start-btn { display: flex; align-items: center; justify-content: center; gap: .45rem; font-family: 'Orbitron', monospace; font-size: .56rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: .7rem 1rem; border: none; cursor: pointer; transition: all .25s; width: 100%; }
-        .tk-start-btn:hover { transform: translateY(-2px); }
-        .tk-start-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
-        .tk-start-btn.std { background: linear-gradient(135deg, var(--tk-cyan), #00b8c8); color: #000; }
-        .tk-start-btn.std:hover:not(:disabled) { box-shadow: var(--tk-glow-c); }
-        .tk-start-btn.ad  { background: linear-gradient(135deg, var(--tk-blue2), var(--tk-blue)); color: #fff; }
-        .tk-start-btn.ad:hover:not(:disabled) { box-shadow: var(--tk-glow-b); }
-        .tk-btn-label { display: flex; flex-direction: column; align-items: center; gap: .06rem; }
-        .tk-btn-main  { font-size: .56rem; font-weight: 700; letter-spacing: 1.5px; }
-        .tk-btn-hint  { font-family: 'Rajdhani', sans-serif; font-size: .7rem; font-weight: 400; letter-spacing: 0; text-transform: none; opacity: .75; }
-        .tk-timer { background: rgba(0,0,0,.5); border: 1px solid var(--tk-border2); padding: .55rem .75rem; display: none; width: 100%; }
-        .tk-timer.on { display: block; }
-        .tk-timer-bar { background: rgba(0,0,0,.4); height: 3px; margin-bottom: .4rem; overflow: hidden; }
-        .tk-timer-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--tk-cyan), var(--tk-blue)); transition: width .9s linear; }
-        .tk-timer-txt  { font-family: 'Orbitron', monospace; font-size: .48rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--tk-muted); text-align: center; display: block; }
-        .tk-sidebar { display: flex; flex-direction: column; gap: 1rem; }
-        .tk-side-card { background: var(--tk-surface); border: 1px solid var(--tk-border2); overflow: hidden; position: relative; }
-        .tk-side-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--tk-cyan), var(--tk-blue), transparent); }
-        .tk-side-head { display: flex; align-items: center; gap: .5rem; padding: .75rem 1rem; background: var(--tk-surface2); border-bottom: 1px solid var(--tk-border2); }
-        .tk-side-head-title { font-family: 'Orbitron', monospace; font-size: .55rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--tk-text); }
-        .tk-side-head i { font-size: .85rem; color: var(--tk-cyan); }
-        .tk-side-stat { display: flex; align-items: center; justify-content: space-between; padding: .85rem 1rem; border-bottom: 1px solid var(--tk-border); }
-        .tk-side-stat:last-child { border-bottom: none; }
-        .tk-side-stat-left { display: flex; align-items: center; gap: .65rem; }
-        .tk-side-ico { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .85rem; flex-shrink: 0; }
-        .tk-side-stat-lbl { font-family: 'Orbitron', monospace; font-size: .5rem; letter-spacing: 1px; text-transform: uppercase; color: var(--tk-muted); }
-        .tk-side-stat-val { font-family: 'Orbitron', monospace; font-size: .9rem; font-weight: 900; color: #fff; }
-        .tk-tip-card { background: linear-gradient(135deg, rgba(0,71,255,.12), rgba(0,245,255,.05)); border: 1px solid var(--tk-border2); padding: 1rem; }
-        .tk-tip-title { font-family: 'Orbitron', monospace; font-size: .58rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--tk-cyan); margin-bottom: .5rem; display: flex; align-items: center; gap: .4rem; }
-        .tk-tip-list { list-style: none; padding: 0; margin: 0; }
-        .tk-tip-list li { font-family: 'Rajdhani', sans-serif; font-size: .82rem; color: var(--tk-muted); padding: .28rem 0; display: flex; gap: .4rem; border-bottom: 1px solid rgba(0,245,255,.05); }
-        .tk-tip-list li:last-child { border-bottom: none; }
-        .tk-tip-list li::before { content: '//'; font-family: 'Orbitron', monospace; font-size: .44rem; color: var(--tk-cyan); opacity: .6; margin-top: .15rem; flex-shrink: 0; }
-        .tk-hist-link { display: flex; align-items: center; justify-content: center; gap: .5rem; font-family: 'Orbitron', monospace; font-size: .55rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--tk-muted); text-decoration: none; border: 1px solid var(--tk-border2); padding: .7rem; transition: all .2s; background: var(--tk-surface2); }
-        .tk-hist-link:hover { border-color: var(--tk-cyan); color: var(--tk-cyan); }
-        .tk-empty { text-align: center; padding: 4rem 2rem; }
-        .tk-empty i { font-size: 3rem; color: var(--tk-cyan); display: block; margin-bottom: 1rem; opacity: .15; }
-        .tk-empty-t { font-family: 'Orbitron', monospace; font-size: .72rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--tk-text); margin-bottom: .5rem; }
-        .tk-empty-s { font-family: 'Rajdhani', sans-serif; font-size: .88rem; color: var(--tk-muted); }
-        .tk-empty-s a { color: var(--tk-cyan); }
-
-        /* ── CRITICAL: Fix modal z-index so buttons are clickable ── */
-        /* The h-screen overflow wrapper in the layout clips modals */
-        .modal { z-index: 999999 !important; }
-        .modal-backdrop { z-index: 999998 !important; }
-        .modal-dialog { z-index: 999999 !important; position: relative; }
-        .modal-content { z-index: 999999 !important; position: relative !important; }
-
-        /* AD MODAL */
-        #adWaitModal .modal-content {
-            background: var(--tk-surface) !important;
-            border: 1px solid var(--tk-border2) !important;
-            border-radius: 0 !important;
-            border-top: 2px solid var(--tk-blue2) !important;
-        }
-        #adWaitModal .modal-header {
-            background: var(--tk-surface2) !important;
-            border-bottom: 1px solid var(--tk-border2) !important;
-            padding: 1rem 1.5rem;
-        }
-        #adWaitModal .modal-body {
-            padding: 2rem 1.5rem;
-            background: var(--tk-surface);
-        }
-        .mah-title { font-family: 'Orbitron', monospace; font-size: .62rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--tk-blue2); display: flex; align-items: center; gap: .5rem; }
-        .mad-icon { width: 70px; height: 70px; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--tk-blue2); border: 1px solid rgba(14,165,233,.3); background: rgba(0,71,255,.1); border-radius: 50%; }
-        .mad-title { font-family: 'Orbitron', monospace; font-size: .7rem; font-weight: 700; color: #fff; margin-bottom: .3rem; }
-        .mad-sub   { font-family: 'Rajdhani', sans-serif; font-size: .88rem; color: var(--tk-muted); }
-        .mad-countdown { font-family: 'Orbitron', monospace; font-size: 2.8rem; font-weight: 900; color: var(--tk-cyan); line-height: 1; display: block; margin-bottom: .25rem; }
-        .mad-clbl  { font-family: 'Orbitron', monospace; font-size: .44rem; letter-spacing: 3px; text-transform: uppercase; color: var(--tk-muted); }
-        .mad-prog-bg   { background: rgba(0,0,0,.4); border: 1px solid var(--tk-border2); height: 6px; margin: 1.25rem 0 1rem; overflow: hidden; }
-        .mad-prog-fill { height: 100%; background: linear-gradient(90deg, var(--tk-blue), var(--tk-cyan)); transition: width .9s linear; width: 0%; }
-        .mad-status    { font-family: 'Orbitron', monospace; font-size: .5rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--tk-muted); margin-bottom: 1rem; }
-
-        #modal-skip-btn {
-            display: none;
-            align-items: center;
-            justify-content: center;
-            gap: .5rem;
-            font-family: 'Orbitron', monospace;
-            font-size: .6rem;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            padding: .8rem 2rem;
-            background: linear-gradient(135deg, var(--tk-cyan), #00b8c8);
-            color: #000;
-            border: none;
-            cursor: pointer !important;
-            transition: all .25s;
-            margin: 0 auto .75rem;
-            position: relative;
-            z-index: 9999999;
-            pointer-events: auto !important;
-        }
-        #modal-skip-btn:hover:not([disabled]) { box-shadow: var(--tk-glow-c); transform: translateY(-2px); }
-        #modal-skip-btn[disabled] { opacity: .5; cursor: not-allowed !important; }
-
-        #modal-cancel-btn {
-            font-family: 'Orbitron', monospace;
-            font-size: .5rem;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            color: var(--tk-muted);
-            background: none;
-            border: none;
-            cursor: pointer !important;
-            padding: .4rem 1rem;
-            transition: color .2s;
-            display: block;
-            margin: 0 auto;
-            position: relative;
-            z-index: 9999999;
-            pointer-events: auto !important;
-        }
-        #modal-cancel-btn:hover { color: #f87171; }
-
-        /* SUCCESS MODAL */
-        #successModal .modal-content {
-            background: var(--tk-surface) !important;
-            border: 1px solid var(--tk-border2) !important;
-            border-radius: 0 !important;
-            border-top: 2px solid var(--tk-cyan) !important;
-        }
-        #successModal .modal-body { background: var(--tk-surface); padding: 2.5rem 1.5rem; }
-        .suc-icon   { font-size: 3.5rem; color: var(--tk-cyan); filter: drop-shadow(0 0 18px rgba(0,245,255,.6)); display: block; margin-bottom: 1rem; }
-        .suc-title  { font-family: 'Orbitron', monospace; font-size: 1rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: #fff; margin-bottom: .3rem; }
-        .suc-sub    { font-family: 'Rajdhani', sans-serif; font-size: .9rem; color: var(--tk-muted); margin-bottom: 1rem; }
-        .suc-amount { font-family: 'Orbitron', monospace; font-size: 2.4rem; font-weight: 900; color: var(--tk-cyan); line-height: 1; display: block; margin-bottom: .25rem; }
-        .suc-unit   { font-family: 'Orbitron', monospace; font-size: .6rem; letter-spacing: 3px; text-transform: uppercase; color: rgba(0,245,255,.5); display: block; margin-bottom: 1.25rem; }
-        .suc-btn    { display: inline-flex; align-items: center; gap: .6rem; font-family: 'Orbitron', monospace; font-size: .62rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: .8rem 2rem; background: linear-gradient(135deg, var(--tk-cyan), var(--tk-blue)); color: #000; border: none; cursor: pointer; transition: all .25s; }
-        .suc-btn:hover { transform: translateY(-2px); color: #000; }
-    </style>
-@endsection
+@section('page-title', 'Tasks')
 
 @section('content')
-    @include('includes.header', ['pageTitle' => 'Available Tasks'])
 
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible fade show">
-            <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-    @if (session('error'))
-        <div class="alert alert-danger alert-dismissible fade show">
-            <i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
+{{-- PAGE HEADER --}}
+<div class="page-header-bar">
+    <div>
+        <h1><i class="bi bi-lightning-charge-fill" style="color:var(--accent);font-size:1.2rem;"></i> Available Tasks</h1>
+        <p>Complete tasks to earn rewards directly to your wallet</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="{{ route('tasks.history') }}" class="cy-hbtn outline">
+            <i class="bi bi-clock-history"></i> History
+        </a>
+    </div>
+</div>
 
-    <div class="tk-hero">
-        <div class="tk-hero-left">
-            <div class="tk-hero-eyebrow">// Task Centre</div>
-            <div class="tk-hero-title">Available Tasks</div>
-            <div class="tk-hero-sub">Complete tasks to earn rewards directly to your wallet</div>
-        </div>
-        <div class="tk-hero-right">
-            <div class="tk-hero-stat">
-                <span class="tk-hs-val" style="color:var(--tk-cyan)">${{ number_format($stats['total_earned_today'], 2) }}</span>
-                <span class="tk-hs-lbl">Earned Today</span>
-            </div>
-            <div class="tk-hero-stat">
-                <span class="tk-hs-val" style="color:#60a5fa">{{ $stats['tasks_completed_today'] }}</span>
-                <span class="tk-hs-lbl">Completed</span>
-            </div>
-            <div class="tk-hero-stat">
-                <span class="tk-hs-val" style="color:var(--tk-blue2)">{{ $stats['available_tasks'] }}</span>
-                <span class="tk-hs-lbl">Available</span>
-            </div>
-            <div class="tk-hero-stat">
-                <span class="tk-hs-val" style="color:#fff">{{ $stats['active_packages'] }}</span>
-                <span class="tk-hs-lbl">Packages</span>
-            </div>
+{{-- STATS ROW --}}
+<div class="stats-row" style="margin-bottom:20px;">
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--accent);"><i class="bi bi-cash-coin"></i></div>
+        <div class="stat-card-lbl">Earned Today</div>
+        <div class="stat-card-val" style="color:var(--accent);" id="stat-earned">${{ number_format($stats['total_earned_today'], 2) }}</div>
+        <div class="stat-card-sub"><span class="stat-card-badge badge-up">Today</span></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--green);"><i class="bi bi-check-circle-fill"></i></div>
+        <div class="stat-card-lbl">Completed</div>
+        <div class="stat-card-val" style="color:var(--green);" id="stat-done">{{ $stats['tasks_completed_today'] }}</div>
+        <div class="stat-card-sub"><span class="stat-card-badge badge-neu">Today</span></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--blue);"><i class="bi bi-list-check"></i></div>
+        <div class="stat-card-lbl">Remaining</div>
+        <div class="stat-card-val" style="color:var(--blue);" id="stat-remaining">{{ $stats['available_tasks'] }}</div>
+        <div class="stat-card-sub"><span class="stat-card-badge badge-neu">Available</span></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--gold);"><i class="bi bi-box-seam-fill"></i></div>
+        <div class="stat-card-lbl">Active Packages</div>
+        <div class="stat-card-val" style="color:var(--gold);">{{ $stats['active_packages'] }}</div>
+        <div class="stat-card-sub">
+            @if($stats['active_packages'] == 0)
+            <a href="{{ route('packages.index') }}" style="color:var(--accent);font-size:0.72rem;">Buy Package →</a>
+            @else
+            <span class="stat-card-badge badge-up">Running</span>
+            @endif
         </div>
     </div>
+</div>
 
-    <div class="tk-layout">
-        <div class="tk-list-panel">
-            <div class="tk-list-head">
-                <h2 class="tk-list-title"><span class="tk-live-dot"></span> Task Queue</h2>
-                <span class="tk-list-count">{{ count($tasks) }} tasks</span>
+{{-- MAIN GRID --}}
+<div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start;">
+
+    {{-- TASK LIST --}}
+    <div>
+        <div class="s-card">
+            <div class="s-card-head">
+                <span class="s-card-title">
+                    <span class="pulse"></span> Task Queue
+                </span>
+                <span style="font-size:0.72rem;color:var(--muted);background:var(--card2);border:1px solid var(--border);padding:3px 10px;border-radius:99px;">
+                    {{ count($tasks) }} tasks
+                </span>
             </div>
 
             @forelse($tasks as $taskData)
-                @php
-                    $isAd = $taskData['task']->task_type === 'adsterra';
-                    $tid  = $taskData['task']->id;
-                    $upid = $taskData['user_package_id'];
-                @endphp
-                <div class="tk-item {{ $isAd ? 'type-ad' : 'type-std' }}" id="task-card-{{ $tid }}-{{ $upid }}">
-                    <div class="tk-item-ico">
-                        <i class="bi {{ $isAd ? 'bi-megaphone-fill' : 'bi-play-circle-fill' }}"></i>
-                    </div>
-                    <div class="tk-item-info">
-                        <div class="tk-item-title">{{ $taskData['task']->title }}</div>
-                        <div class="tk-item-tags">
-                            <span class="tk-tag pkg"><i class="bi bi-box-seam"></i> {{ $taskData['package']->name }}</span>
-                            @if ($isAd)
-                                <span class="tk-tag ad"><i class="bi bi-megaphone-fill"></i> Ad Task</span>
-                            @else
-                                <span class="tk-tag auto"><i class="bi bi-lightning-charge-fill"></i> Auto</span>
-                            @endif
-                            <span class="tk-tag remain"><i class="bi bi-layers"></i> {{ $taskData['remaining_tasks'] }} left</span>
-                        </div>
-                        <p class="tk-item-desc">{{ $taskData['task']->description }}</p>
-                        <div class="tk-item-meta">
-                            @if ($taskData['task']->estimated_time)
-                                <span class="tk-meta-pill"><i class="bi bi-clock"></i> {{ $taskData['task']->estimated_time }} mins</span>
-                            @endif
-                            @if ($isAd)
-                                <span class="tk-meta-pill"><i class="bi bi-eye"></i> View {{ $taskData['task']->effective_skip_delay }}s then skip</span>
-                            @else
-                                <span class="tk-meta-pill"><i class="bi bi-hourglass-split"></i> Stay {{ $taskData['task']->required_duration ?? 30 }}s</span>
-                            @endif
-                        </div>
-                    </div>
-                    <div class="tk-item-action">
-                        <span class="tk-reward-num">${{ number_format($taskData['reward'], 2) }}</span>
-                        <span class="tk-reward-sub">Per Task</span>
-                        @if ($isAd)
-                            <button type="button" class="tk-start-btn ad adsterra-task-btn"
-                                data-task-id="{{ $tid }}"
-                                data-user-package-id="{{ $upid }}"
-                                data-reward="{{ $taskData['reward'] }}"
-                                data-skip-delay="{{ $taskData['task']->effective_skip_delay }}"
-                                data-ad-url="{{ $taskData['task']->task_url ?? route('tasks.ad.view', $taskData['task']->slug) }}">
-                                <i class="bi bi-megaphone-fill"></i>
-                                <span class="tk-btn-label">
-                                    <span class="tk-btn-main">Watch & Earn</span>
-                                    <span class="tk-btn-hint">skip after {{ $taskData['task']->effective_skip_delay }}s</span>
-                                </span>
-                            </button>
+            @php
+                $isAd  = $taskData['task']->task_type === 'adsterra';
+                $tid   = $taskData['task']->id;
+                $upid  = $taskData['user_package_id'];
+            @endphp
+
+            <div class="tk-item {{ $isAd ? 'type-ad' : 'type-std' }}" id="task-card-{{ $tid }}-{{ $upid }}">
+
+                {{-- Icon --}}
+                <div class="tk-item-ico {{ $isAd ? 'ad' : 'std' }}">
+                    <i class="bi {{ $isAd ? 'bi-megaphone-fill' : 'bi-play-circle-fill' }}"></i>
+                </div>
+
+                {{-- Info --}}
+                <div class="tk-item-info">
+                    <div class="tk-item-title">{{ $taskData['task']->title }}</div>
+                    <div class="tk-item-tags">
+                        <span class="tk-tag pkg"><i class="bi bi-box-seam"></i> {{ $taskData['package']->name }}</span>
+                        @if($isAd)
+                        <span class="tk-tag ad"><i class="bi bi-megaphone-fill"></i> Ad Task</span>
                         @else
-                            <button type="button" class="tk-start-btn std auto-task-btn"
-                                data-task-id="{{ $tid }}"
-                                data-user-package-id="{{ $upid }}"
-                                data-task-url="{{ $taskData['task']->task_url }}"
-                                data-reward="{{ $taskData['reward'] }}"
-                                data-required-duration="{{ $taskData['task']->required_duration ?? 30 }}">
-                                <i class="bi bi-play-circle-fill"></i>
-                                <span class="tk-btn-label">
-                                    <span class="tk-btn-main">Start Task</span>
-                                    <span class="tk-btn-hint">auto in {{ $taskData['task']->required_duration ?? 30 }}s</span>
-                                </span>
-                            </button>
+                        <span class="tk-tag auto"><i class="bi bi-lightning-charge-fill"></i> Auto</span>
                         @endif
-                        <div class="tk-timer" id="timer-box-{{ $tid }}-{{ $upid }}">
-                            <div class="tk-timer-bar">
-                                <div class="tk-timer-fill" id="progress-{{ $tid }}-{{ $upid }}"></div>
-                            </div>
-                            <span class="tk-timer-txt" id="timer-text-{{ $tid }}-{{ $upid }}">Waiting...</span>
-                        </div>
+                        <span class="tk-tag remain"><i class="bi bi-layers"></i> {{ $taskData['remaining_tasks'] }} left</span>
+                    </div>
+                    <p class="tk-item-desc">{{ Str::limit($taskData['task']->description, 100) }}</p>
+                    <div class="tk-item-meta">
+                        @if($taskData['task']->estimated_time)
+                        <span class="tk-meta-pill"><i class="bi bi-clock"></i> {{ $taskData['task']->estimated_time }} mins</span>
+                        @endif
+                        @if($isAd)
+                        <span class="tk-meta-pill"><i class="bi bi-eye"></i> Watch {{ $taskData['task']->effective_skip_delay }}s then skip</span>
+                        @else
+                        <span class="tk-meta-pill"><i class="bi bi-hourglass-split"></i> Stay {{ $taskData['task']->required_duration ?? 30 }}s</span>
+                        @endif
                     </div>
                 </div>
+
+                {{-- Action --}}
+                <div class="tk-item-action">
+                    <div>
+                        <div class="tk-reward-num">${{ number_format($taskData['reward'], 2) }}</div>
+                        <div class="tk-reward-sub">Per Task</div>
+                    </div>
+
+                    @if($isAd)
+                    <button type="button" class="tk-start-btn ad adsterra-task-btn"
+                        data-task-id="{{ $tid }}"
+                        data-user-package-id="{{ $upid }}"
+                        data-reward="{{ $taskData['reward'] }}"
+                        data-skip-delay="{{ $taskData['task']->effective_skip_delay }}"
+                        data-ad-url="{{ $taskData['task']->task_url ?? route('tasks.ad.view', $taskData['task']->slug) }}">
+                        <i class="bi bi-megaphone-fill"></i>
+                        <span class="tk-btn-label">
+                            <span class="tk-btn-main">Watch & Earn</span>
+                            <span class="tk-btn-hint">skip after {{ $taskData['task']->effective_skip_delay }}s</span>
+                        </span>
+                    </button>
+                    @else
+                    <button type="button" class="tk-start-btn std auto-task-btn"
+                        data-task-id="{{ $tid }}"
+                        data-user-package-id="{{ $upid }}"
+                        data-task-url="{{ $taskData['task']->task_url }}"
+                        data-reward="{{ $taskData['reward'] }}"
+                        data-required-duration="{{ $taskData['task']->required_duration ?? 30 }}">
+                        <i class="bi bi-play-circle-fill"></i>
+                        <span class="tk-btn-label">
+                            <span class="tk-btn-main">Start Task</span>
+                            <span class="tk-btn-hint">auto in {{ $taskData['task']->required_duration ?? 30 }}s</span>
+                        </span>
+                    </button>
+                    @endif
+
+                    <div class="tk-timer" id="timer-box-{{ $tid }}-{{ $upid }}">
+                        <div class="tk-timer-bar">
+                            <div class="tk-timer-fill" id="progress-{{ $tid }}-{{ $upid }}"></div>
+                        </div>
+                        <span class="tk-timer-txt" id="timer-text-{{ $tid }}-{{ $upid }}">Waiting...</span>
+                    </div>
+                </div>
+
+            </div>
             @empty
-                <div class="tk-empty">
-                    <i class="bi bi-inbox"></i>
-                    <div class="tk-empty-t">No Tasks Available</div>
-                    <p class="tk-empty-s">
-                        @if ($stats['active_packages'] === 0)
-                            No active packages. <a href="{{ route('packages.index') }}">Buy a package</a> to start earning.
-                        @else
-                            All tasks completed for today. Come back tomorrow!
-                        @endif
-                    </p>
-                </div>
+            <div class="tk-empty">
+                <i class="bi bi-inbox"></i>
+                <div class="tk-empty-t">No Tasks Available</div>
+                <p class="tk-empty-s">
+                    @if($stats['active_packages'] === 0)
+                        No active packages. <a href="{{ route('packages.index') }}">Buy a package</a> to start earning.
+                    @else
+                        All tasks completed for today. Come back tomorrow!
+                    @endif
+                </p>
+            </div>
             @endforelse
-        </div>
 
-        <div class="tk-sidebar">
-            <div class="tk-side-card">
-                <div class="tk-side-head">
-                    <i class="bi bi-bar-chart-fill"></i>
-                    <span class="tk-side-head-title">Today's Stats</span>
-                </div>
-                <div class="tk-side-stat">
-                    <div class="tk-side-stat-left">
-                        <div class="tk-side-ico" style="background:rgba(0,245,255,.08);color:var(--tk-cyan);border:1px solid rgba(0,245,255,.2)"><i class="bi bi-cash-coin"></i></div>
-                        <span class="tk-side-stat-lbl">Earned Today</span>
-                    </div>
-                    <span class="tk-side-stat-val" style="color:var(--tk-cyan)" id="stat-earned">${{ number_format($stats['total_earned_today'], 2) }}</span>
-                </div>
-                <div class="tk-side-stat">
-                    <div class="tk-side-stat-left">
-                        <div class="tk-side-ico" style="background:rgba(14,165,233,.08);color:#60a5fa;border:1px solid rgba(14,165,233,.2)"><i class="bi bi-check-circle-fill"></i></div>
-                        <span class="tk-side-stat-lbl">Tasks Done</span>
-                    </div>
-                    <span class="tk-side-stat-val" style="color:#60a5fa" id="stat-done">{{ $stats['tasks_completed_today'] }}</span>
-                </div>
-                <div class="tk-side-stat">
-                    <div class="tk-side-stat-left">
-                        <div class="tk-side-ico" style="background:rgba(0,71,255,.1);color:var(--tk-blue2);border:1px solid rgba(0,71,255,.25)"><i class="bi bi-list-check"></i></div>
-                        <span class="tk-side-stat-lbl">Remaining</span>
-                    </div>
-                    <span class="tk-side-stat-val" style="color:var(--tk-blue2)" id="stat-remaining">{{ $stats['available_tasks'] }}</span>
-                </div>
-                <div class="tk-side-stat">
-                    <div class="tk-side-stat-left">
-                        <div class="tk-side-ico" style="background:rgba(255,255,255,.05);color:#fff;border:1px solid rgba(255,255,255,.1)"><i class="bi bi-box-seam-fill"></i></div>
-                        <span class="tk-side-stat-lbl">Active Packages</span>
-                    </div>
-                    <span class="tk-side-stat-val">{{ $stats['active_packages'] }}</span>
-                </div>
-            </div>
-            <div class="tk-tip-card">
-                <div class="tk-tip-title"><i class="bi bi-lightning-charge-fill"></i> How It Works</div>
-                <ul class="tk-tip-list">
-                    <li>Click Start Task — a new tab opens</li>
-                    <li>Stay on the page for the required time</li>
-                    <li>Ad tasks: watch the ad then click Skip &amp; Claim</li>
-                    <li>Rewards instantly added to your wallet</li>
-                </ul>
-            </div>
-            <a href="{{ route('tasks.history') }}" class="tk-hist-link">
-                <i class="bi bi-clock-history"></i> View Task History
-            </a>
-        </div>
+        </div>{{-- /s-card --}}
     </div>
 
-    {{-- MODALS: placed OUTSIDE .tk-layout to avoid overflow clipping --}}
+    {{-- SIDEBAR --}}
+    <div style="display:flex;flex-direction:column;gap:16px;">
 
-    {{-- AD WAIT MODAL --}}
-    <div class="modal fade" id="adWaitModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" style="z-index:999999!important">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header border-0">
-                    <div class="mah-title"><i class="bi bi-megaphone-fill"></i> Ad Viewing In Progress</div>
-                </div>
-                <div class="modal-body text-center">
-                    <div class="mad-icon"><i class="bi bi-eye-fill"></i></div>
-                    <div class="mad-title">Ad is open in a new tab</div>
-                    <p class="mad-sub mb-3">Keep the ad tab open. Skip button appears after the timer.</p>
-                    <div class="mad-prog-bg">
-                        <div class="mad-prog-fill" id="modal-progress"></div>
+        {{-- Today Stats --}}
+        <div class="s-card">
+            <div class="s-card-head">
+                <span class="s-card-title"><i class="bi bi-bar-chart-fill"></i> Today's Stats</span>
+            </div>
+            <div style="padding:4px 0;">
+                @foreach([
+                    ['icon'=>'bi-cash-coin','color'=>'var(--accent)','label'=>'Earned Today','id'=>'sb-earned','val'=>'$'.number_format($stats['total_earned_today'],2)],
+                    ['icon'=>'bi-check-circle-fill','color'=>'var(--green)','label'=>'Tasks Done','id'=>'sb-done','val'=>$stats['tasks_completed_today']],
+                    ['icon'=>'bi-list-check','color'=>'var(--blue)','label'=>'Remaining','id'=>'sb-remaining','val'=>$stats['available_tasks']],
+                    ['icon'=>'bi-box-seam-fill','color'=>'var(--gold)','label'=>'Packages','id'=>'','val'=>$stats['active_packages']],
+                ] as $row)
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <div style="width:32px;height:32px;border-radius:8px;background:rgba(0,0,0,0.2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:{{ $row['color'] }};font-size:0.9rem;">
+                            <i class="bi {{ $row['icon'] }}"></i>
+                        </div>
+                        <span style="font-size:0.78rem;color:var(--muted);">{{ $row['label'] }}</span>
                     </div>
-                    <span class="mad-countdown" id="modal-countdown">--</span>
-                    <span class="mad-clbl">seconds remaining</span>
-                    <div class="mad-status" id="modal-status-text">Waiting for minimum view time...</div>
-                    <button type="button" id="modal-skip-btn">
-                        <i class="bi bi-check-circle-fill"></i>
-                        Skip &amp; Claim $<span id="modal-reward-amt">0.00</span>
-                    </button>
-                    <button type="button" id="modal-cancel-btn">
-                        <i class="bi bi-x-circle me-1"></i> Cancel
-                    </button>
+                    <span style="font-family:'Syne',sans-serif;font-size:0.92rem;font-weight:800;color:{{ $row['color'] }}" {{ $row['id'] ? 'id='.$row['id'] : '' }}>{{ $row['val'] }}</span>
                 </div>
+                @endforeach
             </div>
         </div>
-    </div>
 
-    {{-- SUCCESS MODAL --}}
-    <div class="modal fade" id="successModal" tabindex="-1" data-bs-backdrop="static" style="z-index:999999!important">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-body text-center py-4">
-                    <i class="bi bi-check-circle-fill suc-icon"></i>
-                    <div class="suc-title">Task Completed!</div>
-                    <p class="suc-sub">You've earned:</p>
-                    <span class="suc-amount">$<span id="earnedAmount">0.00</span></span>
-                    <span class="suc-unit">Added to wallet</span>
-                    <div class="mt-3">
-                        <button type="button" class="suc-btn" onclick="window.location.reload()">
-                            <i class="bi bi-arrow-clockwise"></i> Continue
-                        </button>
+        {{-- How It Works --}}
+        <div class="s-card">
+            <div class="s-card-head">
+                <span class="s-card-title"><i class="bi bi-info-circle-fill"></i> How It Works</span>
+            </div>
+            <div style="padding:14px 20px;display:flex;flex-direction:column;gap:10px;">
+                @foreach([
+                    ['icon'=>'bi-cursor-fill','text'=>'Click Start Task — a new tab opens'],
+                    ['icon'=>'bi-hourglass-split','text'=>'Stay on the page for the required time'],
+                    ['icon'=>'bi-megaphone-fill','text'=>'Ad tasks: watch the ad then click Skip & Claim'],
+                    ['icon'=>'bi-wallet2','text'=>'Rewards instantly added to your wallet'],
+                ] as $tip)
+                <div style="display:flex;align-items:flex-start;gap:10px;">
+                    <div style="width:26px;height:26px;border-radius:7px;background:rgba(0,0,0,0.2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:0.78rem;flex-shrink:0;margin-top:1px;">
+                        <i class="bi {{ $tip['icon'] }}"></i>
                     </div>
+                    <span style="font-size:0.78rem;color:var(--muted);line-height:1.55;">{{ $tip['text'] }}</span>
                 </div>
+                @endforeach
+            </div>
+        </div>
+
+        <a href="{{ route('tasks.history') }}"
+            style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:0.78rem;font-weight:600;text-decoration:none;transition:all 0.2s;"
+            onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+            onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+            <i class="bi bi-clock-history"></i> View Task History
+        </a>
+
+    </div>
+</div>
+
+{{-- ══ MODALS — outside layout to avoid overflow clip ══ --}}
+
+{{-- AD WAIT MODAL --}}
+<div class="modal fade" id="adWaitModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span style="font-size:0.82rem;font-weight:700;display:flex;align-items:center;gap:6px;">
+                    <i class="bi bi-megaphone-fill" style="color:var(--accent);"></i> Ad Viewing In Progress
+                </span>
+            </div>
+            <div class="modal-body" style="text-align:center;padding:32px 24px;">
+                <div style="width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.8rem;color:var(--blue);">
+                    <i class="bi bi-eye-fill"></i>
+                </div>
+                <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;margin-bottom:6px;">Ad is open in a new tab</div>
+                <p style="font-size:0.82rem;color:var(--muted);margin-bottom:20px;">Keep the ad tab open. Skip button appears after the timer.</p>
+
+                <div style="background:var(--card2);border-radius:99px;height:6px;overflow:hidden;margin-bottom:14px;">
+                    <div id="modal-progress" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:99px;transition:width 0.9s linear;"></div>
+                </div>
+                <div style="font-family:'Syne',sans-serif;font-size:2.5rem;font-weight:800;color:var(--accent);line-height:1;margin-bottom:4px;" id="modal-countdown">--</div>
+                <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:8px;">seconds remaining</div>
+                <div style="font-size:0.75rem;color:var(--muted);margin-bottom:20px;" id="modal-status-text">Waiting for minimum view time...</div>
+
+                <button type="button" id="modal-skip-btn" style="display:none;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border-radius:10px;background:var(--accent);color:#000;border:none;cursor:pointer;font-size:0.88rem;font-weight:700;font-family:'DM Sans',sans-serif;margin-bottom:10px;transition:opacity 0.2s;">
+                    <i class="bi bi-check-circle-fill"></i>
+                    Skip & Claim $<span id="modal-reward-amt">0.00</span>
+                </button>
+                <button type="button" id="modal-cancel-btn" style="background:none;border:none;color:var(--muted);font-size:0.78rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:color 0.2s;"
+                    onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </button>
             </div>
         </div>
     </div>
+</div>
+
+{{-- SUCCESS MODAL --}}
+<div class="modal fade" id="successModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body" style="text-align:center;padding:40px 24px;">
+                <i class="bi bi-check-circle-fill" style="font-size:3.5rem;color:var(--accent);display:block;margin-bottom:14px;"></i>
+                <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:6px;">Task Completed!</div>
+                <p style="color:var(--muted);font-size:0.85rem;margin-bottom:16px;">You've earned:</p>
+                <div style="font-family:'Syne',sans-serif;font-size:2.8rem;font-weight:800;color:var(--accent);line-height:1;margin-bottom:4px;">$<span id="earnedAmount">0.00</span></div>
+                <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:24px;">Added to wallet</div>
+                <button type="button" class="cy-hbtn primary" style="width:100%;justify-content:center;" onclick="window.location.reload()">
+                    <i class="bi bi-arrow-clockwise"></i> Continue Tasks
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @endsection
 
 @push('scripts')
+<style>
+/* Task item styles */
+.tk-item {
+    display: grid;
+    grid-template-columns: 48px 1fr auto;
+    gap: 16px;
+    align-items: start;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.2s;
+    border-left: 3px solid transparent;
+}
+.tk-item:last-child { border-bottom: none; }
+.tk-item:hover { background: rgba(255,255,255,0.02); }
+.tk-item.type-ad  { border-left-color: var(--blue); }
+.tk-item.type-std { border-left-color: rgba(0,245,212,0.3); }
+.tk-item.task-done { opacity: 0.3; pointer-events: none; }
+
+.tk-item-ico {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex-shrink: 0; border: 1px solid;
+}
+.tk-item-ico.ad  { background: rgba(59,130,246,0.1); color: var(--blue); border-color: rgba(59,130,246,0.2); }
+.tk-item-ico.std { background: rgba(0,0,0,0.2); color: var(--accent); border-color: rgba(255,255,255,0.1); }
+
+.tk-item-title { font-family: 'Syne', sans-serif; font-size: 0.88rem; font-weight: 700; margin-bottom: 8px; }
+.tk-item-tags  { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.tk-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.62rem; font-weight: 600; padding: 2px 8px;
+    border-radius: 99px; border: 1px solid;
+}
+.tk-tag.pkg    { color: var(--blue);   border-color: rgba(59,130,246,0.25);  background: rgba(59,130,246,0.08);  }
+.tk-tag.ad     { color: var(--accent); border-color: rgba(0,245,212,0.25);   background: rgba(0,245,212,0.06);   }
+.tk-tag.auto   { color: var(--green);  border-color: rgba(34,197,94,0.25);   background: rgba(34,197,94,0.06);   }
+.tk-tag.remain { color: var(--muted);  border-color: var(--border2);          background: rgba(0,0,0,0.2);        }
+.tk-item-desc  { font-size: 0.82rem; color: var(--muted); line-height: 1.6; margin-bottom: 8px; }
+.tk-item-meta  { display: flex; gap: 14px; flex-wrap: wrap; }
+.tk-meta-pill  { display: flex; align-items: center; gap: 4px; font-size: 0.68rem; color: var(--muted); }
+.tk-meta-pill i { color: var(--accent); }
+
+.tk-item-action { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 150px; }
+.tk-reward-num { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--accent); line-height: 1; text-align: right; }
+.tk-reward-sub { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); text-align: right; }
+
+.tk-start-btn {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 10px 16px; border: none; cursor: pointer;
+    border-radius: 9px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem; font-weight: 700; width: 100%;
+    transition: all 0.25s;
+}
+.tk-start-btn:hover { transform: translateY(-2px); }
+.tk-start-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.tk-start-btn.std { background: var(--accent); color: #000; }
+.tk-start-btn.ad  { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff; }
+.tk-btn-label { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tk-btn-main  { font-size: 0.78rem; font-weight: 700; }
+.tk-btn-hint  { font-size: 0.65rem; opacity: 0.75; font-weight: 400; }
+
+.tk-timer { background: var(--card2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; display: none; width: 100%; }
+.tk-timer.on { display: block; }
+.tk-timer-bar { background: rgba(0,0,0,0.3); border-radius: 99px; height: 3px; margin-bottom: 5px; overflow: hidden; }
+.tk-timer-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); border-radius: 99px; }
+.tk-timer-txt { font-size: 0.65rem; color: var(--muted); text-align: center; display: block; }
+
+.tk-empty { text-align: center; padding: 48px 20px; color: var(--muted); }
+.tk-empty i { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: 0.2; }
+.tk-empty-t { font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+.tk-empty-s { font-size: 0.82rem; }
+.tk-empty-s a { color: var(--accent); }
+
+@media(max-width:600px) {
+    .tk-item { grid-template-columns: 44px 1fr; gap: 12px; }
+    .tk-item-action { grid-column: 1/-1; align-items: stretch; flex-direction: row; flex-wrap: wrap; }
+    .tk-reward-num  { font-size: 1.1rem; }
+    .tk-start-btn   { flex: 1; }
+}
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    console.log('✅ DOMContentLoaded fired');
-    console.log('✅ Bootstrap available:', typeof bootstrap !== 'undefined');
-    console.log('✅ CSRF token:', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'));
-    console.log('✅ Auto task buttons found:', document.querySelectorAll('.auto-task-btn').length);
-    console.log('✅ Ad task buttons found:', document.querySelectorAll('.adsterra-task-btn').length);
-
-    // ── Move modals to <body> to escape any overflow:hidden parent ──
-    var adModal  = document.getElementById('adWaitModal');
-    var sucModal = document.getElementById('successModal');
-    if (adModal  && adModal.parentElement  !== document.body) document.body.appendChild(adModal);
-    if (sucModal && sucModal.parentElement !== document.body) document.body.appendChild(sucModal);
-    console.log('✅ Modals moved to body');
-
-    // ── Global state ──
-    window.adState = {
-        taskId:   null,
-        pkgId:    null,
-        reward:   0,
-        duration: 0,
-        elapsed:  0,
-        interval: null,
-        tabRef:   null,
-        btn:      null,
-    };
-
-    var skipBtn   = document.getElementById('modal-skip-btn');
-    var cancelBtn = document.getElementById('modal-cancel-btn');
-
-    console.log('✅ skipBtn found:', !!skipBtn);
-    console.log('✅ cancelBtn found:', !!cancelBtn);
-
-    // ── Skip button ──
-    skipBtn.addEventListener('click', function () {
-        console.log('🖱️ SKIP CLICKED');
-        console.log('adState:', JSON.stringify({
-            taskId:  window.adState.taskId,
-            pkgId:   window.adState.pkgId,
-            elapsed: window.adState.elapsed,
-            reward:  window.adState.reward,
-        }));
-
-        if (!window.adState.taskId || !window.adState.pkgId) {
-            console.error('❌ adState.taskId or pkgId is null!');
-            alert('Task data missing. Please refresh.');
-            return;
-        }
-
-        clearInterval(window.adState.interval);
-        skipBtn.disabled      = true;
-        skipBtn.style.opacity = '0.5';
-
-        if (window.adState.tabRef && !window.adState.tabRef.closed) {
-            try { window.adState.tabRef.close(); } catch(e) {}
-        }
-
-        submitTask(
-            window.adState.taskId,
-            window.adState.pkgId,
-            window.adState.elapsed,
-            window.adState.reward,
-            window.adState.btn,
-            true
-        );
+    // Move modals to body
+    ['adWaitModal','successModal'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.parentElement !== document.body) document.body.appendChild(el);
     });
 
-    // ── Cancel button ──
-    cancelBtn.addEventListener('click', function () {
-        console.log('🖱️ CANCEL CLICKED');
+    window.adState = { taskId:null, pkgId:null, reward:0, duration:0, elapsed:0, interval:null, tabRef:null, btn:null };
+
+    const skipBtn   = document.getElementById('modal-skip-btn');
+    const cancelBtn = document.getElementById('modal-cancel-btn');
+
+    // Skip
+    skipBtn.addEventListener('click', function () {
+        if (!window.adState.taskId || !window.adState.pkgId) return;
         clearInterval(window.adState.interval);
-        var m = bootstrap.Modal.getInstance(document.getElementById('adWaitModal'));
+        skipBtn.disabled = true; skipBtn.style.opacity = '0.5';
+        if (window.adState.tabRef && !window.adState.tabRef.closed) {
+            try { window.adState.tabRef.close(); } catch(e){}
+        }
+        submitTask(window.adState.taskId, window.adState.pkgId, window.adState.elapsed, window.adState.reward, window.adState.btn, true);
+    });
+
+    // Cancel
+    cancelBtn.addEventListener('click', function () {
+        clearInterval(window.adState.interval);
+        const m = bootstrap.Modal.getInstance(document.getElementById('adWaitModal'));
         if (m) m.hide();
         if (window.adState.btn) {
             window.adState.btn.disabled = false;
@@ -532,25 +402,14 @@ document.addEventListener('DOMContentLoaded', function () {
             window.adState.btn.querySelector('.tk-btn-hint').textContent = 'Opens new tab';
         }
         if (window.adState.tabRef && !window.adState.tabRef.closed) {
-            try { window.adState.tabRef.close(); } catch(e) {}
+            try { window.adState.tabRef.close(); } catch(e){}
         }
-        window.adState.taskId = null;
-        window.adState.pkgId  = null;
-        window.adState.btn    = null;
+        window.adState.taskId = null; window.adState.pkgId = null; window.adState.btn = null;
     });
 
-    // ── Adsterra ad task buttons ──
-    document.querySelectorAll('.adsterra-task-btn').forEach(function (btn) {
-        console.log('🔗 Binding adsterra btn, task-id:', btn.dataset.taskId);
+    // Ad task buttons
+    document.querySelectorAll('.adsterra-task-btn').forEach(btn => {
         btn.addEventListener('click', function () {
-            console.group('🖱️ Adsterra button clicked');
-            console.log('task-id:', this.dataset.taskId);
-            console.log('user-package-id:', this.dataset.userPackageId);
-            console.log('reward:', this.dataset.reward);
-            console.log('skip-delay:', this.dataset.skipDelay);
-            console.log('ad-url:', this.dataset.adUrl);
-            console.groupEnd();
-
             window.adState.taskId   = this.dataset.taskId;
             window.adState.pkgId    = this.dataset.userPackageId;
             window.adState.reward   = parseFloat(this.dataset.reward);
@@ -558,17 +417,8 @@ document.addEventListener('DOMContentLoaded', function () {
             window.adState.elapsed  = 0;
             window.adState.btn      = this;
 
-            console.log('📌 adState set:', JSON.stringify({
-                taskId: window.adState.taskId, pkgId: window.adState.pkgId,
-                reward: window.adState.reward, duration: window.adState.duration,
-            }));
-
             window.adState.tabRef = window.open(this.dataset.adUrl, '_blank');
-            if (!window.adState.tabRef) {
-                console.error('❌ Popup blocked!');
-                alert('Popup blocked! Please allow popups for this site.');
-                return;
-            }
+            if (!window.adState.tabRef) { alert('Popup blocked! Please allow popups for this site.'); return; }
 
             this.disabled = true;
             this.querySelector('.tk-btn-main').textContent = 'Ad opened...';
@@ -578,176 +428,109 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('modal-countdown').textContent   = window.adState.duration;
             document.getElementById('modal-progress').style.width    = '0%';
             document.getElementById('modal-status-text').textContent = 'Waiting for minimum view time...';
-            skipBtn.style.display  = 'none';
-            skipBtn.disabled       = false;
-            skipBtn.style.opacity  = '1';
+            skipBtn.style.display = 'none';
+            skipBtn.disabled      = false;
+            skipBtn.style.opacity = '1';
 
             new bootstrap.Modal(document.getElementById('adWaitModal')).show();
-            console.log('✅ Modal shown, timer starting for', window.adState.duration, 'seconds');
 
             clearInterval(window.adState.interval);
             window.adState.interval = setInterval(function () {
                 window.adState.elapsed++;
-                var rem = Math.max(window.adState.duration - window.adState.elapsed, 0);
-                var pct = Math.min((window.adState.elapsed / window.adState.duration) * 100, 100);
+                const rem = Math.max(window.adState.duration - window.adState.elapsed, 0);
+                const pct = Math.min((window.adState.elapsed / window.adState.duration) * 100, 100);
                 document.getElementById('modal-countdown').textContent = rem;
                 document.getElementById('modal-progress').style.width  = pct + '%';
-
                 if (window.adState.elapsed >= window.adState.duration) {
                     clearInterval(window.adState.interval);
-                    skipBtn.style.display = 'inline-flex';
+                    skipBtn.style.display = 'flex';
                     document.getElementById('modal-countdown').textContent   = '✓';
                     document.getElementById('modal-status-text').textContent = 'Time complete — click Skip & Claim!';
-                    console.log('✅ Timer complete — skip button now visible, click it!');
                 }
             }, 1000);
         });
     });
 
-    // ── Standard auto-complete task buttons ──
-    document.querySelectorAll('.auto-task-btn').forEach(function (btn) {
-        console.log('🔗 Binding auto btn, task-id:', btn.dataset.taskId);
+    // Auto task buttons
+    document.querySelectorAll('.auto-task-btn').forEach(btn => {
         btn.addEventListener('click', function () {
-            console.group('🖱️ Auto task button clicked');
-            console.log('task-id:', this.dataset.taskId);
-            console.log('user-package-id:', this.dataset.userPackageId);
-            console.log('task-url:', this.dataset.taskUrl);
-            console.log('reward:', this.dataset.reward);
-            console.log('required-duration:', this.dataset.requiredDuration);
-            console.groupEnd();
+            const taskId   = this.dataset.taskId;
+            const pkgId    = this.dataset.userPackageId;
+            const url      = this.dataset.taskUrl;
+            const reward   = this.dataset.reward;
+            const duration = parseInt(this.dataset.requiredDuration);
+            const self     = this;
 
-            var taskId   = this.dataset.taskId;
-            var pkgId    = this.dataset.userPackageId;
-            var url      = this.dataset.taskUrl;
-            var reward   = this.dataset.reward;
-            var duration = parseInt(this.dataset.requiredDuration);
-            var self     = this;
-
-            if (!url) {
-                console.error('❌ No task URL!');
-                alert('Task URL missing. Please contact support.');
-                return;
-            }
-
-            var tab = window.open(url, '_blank');
-            if (!tab) {
-                console.error('❌ Popup blocked!');
-                alert('Popup blocked! Please allow popups for this site.');
-                return;
-            }
-
-            console.log('✅ Task tab opened, duration:', duration, 's');
+            if (!url) { alert('Task URL missing. Please contact support.'); return; }
+            const tab = window.open(url, '_blank');
+            if (!tab) { alert('Popup blocked! Please allow popups for this site.'); return; }
 
             self.disabled = true;
             self.querySelector('.tk-btn-main').textContent = 'Processing...';
             self.querySelector('.tk-btn-hint').textContent = 'Please wait...';
 
-            var timerBox = document.getElementById('timer-box-' + taskId + '-' + pkgId);
+            const timerBox = document.getElementById(`timer-box-${taskId}-${pkgId}`);
             if (timerBox) timerBox.classList.add('on');
 
-            var elapsed = 0;
-            var iv = setInterval(function () {
+            let elapsed = 0;
+            const iv = setInterval(function () {
                 elapsed++;
-                var bar = document.getElementById('progress-' + taskId + '-' + pkgId);
-                var txt = document.getElementById('timer-text-' + taskId + '-' + pkgId);
-                if (bar) bar.style.width = Math.min((elapsed / duration) * 100, 100) + '%';
-                if (txt) txt.textContent = Math.max(duration - elapsed, 0) + 's remaining...';
-                if (elapsed >= duration) {
-                    clearInterval(iv);
-                    console.log('✅ Timer complete, submitting...');
-                    submitTask(taskId, pkgId, elapsed, reward, self, false);
-                }
+                const bar = document.getElementById(`progress-${taskId}-${pkgId}`);
+                const txt = document.getElementById(`timer-text-${taskId}-${pkgId}`);
+                if (bar) bar.style.width = Math.min((elapsed/duration)*100,100)+'%';
+                if (txt) txt.textContent = Math.max(duration-elapsed,0)+'s remaining...';
+                if (elapsed >= duration) { clearInterval(iv); submitTask(taskId,pkgId,elapsed,reward,self,false); }
             }, 1000);
         });
     });
 
-    // ── Submit task to server ──
     function submitTask(taskId, userPackageId, duration, reward, btn, isAd) {
-        console.group('🚀 submitTask');
-        console.log('taskId:', taskId, 'pkgId:', userPackageId, 'duration:', duration, 'reward:', reward, 'isAd:', isAd);
-        console.groupEnd();
-
-        var payload = {
-            user_package_id: parseInt(userPackageId),
-            task_id:         parseInt(taskId),
-            duration:        parseInt(duration)
-        };
-        console.log('📤 Payload:', JSON.stringify(payload));
-
-        var csrfMeta = document.querySelector('meta[name="csrf-token"]');
-        if (!csrfMeta) {
-            console.error('❌ No CSRF token!');
-            alert('CSRF token missing. Please refresh.');
-            return;
-        }
-
         fetch('/tasks/auto-verify', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfMeta.getAttribute('content')
-            },
-            body: JSON.stringify(payload)
+            headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
+            body: JSON.stringify({ user_package_id:parseInt(userPackageId), task_id:parseInt(taskId), duration:parseInt(duration) })
         })
-        .then(function (r) {
-            console.log('📥 HTTP Status:', r.status, r.statusText);
-            return r.json();
-        })
-        .then(function (data) {
-            console.group('📦 Response');
-            console.log('success:', data.success);
-            console.log('message:', data.message);
-            console.log('data:', data);
-            console.groupEnd();
-
+        .then(r => r.json())
+        .then(data => {
             if (isAd) {
-                var m = bootstrap.Modal.getInstance(document.getElementById('adWaitModal'));
+                const m = bootstrap.Modal.getInstance(document.getElementById('adWaitModal'));
                 if (m) m.hide();
             }
-
             if (data.success) {
-                console.log('🎉 Task completed! Reward:', data.reward);
-
-                var card = document.getElementById('task-card-' + taskId + '-' + userPackageId);
+                const card = document.getElementById(`task-card-${taskId}-${userPackageId}`);
                 if (card) card.classList.add('task-done');
 
-                var statEarned    = document.getElementById('stat-earned');
-                var statDone      = document.getElementById('stat-done');
-                var statRemaining = document.getElementById('stat-remaining');
+                // Update sidebar stats
+                const sEarned = document.getElementById('sb-earned');
+                const sDone   = document.getElementById('sb-done');
+                const sRem    = document.getElementById('sb-remaining');
+                const hEarned = document.getElementById('stat-earned');
+                const hDone   = document.getElementById('stat-done');
+                const hRem    = document.getElementById('stat-remaining');
 
-                if (statEarned) {
-                    var cur = parseFloat(statEarned.textContent.replace('$','').replace(',','')) || 0;
-                    statEarned.textContent = '$' + (cur + parseFloat(reward)).toFixed(2);
-                }
-                if (statDone)      statDone.textContent      = (parseInt(statDone.textContent) || 0) + 1;
-                if (statRemaining) statRemaining.textContent = Math.max((parseInt(statRemaining.textContent) || 0) - 1, 0);
+                if (sEarned) { const cur = parseFloat(sEarned.textContent.replace('$','').replace(',',''))||0; sEarned.textContent = '$'+(cur+parseFloat(reward)).toFixed(2); }
+                if (hEarned) { const cur = parseFloat(hEarned.textContent.replace('$','').replace(',',''))||0; hEarned.textContent = '$'+(cur+parseFloat(reward)).toFixed(2); }
+                if (sDone)   { sDone.textContent   = (parseInt(sDone.textContent)||0)+1; }
+                if (hDone)   { hDone.textContent   = (parseInt(hDone.textContent)||0)+1; }
+                if (sRem)    { sRem.textContent    = Math.max((parseInt(sRem.textContent)||0)-1,0); }
+                if (hRem)    { hRem.textContent    = Math.max((parseInt(hRem.textContent)||0)-1,0); }
 
                 document.getElementById('earnedAmount').textContent = data.reward || parseFloat(reward).toFixed(2);
                 new bootstrap.Modal(document.getElementById('successModal')).show();
-
             } else {
-                console.warn('❌ Failed:', data.message);
-                if (data.errors) console.warn('Errors:', data.errors);
                 alert('Task failed: ' + data.message);
-
                 if (btn) {
                     btn.disabled = false;
-                    if (isAd) {
-                        btn.querySelector('.tk-btn-main').textContent = 'Watch & Earn';
-                        btn.querySelector('.tk-btn-hint').textContent = 'Opens new tab';
-                    } else {
-                        btn.querySelector('.tk-btn-main').textContent = 'Start Task';
-                        btn.querySelector('.tk-btn-hint').textContent = 'auto in ' + duration + 's';
-                    }
+                    btn.querySelector('.tk-btn-main').textContent = isAd ? 'Watch & Earn' : 'Start Task';
+                    btn.querySelector('.tk-btn-hint').textContent = isAd ? 'Opens new tab' : 'Try again';
                 }
                 if (!isAd) {
-                    var tb = document.getElementById('timer-box-' + taskId + '-' + userPackageId);
+                    const tb = document.getElementById(`timer-box-${taskId}-${userPackageId}`);
                     if (tb) tb.classList.remove('on');
                 }
             }
         })
-        .catch(function (e) {
-            console.error('💥 Fetch error:', e);
+        .catch(e => {
             alert('Network error: ' + e.message);
             if (btn) {
                 btn.disabled = false;
@@ -756,7 +539,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
-
-}); // end DOMContentLoaded
+});
 </script>
 @endpush

@@ -1,192 +1,199 @@
 @extends('layouts.app')
-@section('title') Task History @endsection
+@section('title', 'Task History')
+@section('page-title', 'Task History')
+
 @section('content')
-    <!-- Header -->
-    @include('includes.header', [
-        'pageTitle' => 'My Task History',
-        'backRoute' => route('tasks.index'),
-        'backText' => 'Back to Available Tasks',
-        'backPermission' => 'user-list'
-        ])
 
-    <!-- Task History Table -->
-    <div class="card shadow border-0">
-        <div class="card-header bg-white">
-            <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>My Task Submissions</h5>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-hover table-nowrap mb-0">
-                <thead class="thead-light">
-                    <tr>
-                        <th>Date</th>
-                        <th>Task</th>
-                        <th>Package</th>
-                        <th>Reward</th>
-                        <th>Proof</th>
-                        <th>Status</th>
-                        <th>Details</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($submissions as $submission)
-                    <tr>
-                        <td>
-                            {{ $submission->submitted_at->format('d M Y') }}<br>
-                            <small class="text-muted">{{ $submission->submitted_at->format('h:i A') }}</small>
-                        </td>
-                        <td>
-                            <strong>{{ $submission->task->title }}</strong><br>
-                            <span class="badge bg-{{ $submission->task->type_badge_color }} small">
-                                <i class="{{ $submission->task->type_icon }}"></i>
-                                {{ ucfirst($submission->task->task_type) }}
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge bg-info">
-                                {{ $submission->userPackage->package->name }}
-                            </span>
-                        </td>
-                        <td>
-                            <strong class="text-success">{{ $submission->formatted_reward }}</strong>
-                        </td>
-                        <td>
-                            @if($submission->hasProof())
-                                <a href="{{ $submission->proof_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-image"></i> View
-                                </a>
-                            @else
-                                <span class="text-muted">—</span>
-                            @endif
+{{-- PAGE HEADER --}}
+<div class="page-header-bar">
+    <div>
+        <h1><i class="bi bi-clock-history" style="color:var(--accent);font-size:1.2rem;"></i> Task History</h1>
+        <p>All your task submissions and their status</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="{{ route('tasks.index') }}" class="cy-hbtn primary">
+            <i class="bi bi-lightning-charge-fill"></i> Available Tasks
+        </a>
+    </div>
+</div>
 
-                            @if($submission->proof_text)
-                                <button class="btn btn-sm btn-link p-0" data-bs-toggle="tooltip"
-                                    title="{{ $submission->proof_text }}">
-                                    <i class="bi bi-chat-text"></i>
-                                </button>
-                            @endif
-                        </td>
-                        <td>
-                            <span class="badge bg-{{ $submission->status_badge }}">
-                                <i class="{{ $submission->status_icon }}"></i>
-                                {{ ucfirst($submission->status) }}
-                            </span>
-                            <br>
-                            <small class="text-muted">{{ $submission->time_elapsed }}</small>
-                        </td>
-                        <td>
-                            @if($submission->isApproved())
-                                <small class="text-success">
-                                    <i class="bi bi-check-circle"></i> Credited to wallet
-                                </small>
-                            @elseif($submission->isRejected())
-                                <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal"
-                                    data-bs-target="#reasonModal{{ $submission->id }}">
-                                    <i class="bi bi-info-circle"></i> View Reason
-                                </button>
+{{-- SUMMARY STATS --}}
+<div class="stats-row" style="margin-bottom:24px;">
+    @php
+        $allSubs = $submissions->getCollection();
+    @endphp
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--gold);"><i class="bi bi-hourglass-split"></i></div>
+        <div class="stat-card-lbl">Pending Review</div>
+        <div class="stat-card-val" style="color:var(--gold);">{{ $allSubs->where('status','pending')->count() }}</div>
+        <div class="stat-card-sub"><span class="stat-card-badge badge-neu">Awaiting</span></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--green);"><i class="bi bi-check-circle-fill"></i></div>
+        <div class="stat-card-lbl">Approved</div>
+        <div class="stat-card-val" style="color:var(--green);">{{ $allSubs->where('status','approved')->count() }}</div>
+        <div class="stat-card-sub"><span class="stat-card-badge badge-up">Credited</span></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--red);"><i class="bi bi-x-circle-fill"></i></div>
+        <div class="stat-card-lbl">Rejected</div>
+        <div class="stat-card-val" style="color:var(--red);">{{ $allSubs->where('status','rejected')->count() }}</div>
+        <div class="stat-card-sub"><span class="stat-card-badge badge-down">Declined</span></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--accent);"><i class="bi bi-cash-coin"></i></div>
+        <div class="stat-card-lbl">Total Earned</div>
+        <div class="stat-card-val" style="color:var(--accent);">${{ number_format($allSubs->where('status','approved')->sum('reward_amount'), 2) }}</div>
+        <div class="stat-card-sub"><span class="stat-card-badge badge-up">All Time</span></div>
+    </div>
+</div>
 
-                                <!-- Rejection Reason Modal -->
-                                <div class="modal fade" id="reasonModal{{ $submission->id }}" tabindex="-1">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <div class="modal-header bg-danger text-white">
-                                                <h6 class="modal-title">Rejection Reason</h6>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+{{-- TABLE --}}
+<div class="s-card">
+    <div class="s-card-head">
+        <span class="s-card-title"><i class="bi bi-table"></i> My Task Submissions</span>
+        @if($submissions->total() > 0)
+        <span style="font-size:0.72rem;color:var(--muted);">{{ $submissions->total() }} total</span>
+        @endif
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="act-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Task</th>
+                    <th>Package</th>
+                    <th>Reward</th>
+                    <th>Proof</th>
+                    <th>Status</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($submissions as $sub)
+                <tr>
+                    <td>
+                        <div style="font-weight:600;font-size:0.82rem;">{{ $sub->submitted_at->format('d M Y') }}</div>
+                        <div style="font-size:0.68rem;color:var(--muted);">{{ $sub->submitted_at->format('h:i A') }}</div>
+                    </td>
+                    <td>
+                        <div class="t-task">{{ Str::limit($sub->task->title, 35) }}</div>
+                        <span class="s-pill info" style="font-size:0.6rem;margin-top:4px;">
+                            {{ ucfirst($sub->task->task_type) }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="s-pill info">{{ $sub->userPackage->package->name }}</span>
+                    </td>
+                    <td>
+                        <span class="t-reward">+${{ number_format($sub->reward_amount, 2) }}</span>
+                    </td>
+                    <td>
+                        @if($sub->hasProof())
+                        <a href="{{ $sub->proof_url }}" target="_blank" class="cy-hbtn outline" style="padding:4px 10px;font-size:0.72rem;">
+                            <i class="bi bi-image"></i> View
+                        </a>
+                        @else
+                        <span style="color:var(--muted);font-size:0.78rem;">—</span>
+                        @endif
+
+                        @if($sub->proof_text)
+                        <button class="cy-hbtn outline" style="padding:4px 10px;font-size:0.72rem;margin-left:4px;" data-bs-toggle="tooltip" title="{{ $sub->proof_text }}">
+                            <i class="bi bi-chat-text"></i>
+                        </button>
+                        @endif
+                    </td>
+                    <td>
+                        <span class="s-pill {{ $sub->status }}">{{ ucfirst($sub->status) }}</span>
+                        <div style="font-size:0.65rem;color:var(--muted);margin-top:4px;">{{ $sub->time_elapsed ?? $sub->submitted_at->diffForHumans() }}</div>
+                    </td>
+                    <td>
+                        @if($sub->status === 'approved')
+                        <span style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--green);">
+                            <i class="bi bi-check-circle-fill"></i> Credited
+                        </span>
+                        @elseif($sub->status === 'rejected')
+                        <button class="cy-hbtn outline" style="padding:4px 10px;font-size:0.72rem;color:var(--red);border-color:rgba(239,68,68,0.25);"
+                            data-bs-toggle="modal" data-bs-target="#reasonModal{{ $sub->id }}">
+                            <i class="bi bi-info-circle"></i> Reason
+                        </button>
+
+                        {{-- Rejection Modal --}}
+                        <div class="modal fade" id="reasonModal{{ $sub->id }}" tabindex="-1">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" style="color:var(--red)!important;">
+                                            <i class="bi bi-x-circle-fill" style="color:var(--red);"></i>
+                                            Rejection Reason
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div style="display:flex;flex-direction:column;gap:10px;">
+                                            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.82rem;">
+                                                <span style="color:var(--muted);">Task</span>
+                                                <span style="font-weight:600;">{{ $sub->task->title }}</span>
                                             </div>
-                                            <div class="modal-body">
-                                                <p><strong>Task:</strong> {{ $submission->task->title }}</p>
-                                                <p><strong>Submitted:</strong> {{ $submission->submitted_at->format('d M Y h:i A') }}</p>
-                                                <hr>
-                                                <p class="mb-0">{{ $submission->rejection_reason }}</p>
+                                            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.82rem;">
+                                                <span style="color:var(--muted);">Submitted</span>
+                                                <span>{{ $sub->submitted_at->format('d M Y h:i A') }}</span>
                                             </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:9px;padding:12px 14px;margin-top:4px;font-size:0.85rem;color:var(--text);">
+                                                {{ $sub->rejection_reason ?? 'No reason provided.' }}
                                             </div>
                                         </div>
                                     </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="cy-hbtn outline" data-bs-dismiss="modal">Close</button>
+                                        <a href="{{ route('tasks.index') }}" class="cy-hbtn primary">Try Again</a>
+                                    </div>
                                 </div>
-                            @else
-                                <small class="text-muted">
-                                    <i class="bi bi-clock"></i> Under review
-                                </small>
-                            @endif
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="7" class="text-center py-5">
-                            <i class="bi bi-inbox display-4 text-muted d-block mb-3"></i>
-                            <h5 class="text-muted mb-3">No Task History</h5>
-                            <p class="text-muted mb-4">You haven't submitted any tasks yet.</p>
-                            <a href="{{ route('tasks.index') }}" class="btn btn-primary">
-                                <i class="bi bi-list-check me-2"></i>View Available Tasks
+                            </div>
+                        </div>
+                        @else
+                        <span style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--muted);">
+                            <i class="bi bi-clock"></i> Under review
+                        </span>
+                        @endif
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state" style="padding:48px 20px;">
+                            <i class="bi bi-inbox"></i>
+                            <p style="margin-bottom:14px;">No task history yet.</p>
+                            <a href="{{ route('tasks.index') }}" class="cy-hbtn primary">
+                                <i class="bi bi-lightning-charge-fill"></i> Start Earning
                             </a>
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        @if($submissions->hasPages())
-        <div class="card-footer bg-white">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="text-muted small">
-                    Showing {{ $submissions->firstItem() }} to {{ $submissions->lastItem() }} of {{ $submissions->total() }}
-                </div>
-                {{ $submissions->links() }}
-            </div>
-        </div>
-        @endif
+                        </div>
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 
-    <!-- Summary Stats -->
-    <div class="row g-4 mt-4">
-        <div class="col-md-3">
-            <div class="card border-warning">
-                <div class="card-body text-center">
-                    <i class="bi bi-clock-history text-warning display-6"></i>
-                    <h4 class="mt-2">{{ $submissions->where('status', 'pending')->count() }}</h4>
-                    <small class="text-muted">Pending Review</small>
-                </div>
-            </div>
+    @if($submissions->hasPages())
+    <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div style="font-size:0.72rem;color:var(--muted);">
+            Showing {{ $submissions->firstItem() }}–{{ $submissions->lastItem() }} of {{ $submissions->total() }}
         </div>
-        <div class="col-md-3">
-            <div class="card border-success">
-                <div class="card-body text-center">
-                    <i class="bi bi-check-circle text-success display-6"></i>
-                    <h4 class="mt-2">{{ $submissions->where('status', 'approved')->count() }}</h4>
-                    <small class="text-muted">Approved</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-danger">
-                <div class="card-body text-center">
-                    <i class="bi bi-x-circle text-danger display-6"></i>
-                    <h4 class="mt-2">{{ $submissions->where('status', 'rejected')->count() }}</h4>
-                    <small class="text-muted">Rejected</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-primary">
-                <div class="card-body text-center">
-                    <i class="bi bi-cash-coin text-primary display-6"></i>
-                    <h4 class="mt-2">${{ number_format($submissions->where('status', 'approved')->sum('reward_amount'), 2) }}</h4>
-                    <small class="text-muted">Total Earned</small>
-                </div>
-            </div>
-        </div>
+        {{ $submissions->links() }}
     </div>
+    @endif
+</div>
 
 @endsection
 
 @push('scripts')
 <script>
-    // Initialize tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl)
+// Init Bootstrap tooltips
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el);
     });
+});
 </script>
 @endpush

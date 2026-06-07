@@ -1,118 +1,111 @@
 @extends('layouts.app')
-@section('title') My Portfolio @endsection
+@section('title', 'My Portfolio')
+@section('page-title', 'Portfolio')
+
 @section('content')
 
-<div class="container py-5">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h2><i class="bi bi-pie-chart-fill"></i> My Investment Portfolio</h2>
-            <p class="text-muted">Overview of your investments and performance</p>
-        </div>
-        <div class="col-md-4 text-end">
-            <a href="{{ route('companies.index') }}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> New Investment
-            </a>
-        </div>
+<div class="page-header-bar">
+    <div>
+        <h1><i class="bi bi-pie-chart-fill" style="color:var(--accent);font-size:1.1rem;"></i> My Investment Portfolio</h1>
+        <p>Overview of your investments and performance</p>
     </div>
-
-    <!-- Portfolio Summary -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body text-center">
-                    <i class="bi bi-wallet2 text-primary" style="font-size: 2.5rem;"></i>
-                    <h6 class="mt-2 text-muted">Total Invested</h6>
-                    <h3 class="mb-0">৳{{ number_format($totalInvested, 2) }}</h3>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body text-center">
-                    <i class="bi bi-graph-up text-success" style="font-size: 2.5rem;"></i>
-                    <h6 class="mt-2 text-muted">Current Value</h6>
-                    <h3 class="mb-0">৳{{ number_format($currentValue, 2) }}</h3>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card shadow-sm h-100 border-{{ $totalProfitLoss >= 0 ? 'success' : 'danger' }}">
-                <div class="card-body text-center">
-                    <i class="bi bi-{{ $totalProfitLoss >= 0 ? 'arrow-up-circle' : 'arrow-down-circle' }} text-{{ $totalProfitLoss >= 0 ? 'success' : 'danger' }}" style="font-size: 2.5rem;"></i>
-                    <h6 class="mt-2 text-muted">Unrealized P/L</h6>
-                    <h3 class="mb-0 text-{{ $totalProfitLoss >= 0 ? 'success' : 'danger' }}">
-                        {{ $totalProfitLoss >= 0 ? '+' : '' }}৳{{ number_format($totalProfitLoss, 2) }}
-                    </h3>
-                    <small class="text-{{ $totalProfitLoss >= 0 ? 'success' : 'danger' }}">
-                        {{ number_format($totalProfitLossPercentage, 2) }}%
-                    </small>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body text-center">
-                    <i class="bi bi-cash-stack text-warning" style="font-size: 2.5rem;"></i>
-                    <h6 class="mt-2 text-muted">Total Profit Received</h6>
-                    <h3 class="mb-0 text-success">৳{{ number_format($totalProfitReceived, 2) }}</h3>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Company Breakdown -->
-    <div class="card shadow-sm">
-        <div class="card-header bg-light">
-            <h5 class="mb-0">Company-wise Breakdown</h5>
-        </div>
-        <div class="card-body">
-            @if($companiesData->count() > 0)
-                @foreach($companiesData as $data)
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-md-3">
-                                <h6 class="mb-0">{{ $data['company']->name }}</h6>
-                                <small class="text-muted">{{ number_format($data['ownership'], 2) }}% ownership</small>
-                            </div>
-                            <div class="col-md-2 text-center">
-                                <small class="text-muted d-block">Investment</small>
-                                <strong>৳{{ number_format($data['investment'], 2) }}</strong>
-                            </div>
-                            <div class="col-md-2 text-center">
-                                <small class="text-muted d-block">Current Value</small>
-                                <strong>৳{{ number_format($data['current_value'], 2) }}</strong>
-                            </div>
-                            <div class="col-md-2 text-center">
-                                <small class="text-muted d-block">Shares</small>
-                                <strong>{{ number_format($data['shares'], 2) }}</strong>
-                            </div>
-                            <div class="col-md-3 text-center">
-                                <small class="text-muted d-block">P/L</small>
-                                <strong class="text-{{ $data['profit_loss'] >= 0 ? 'success' : 'danger' }}">
-                                    {{ $data['profit_loss'] >= 0 ? '+' : '' }}৳{{ number_format($data['profit_loss'], 2) }}
-                                    ({{ number_format($data['profit_loss_percentage'], 2) }}%)
-                                </strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                @endforeach
-            @else
-                <div class="text-center py-5">
-                    <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
-                    <h5 class="text-muted mt-3">No Active Investments</h5>
-                    <p class="text-muted">Start investing to see your portfolio here.</p>
-                    <a href="{{ route('companies.index') }}" class="btn btn-primary mt-3">
-                        <i class="bi bi-plus-circle"></i> Browse Companies
-                    </a>
-                </div>
-            @endif
-        </div>
+    <div class="page-header-actions">
+        <a href="{{ route('companies.index') }}" class="cy-hbtn primary">
+            <i class="bi bi-plus-circle-fill"></i> New Investment
+        </a>
     </div>
 </div>
 
+{{-- STATS --}}
+<div class="stats-row" style="margin-bottom:20px;">
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--accent);"><i class="bi bi-wallet2"></i></div>
+        <div class="stat-card-lbl">Total Invested</div>
+        <div class="stat-card-val" style="color:var(--accent);">${{ number_format($totalInvested, 2) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--green);"><i class="bi bi-graph-up"></i></div>
+        <div class="stat-card-lbl">Current Value</div>
+        <div class="stat-card-val" style="color:var(--green);">${{ number_format($currentValue, 2) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:{{ $totalProfitLoss >= 0 ? 'var(--green)' : 'var(--red)' }};"><i class="bi bi-arrow-{{ $totalProfitLoss >= 0 ? 'up' : 'down' }}-circle-fill"></i></div>
+        <div class="stat-card-lbl">Unrealized P/L</div>
+        <div class="stat-card-val" style="color:{{ $totalProfitLoss >= 0 ? 'var(--green)' : 'var(--red)' }};">{{ $totalProfitLoss >= 0 ? '+' : '' }}${{ number_format($totalProfitLoss, 2) }}</div>
+        <div class="stat-card-sub"><span class="stat-card-badge {{ $totalProfitLoss >= 0 ? 'badge-up':'badge-down' }}">{{ number_format($totalProfitLossPercentage, 2) }}%</span></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--gold);"><i class="bi bi-cash-coin"></i></div>
+        <div class="stat-card-lbl">Profit Received</div>
+        <div class="stat-card-val" style="color:var(--gold);">${{ number_format($totalProfitReceived, 2) }}</div>
+    </div>
+</div>
+
+{{-- COMPANY BREAKDOWN --}}
+<div class="s-card">
+    <div class="s-card-head">
+        <span class="s-card-title"><i class="bi bi-building-fill"></i> Company Breakdown</span>
+        <span style="font-size:0.72rem;color:var(--muted);">{{ $companiesData->count() }} companies</span>
+    </div>
+    @if($companiesData->count() > 0)
+    <div>
+        @foreach($companiesData as $d)
+        <div class="port-row">
+            <div style="flex:1.5;min-width:0;">
+                <div style="font-family:'Syne',sans-serif;font-size:0.88rem;font-weight:700;margin-bottom:2px;">{{ $d['company']->name }}</div>
+                <div style="font-size:0.7rem;color:var(--muted);">{{ number_format($d['ownership'], 2) }}% ownership</div>
+            </div>
+            <div class="port-cell port-hide-sm">
+                <div class="port-lbl">Investment</div>
+                <div class="port-val">${{ number_format($d['investment'], 2) }}</div>
+            </div>
+            <div class="port-cell port-hide-sm">
+                <div class="port-lbl">Current Value</div>
+                <div class="port-val">${{ number_format($d['current_value'], 2) }}</div>
+            </div>
+            <div class="port-cell port-hide-sm">
+                <div class="port-lbl">Shares</div>
+                <div class="port-val">{{ number_format($d['shares'], 2) }}</div>
+            </div>
+            <div class="port-cell">
+                <div class="port-lbl">P/L</div>
+                <div class="port-val" style="color:{{ $d['profit_loss'] >= 0 ? 'var(--green)' : 'var(--red)' }};">
+                    {{ $d['profit_loss'] >= 0 ? '+' : '' }}${{ number_format($d['profit_loss'], 2) }}
+                    <span style="font-size:0.65rem;opacity:0.75;">({{ number_format($d['profit_loss_percentage'], 2) }}%)</span>
+                </div>
+            </div>
+        </div>
+        @endforeach
+    </div>
+    @else
+    <div class="empty-state">
+        <i class="bi bi-briefcase"></i>
+        <p>No active investments</p>
+        <div style="margin-top:12px;">
+            <a href="{{ route('companies.index') }}" class="cy-hbtn primary">
+                <i class="bi bi-plus-circle"></i> Browse Companies
+            </a>
+        </div>
+    </div>
+    @endif
+</div>
+
 @endsection
+
+@push('scripts')
+<style>
+.port-row {
+    display: flex; align-items: center; gap: 16px;
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+}
+.port-row:last-child { border-bottom: none; }
+.port-row:hover { background: var(--card2); }
+.port-cell { text-align: center; min-width: 90px; flex-shrink: 0; }
+.port-lbl { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 3px; }
+.port-val { font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 700; }
+.port-hide-sm {}
+@media(max-width: 768px) { .port-hide-sm { display: none !important; } }
+@media(max-width: 480px) { .port-row { padding: 12px 14px; gap: 10px; } }
+</style>
+@endpush

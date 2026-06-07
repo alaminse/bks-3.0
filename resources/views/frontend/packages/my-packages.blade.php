@@ -1,584 +1,100 @@
 @extends('layouts.app')
 @section('title', 'My Packages')
-
-@section('css')
-<style>
-/* ══════════════════════════════════════════════
-   MY PACKAGES  ·  Cyberpunk  ·  New Layout
-   Colors: --black / --surface / --cyan / --blue
-══════════════════════════════════════════════ */
-
-/* ── TOP BAR ── */
-.mp-topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1.75rem;
-    flex-wrap: wrap;
-    gap: .75rem;
-}
-.mp-page-label {
-    font-family: 'Orbitron', monospace;
-    font-size: .48rem;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: var(--cyan);
-    opacity: .7;
-    margin-bottom: .3rem;
-}
-.mp-page-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 1.25rem;
-    font-weight: 900;
-    color: #fff;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    line-height: 1;
-}
-.mp-buy-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: .5rem;
-    font-family: 'Orbitron', monospace;
-    font-size: .6rem;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    padding: .65rem 1.4rem;
-    text-decoration: none;
-    background: transparent;
-    color: var(--cyan);
-    border: 1px solid var(--cyan);
-    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
-    transition: all .25s;
-    position: relative;
-    overflow: hidden;
-}
-.mp-buy-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--cyan);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform .25s;
-    z-index: 0;
-}
-.mp-buy-btn:hover::before { transform: scaleX(1); }
-.mp-buy-btn:hover { color: var(--black); box-shadow: var(--glow-cyan-lg); }
-.mp-buy-btn span, .mp-buy-btn i { position: relative; z-index: 1; }
-
-/* ── SECTION DIVIDER ── */
-.mp-section-label {
-    font-family: 'Orbitron', monospace;
-    font-size: .5rem;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    gap: .75rem;
-    margin-bottom: 1rem;
-}
-.mp-section-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, var(--border), transparent);
-}
-
-/* ══════════════════════
-   PACKAGE TILE CARDS
-   Vertical stacked design
-══════════════════════ */
-.mp-tiles {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1.1rem;
-    margin-bottom: 2rem;
-}
-
-.mp-tile {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    transition: border-color .3s, transform .3s;
-}
-.mp-tile:hover {
-    border-color: var(--border-bright);
-    transform: translateY(-4px);
-}
-
-/* glowing top bar — thick neon line */
-.mp-tile-glow {
-    height: 3px;
-    background: linear-gradient(90deg, var(--blue), var(--cyan), var(--blue));
-    background-size: 200%;
-    animation: mp-flow 3s linear infinite;
-}
-@keyframes mp-flow { 0%{background-position:0%} 100%{background-position:200%} }
-
-/* diagonal number watermark */
-.mp-tile::after {
-    content: attr(data-index);
-    position: absolute;
-    bottom: -10px;
-    right: -5px;
-    font-family: 'Orbitron', monospace;
-    font-size: 5rem;
-    font-weight: 900;
-    color: rgba(0,245,255,.03);
-    line-height: 1;
-    pointer-events: none;
-    user-select: none;
-}
-
-/* tile top section */
-.mp-tile-top {
-    padding: 1.1rem 1.25rem .85rem;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: .75rem;
-}
-.mp-tile-name {
-    font-family: 'Orbitron', monospace;
-    font-size: .85rem;
-    font-weight: 900;
-    color: #fff;
-    letter-spacing: 1px;
-    margin-bottom: .25rem;
-}
-.mp-tile-desc {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: .8rem;
-    color: var(--text-muted);
-}
-.mp-tile-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: .3rem;
-    font-family: 'Orbitron', monospace;
-    font-size: .46rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: .22rem .6rem;
-    border: 1px solid;
-    clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-.mp-tile-badge.active   { color: var(--cyan); border-color: rgba(0,245,255,.4); background: rgba(0,245,255,.07); }
-.mp-tile-badge.expired  { color: var(--text-muted); border-color: var(--border); background: var(--surface2); }
-.mp-tile-badge.completed{ color: #34d399; border-color: rgba(52,211,153,.4); background: rgba(52,211,153,.07); }
-
-/* big earned number */
-.mp-tile-earned-block {
-    padding: 1.25rem 1.25rem .75rem;
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: .5rem;
-}
-.mp-earned-label {
-    font-family: 'Orbitron', monospace;
-    font-size: .44rem;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: .3rem;
-    display: block;
-}
-.mp-earned-val {
-    font-family: 'Orbitron', monospace;
-    font-size: 2.1rem;
-    font-weight: 900;
-    color: var(--cyan);
-    text-shadow: var(--glow-cyan);
-    line-height: 1;
-    display: block;
-}
-.mp-earned-of {
-    font-family: 'Orbitron', monospace;
-    font-size: .5rem;
-    color: var(--text-muted);
-    margin-top: .2rem;
-    display: block;
-}
-.mp-roi-chip {
-    font-family: 'Orbitron', monospace;
-    font-size: .72rem;
-    font-weight: 900;
-    padding: .4rem .75rem;
-    border: 1px solid;
-    clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-.mp-roi-chip.pos { color: var(--cyan); border-color: rgba(0,245,255,.35); background: rgba(0,245,255,.07); }
-.mp-roi-chip.neg { color: var(--danger); border-color: rgba(248,113,113,.35); background: rgba(248,113,113,.07); }
-
-/* progress bar */
-.mp-prog-wrap {
-    padding: 0 1.25rem .9rem;
-}
-.mp-prog-track {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    height: 5px;
-    overflow: hidden;
-}
-.mp-prog-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--blue), var(--cyan));
-    box-shadow: 0 0 8px rgba(0,245,255,.5);
-    transition: width 1s cubic-bezier(.4,0,.2,1);
-}
-.mp-prog-meta {
-    display: flex;
-    justify-content: space-between;
-    margin-top: .35rem;
-}
-.mp-prog-meta span {
-    font-family: 'Orbitron', monospace;
-    font-size: .44rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-}
-.mp-prog-meta .pct { color: var(--cyan); }
-
-/* data rows — key:value inside tile */
-.mp-data-rows {
-    border-top: 1px solid var(--border);
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-}
-.mp-dr {
-    padding: .65rem 1.25rem;
-    border-right: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-}
-.mp-dr:nth-child(even) { border-right: none; }
-.mp-dr:nth-last-child(-n+2) { border-bottom: none; }
-.mp-dr-label {
-    font-family: 'Orbitron', monospace;
-    font-size: .42rem;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: .2rem;
-    display: block;
-}
-.mp-dr-val {
-    font-family: 'Orbitron', monospace;
-    font-size: .72rem;
-    font-weight: 700;
-    color: #fff;
-    display: block;
-}
-.mp-dr-val.cyan  { color: var(--cyan); }
-.mp-dr-val.green { color: #34d399; }
-.mp-dr-val.amber { color: var(--warning); }
-
-/* daily task inline progress */
-.mp-task-inline {
-    display: flex;
-    align-items: center;
-    gap: .5rem;
-}
-.mp-task-inline .mp-prog-track {
-    flex: 1;
-    height: 3px;
-}
-.mp-task-num {
-    font-family: 'Orbitron', monospace;
-    font-size: .62rem;
-    font-weight: 700;
-    color: #fff;
-    white-space: nowrap;
-}
-
-/* tile footer — action button */
-.mp-tile-footer {
-    margin-top: auto;
-    padding: .85rem 1.25rem;
-    border-top: 1px solid var(--border);
-    background: rgba(0,0,0,.2);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: .75rem;
-}
-.mp-tile-date {
-    font-family: 'Orbitron', monospace;
-    font-size: .5rem;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-}
-.mp-tile-date i { color: var(--cyan); margin-right: .3rem; }
-.mp-action-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: .4rem;
-    font-family: 'Orbitron', monospace;
-    font-size: .58rem;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    padding: .55rem 1.1rem;
-    text-decoration: none;
-    background: linear-gradient(135deg, var(--cyan), var(--blue));
-    color: var(--black);
-    border: none;
-    clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
-    transition: all .25s;
-}
-.mp-action-btn:hover { box-shadow: var(--glow-cyan-lg); transform: translateY(-2px); color: var(--black); }
-
-/* ══════════════════════
-   EMPTY STATE
-══════════════════════ */
-.mp-empty {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    text-align: center;
-    padding: 4rem 2rem;
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 2rem;
-}
-.mp-empty::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-}
-.mp-empty i { font-size: 3rem; color: var(--cyan); opacity: .12; display: block; margin-bottom: 1rem; }
-.mp-empty-t { font-family: 'Orbitron', monospace; font-size: .75rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); margin-bottom: .5rem; }
-.mp-empty-s { font-family: 'Rajdhani', sans-serif; font-size: .9rem; color: var(--text-muted); margin-bottom: 1.5rem; }
-.mp-empty-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: .5rem;
-    font-family: 'Orbitron', monospace;
-    font-size: .6rem;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    padding: .7rem 1.5rem;
-    text-decoration: none;
-    background: linear-gradient(135deg, var(--cyan), var(--blue));
-    color: var(--black);
-    clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
-    transition: all .25s;
-}
-.mp-empty-btn:hover { box-shadow: var(--glow-cyan-lg); transform: translateY(-2px); color: var(--black); }
-
-/* ══════════════════════
-   HISTORY — minimal list
-══════════════════════ */
-.mp-hist-wrap {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    position: relative;
-    overflow: hidden;
-}
-.mp-hist-wrap::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-}
-.mp-hist-hd {
-    padding: .85rem 1.25rem;
-    background: var(--surface2);
-    border-bottom: 1px solid var(--border);
-}
-.mp-hist-hd-title {
-    font-family: 'Orbitron', monospace;
-    font-size: .62rem;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--cyan);
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: .5rem;
-}
-
-/* table */
-.mp-htable { width: 100%; border-collapse: collapse; }
-.mp-htable th {
-    background: rgba(1,21,53,.95);
-    color: var(--cyan);
-    font-family: 'Orbitron', monospace;
-    font-size: .5rem;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    padding: .7rem 1.1rem;
-    border-bottom: 1px solid var(--border-bright);
-    white-space: nowrap;
-}
-.mp-htable td {
-    padding: .8rem 1.1rem;
-    border-bottom: 1px solid var(--border);
-    vertical-align: middle;
-}
-.mp-htable tr:last-child td { border-bottom: none; }
-.mp-htable tbody tr:hover td { background: rgba(0,245,255,.025); }
-
-.ht-name  { font-family: 'Orbitron', monospace; font-size: .65rem; font-weight: 700; color: #fff; }
-.ht-date  { font-family: 'Orbitron', monospace; font-size: .58rem; color: var(--text-dim); }
-.ht-money { font-family: 'Orbitron', monospace; font-size: .7rem; font-weight: 900; }
-.ht-money.earn  { color: var(--cyan); }
-.ht-money.price { color: var(--text); }
-.ht-unlim { font-family: 'Orbitron', monospace; font-size: .5rem; letter-spacing: 1px; color: #34d399; }
-
-.ht-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: .28rem;
-    font-family: 'Orbitron', monospace;
-    font-size: .46rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: .2rem .55rem;
-    border: 1px solid;
-    clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
-}
-.ht-badge.pos       { color: var(--cyan);    border-color: rgba(0,245,255,.4);    background: rgba(0,245,255,.06); }
-.ht-badge.neg       { color: var(--danger);  border-color: rgba(248,113,113,.4);  background: rgba(248,113,113,.06); }
-.ht-badge.completed { color: #34d399;        border-color: rgba(52,211,153,.4);   background: rgba(52,211,153,.06); }
-.ht-badge.expired   { color: var(--text-muted); border-color: var(--border);      background: var(--surface2); }
-
-@media(max-width: 767px) {
-    .mp-tiles { grid-template-columns: 1fr; }
-    .mp-earned-val { font-size: 1.6rem; }
-    .mp-data-rows { grid-template-columns: 1fr 1fr; }
-    .mp-htable th, .mp-htable td { padding: .55rem .75rem; font-size: .72rem; }
-}
-</style>
-@endsection
+@section('page-title', 'My Packages')
 
 @section('content')
-@include('includes.header', ['pageTitle' => 'My Packages'])
 
-{{-- alerts --}}
-@if(session('success'))
-<div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 mb-4">
-    <i class="bi bi-check-circle-fill"></i> {{ session('success') }}
-    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-</div>
-@endif
-@if(session('error'))
-<div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 mb-4">
-    <i class="bi bi-exclamation-triangle-fill"></i> {{ session('error') }}
-    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-</div>
-@endif
-
-{{-- ── TOP BAR ── --}}
-{{-- <div class="mp-topbar">
+<div class="page-header-bar">
     <div>
-        <div class="mp-page-label">// Packages</div>
-        <div class="mp-page-title">My Packages</div>
+        <h1><i class="bi bi-collection-fill" style="color:var(--accent);font-size:1.1rem;"></i> My Packages</h1>
+        <p>Track your active packages and earnings</p>
     </div>
-    <a href="{{ route('packages.index') }}" class="mp-buy-btn">
-        <i class="bi bi-plus-circle-fill"></i>
-        <span>Buy New Package</span>
-    </a>
-</div> --}}
+    <div class="page-header-actions">
+        <a href="{{ route('packages.index') }}" class="cy-hbtn primary">
+            <i class="bi bi-plus-circle-fill"></i> Buy New Package
+        </a>
+    </div>
+</div>
 
-{{-- ── ACTIVE PACKAGES ── --}}
-<div class="mp-section-label">Active Packages &nbsp;({{ $activePackages->count() }})</div>
+{{-- ACTIVE PACKAGES --}}
+<div class="mp-sec-lbl">
+    Active Packages
+    <span class="mp-sec-count">{{ $activePackages->count() }}</span>
+</div>
 
 @if($activePackages->count() > 0)
-<div class="mp-tiles">
+<div class="mp-grid">
     @foreach($activePackages as $i => $up)
     @php
-        $taskPct  = $up->daily_task_limit > 0 ? ($up->today_task_count / $up->daily_task_limit) * 100 : 0;
-        $earnPct  = $up->progress_percentage ?? 0;
+        $taskPct = $up->daily_task_limit > 0 ? min(100, ($up->today_task_count / $up->daily_task_limit) * 100) : 0;
+        $earnPct = $up->progress_percentage ?? 0;
     @endphp
-    <div class="mp-tile" data-index="{{ str_pad($i + 1, 2, '0', STR_PAD_LEFT) }}">
+    <div class="mp-card">
 
-        {{-- animated glow line --}}
-        <div class="mp-tile-glow"></div>
-
-        {{-- name + badge --}}
-        <div class="mp-tile-top">
+        {{-- Card Header --}}
+        <div class="mp-card-head">
             <div>
-                <div class="mp-tile-name">{{ $up->package->name }}</div>
-                <div class="mp-tile-desc">{{ $up->package->description }}</div>
+                <div class="mp-card-name">{{ $up->package->name }}</div>
+                <div class="mp-card-desc">{{ $up->package->description }}</div>
             </div>
-            <span class="mp-tile-badge active">
-                <i class="bi bi-circle-fill" style="font-size:.4rem;"></i> Active
-            </span>
+            <span class="s-pill approved"><i class="bi bi-circle-fill" style="font-size:0.4rem;"></i> Active</span>
         </div>
 
-        {{-- big earned number --}}
-        <div class="mp-tile-earned-block">
+        {{-- Big earned --}}
+        <div class="mp-earned-block">
             <div>
-                <span class="mp-earned-label">Total Earned</span>
-                <span class="mp-earned-val">${{ number_format($up->total_earning, 2) }}</span>
-                <span class="mp-earned-of">of ${{ number_format($up->package->total_earning_potential, 2) }}</span>
+                <div class="mp-earned-lbl">Total Earned</div>
+                <div class="mp-earned-val">${{ number_format($up->total_earning, 2) }}</div>
+                <div class="mp-earned-of">of ${{ number_format($up->package->total_earning_potential, 2) }}</div>
             </div>
             <div class="mp-roi-chip {{ $up->roi_achieved > 0 ? 'pos' : 'neg' }}">
                 {{ number_format($up->roi_achieved, 1) }}% ROI
             </div>
         </div>
 
-        {{-- earn progress --}}
-        <div class="mp-prog-wrap">
-            <div class="mp-prog-track">
-                <div class="mp-prog-fill" style="width:{{ min($earnPct,100) }}%"></div>
+        {{-- Earn progress --}}
+        <div style="padding:0 18px 14px;">
+            <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:var(--muted);margin-bottom:5px;">
+                <span>Earnings progress</span>
+                <span style="color:var(--accent);">{{ number_format($earnPct, 1) }}%</span>
             </div>
-            <div class="mp-prog-meta">
-                <span>Earnings Progress</span>
-                <span class="pct">{{ number_format($earnPct, 1) }}%</span>
+            <div class="mp-prog-track">
+                <div class="mp-prog-fill" style="width:{{ min($earnPct, 100) }}%"></div>
             </div>
         </div>
 
         {{-- 4 data cells --}}
-        <div class="mp-data-rows">
-            <div class="mp-dr">
-                <span class="mp-dr-label">Daily Tasks</span>
-                <div class="mp-task-inline">
-                    <span class="mp-task-num">{{ $up->today_task_count }}/{{ $up->daily_task_limit }}</span>
-                    <div class="mp-prog-track">
-                        <div class="mp-prog-fill" style="width:{{ min($taskPct,100) }}%"></div>
+        <div class="mp-data-grid">
+            <div class="mp-data-cell">
+                <div class="mp-data-lbl">Daily Tasks</div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:700;">{{ $up->today_task_count }}/{{ $up->daily_task_limit }}</span>
+                    <div class="mp-prog-track" style="flex:1;height:3px;">
+                        <div class="mp-prog-fill" style="width:{{ min($taskPct, 100) }}%"></div>
                     </div>
                 </div>
             </div>
-            <div class="mp-dr">
-                <span class="mp-dr-label">Today Earned</span>
-                <span class="mp-dr-val cyan">${{ number_format($up->today_earning, 2) }}</span>
+            <div class="mp-data-cell">
+                <div class="mp-data-lbl">Today Earned</div>
+                <div class="mp-data-val" style="color:var(--accent);">${{ number_format($up->today_earning, 2) }}</div>
             </div>
-            <div class="mp-dr">
-                <span class="mp-dr-label">Days Running</span>
-                <span class="mp-dr-val">{{ $up->days_remaining }} <span style="font-size:.52rem;color:var(--text-muted)">days</span></span>
+            <div class="mp-data-cell">
+                <div class="mp-data-lbl">Days Running</div>
+                <div class="mp-data-val">{{ $up->days_remaining }} <span style="font-size:0.65rem;color:var(--muted);">days</span></div>
             </div>
-            <div class="mp-dr">
-                <span class="mp-dr-label">Valid Until</span>
-                <span class="mp-dr-val green" style="font-size:.6rem;letter-spacing:1px;">Unlimited</span>
+            <div class="mp-data-cell">
+                <div class="mp-data-lbl">Valid Until</div>
+                <div class="mp-data-val" style="color:var(--green);font-size:0.72rem;">Unlimited</div>
             </div>
         </div>
 
-        {{-- footer --}}
-        <div class="mp-tile-footer">
-            <div class="mp-tile-date">
-                <i class="bi bi-calendar3"></i>{{ $up->created_at->format('d M Y') }}
+        {{-- Footer --}}
+        <div class="mp-card-footer">
+            <div style="font-size:0.72rem;color:var(--muted);">
+                <i class="bi bi-calendar3" style="color:var(--accent);"></i>
+                {{ $up->created_at->format('d M Y') }}
             </div>
-            <a href="{{ route('tasks.index') }}" class="mp-action-btn">
+            <a href="{{ route('tasks.index') }}" class="cy-hbtn primary" style="font-size:0.78rem;padding:7px 14px;">
                 <i class="bi bi-play-fill"></i> Start Tasks
             </a>
         </div>
@@ -587,26 +103,30 @@
     @endforeach
 </div>
 @else
-<div class="mp-empty">
+<div class="empty-state" style="margin-bottom:20px;">
     <i class="bi bi-box-seam"></i>
-    <div class="mp-empty-t">No Active Packages</div>
-    <p class="mp-empty-s">Purchase a package to start earning daily rewards</p>
-    <a href="{{ route('packages.index') }}" class="mp-empty-btn">
-        <i class="bi bi-cart-check"></i> Browse Packages
-    </a>
+    <p>No active packages</p>
+    <div style="margin-top:12px;">
+        <a href="{{ route('packages.index') }}" class="cy-hbtn primary">
+            <i class="bi bi-cart-check"></i> Browse Packages
+        </a>
+    </div>
 </div>
 @endif
 
-{{-- ── HISTORY ── --}}
+{{-- HISTORY --}}
 @if($expiredPackages->count() > 0)
-<div class="mp-section-label" style="margin-top:.5rem;">Package History &nbsp;({{ $expiredPackages->count() }})</div>
+<div class="mp-sec-lbl" style="margin-top:8px;">
+    Package History
+    <span class="mp-sec-count">{{ $expiredPackages->count() }}</span>
+</div>
 
-<div class="mp-hist-wrap">
-    <div class="mp-hist-hd">
-        <h2 class="mp-hist-hd-title"><i class="bi bi-clock-history"></i> Past Packages</h2>
+<div class="s-card">
+    <div class="s-card-head">
+        <span class="s-card-title"><i class="bi bi-clock-history"></i> Past Packages</span>
     </div>
     <div style="overflow-x:auto;">
-        <table class="mp-htable">
+        <table class="act-table">
             <thead>
                 <tr>
                     <th>Package</th>
@@ -615,29 +135,27 @@
                     <th>Total Earned</th>
                     <th>ROI</th>
                     <th>Status</th>
-                    <th>Valid Until</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($expiredPackages as $up)
                 <tr>
-                    <td><span class="ht-name">{{ $up->package->name }}</span></td>
-                    <td><span class="ht-date">{{ $up->created_at->format('d M Y') }}</span></td>
-                    <td><span class="ht-money price">${{ number_format($up->purchase_price, 2) }}</span></td>
-                    <td><span class="ht-money earn">${{ number_format($up->total_earning, 2) }}</span></td>
+                    <td style="font-weight:700;">{{ $up->package->name }}</td>
+                    <td style="font-size:0.78rem;color:var(--muted);">{{ $up->created_at->format('d M Y') }}</td>
+                    <td>${{ number_format($up->purchase_price, 2) }}</td>
+                    <td><span class="t-reward">${{ number_format($up->total_earning, 2) }}</span></td>
                     <td>
-                        <span class="ht-badge {{ $up->roi_achieved > 0 ? 'pos' : 'neg' }}">
+                        <span class="s-pill {{ $up->roi_achieved > 0 ? 'approved' : 'rejected' }}">
                             {{ number_format($up->roi_achieved, 1) }}%
                         </span>
                     </td>
                     <td>
                         @if($up->status === 'completed')
-                            <span class="ht-badge completed"><i class="bi bi-check-all"></i> Completed</span>
+                        <span class="s-pill approved"><i class="bi bi-check-all"></i> Completed</span>
                         @else
-                            <span class="ht-badge expired"><i class="bi bi-clock"></i> Expired</span>
+                        <span class="s-pill inactive"><i class="bi bi-clock"></i> Expired</span>
                         @endif
                     </td>
-                    <td><span class="ht-unlim">Unlimited</span></td>
                 </tr>
                 @endforeach
             </tbody>
@@ -647,3 +165,49 @@
 @endif
 
 @endsection
+
+@push('scripts')
+<style>
+/* ── MY PACKAGES ── */
+.mp-sec-lbl{display:flex;align-items:center;gap:10px;font-family:'Syne',sans-serif;font-size:0.88rem;font-weight:700;margin-bottom:14px}
+.mp-sec-count{background:var(--card2);border:1px solid var(--border);border-radius:99px;padding:2px 10px;font-size:0.72rem;color:var(--muted);font-weight:400}
+
+.mp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin-bottom:20px}
+
+.mp-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;transition:border-color 0.2s,transform 0.2s}
+.mp-card:hover{border-color:rgba(0,245,212,0.3);transform:translateY(-2px)}
+
+.mp-card-head{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.mp-card-name{font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:800;margin-bottom:3px}
+.mp-card-desc{font-size:0.75rem;color:var(--muted)}
+
+.mp-earned-block{padding:18px 18px 10px;display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+.mp-earned-lbl{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:4px}
+.mp-earned-val{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:var(--accent);line-height:1}
+.mp-earned-of{font-size:0.68rem;color:var(--muted);margin-top:3px}
+.mp-roi-chip{font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:800;padding:5px 10px;border-radius:8px;border:1px solid;white-space:nowrap;flex-shrink:0}
+.mp-roi-chip.pos{color:var(--accent);border-color:rgba(0,245,212,0.3);background:rgba(0,245,212,0.08)}
+.mp-roi-chip.neg{color:var(--red);border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.08)}
+
+.mp-prog-track{background:var(--card2);border:1px solid var(--border);height:5px;border-radius:99px;overflow:hidden}
+.mp-prog-fill{height:100%;background:var(--accent);border-radius:99px;transition:width 0.8s}
+
+.mp-data-grid{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--border)}
+.mp-data-cell{padding:12px 18px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+.mp-data-cell:nth-child(2n){border-right:none}
+.mp-data-cell:nth-last-child(-n+2){border-bottom:none}
+.mp-data-lbl{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:4px}
+.mp-data-val{font-family:'Syne',sans-serif;font-size:0.9rem;font-weight:700}
+
+.mp-card-footer{margin-top:auto;padding:12px 18px;border-top:1px solid var(--border);background:rgba(0,0,0,0.1);display:flex;align-items:center;justify-content:space-between;gap:10px}
+
+@media(max-width:768px){
+    .mp-grid{grid-template-columns:1fr}
+    .mp-earned-val{font-size:1.5rem}
+}
+@media(max-width:480px){
+    .mp-card-head{flex-direction:column}
+    .mp-data-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+@endpush

@@ -1,306 +1,187 @@
 @extends('layouts.app')
-@section('title') My Investments @endsection
+@section('title', 'My Investments')
+@section('page-title', 'My Investments')
+
 @section('content')
 
-<div class="container py-5">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h2><i class="bi bi-briefcase"></i> My Investments</h2>
-            <p class="text-muted">Track and manage your company partnerships</p>
-        </div>
-        <div class="col-md-4 text-end">
-            <a href="{{ route('companies.index') }}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> New Investment
-            </a>
-            <a href="{{ route('companies.profit-history') }}" class="btn btn-outline-success">
-                <i class="bi bi-graph-up"></i> Profit History
-            </a>
-        </div>
+<div class="page-header-bar">
+    <div>
+        <h1><i class="bi bi-briefcase-fill" style="color:var(--accent);font-size:1.1rem;"></i> My Investments</h1>
+        <p>Track and manage your company partnerships</p>
     </div>
+    <div class="page-header-actions">
+        <a href="{{ route('companies.profit-history') }}" class="cy-hbtn outline">
+            <i class="bi bi-graph-up"></i> Profit History
+        </a>
+        <a href="{{ route('companies.index') }}" class="cy-hbtn primary">
+            <i class="bi bi-plus-circle-fill"></i> New Investment
+        </a>
+    </div>
+</div>
 
-    @if ($message = Session::get('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ $message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+{{-- STATS --}}
+<div class="stats-row" style="margin-bottom:20px;">
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--accent);"><i class="bi bi-cash-stack"></i></div>
+        <div class="stat-card-lbl">Total Invested</div>
+        <div class="stat-card-val" style="color:var(--accent);">${{ number_format($totalInvested, 2) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--green);"><i class="bi bi-graph-up"></i></div>
+        <div class="stat-card-lbl">Current Value</div>
+        <div class="stat-card-val" style="color:var(--green);">${{ number_format($currentValue, 2) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:{{ $totalProfitLoss >= 0 ? 'var(--green)' : 'var(--red)' }};"><i class="bi bi-arrow-{{ $totalProfitLoss >= 0 ? 'up' : 'down' }}-circle-fill"></i></div>
+        <div class="stat-card-lbl">Total P/L</div>
+        <div class="stat-card-val" style="color:{{ $totalProfitLoss >= 0 ? 'var(--green)' : 'var(--red)' }};">{{ $totalProfitLoss >= 0 ? '+' : '' }}${{ number_format($totalProfitLoss, 2) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-icon" style="color:var(--blue);"><i class="bi bi-building-fill"></i></div>
+        <div class="stat-card-lbl">Active Partnerships</div>
+        <div class="stat-card-val" style="color:var(--blue);">{{ $investments->where('status','active')->count() }}</div>
+    </div>
+</div>
+
+{{-- TABLE --}}
+<div class="s-card">
+    <div class="s-card-head">
+        <span class="s-card-title"><i class="bi bi-pie-chart-fill"></i> Investment Portfolio</span>
+        <span style="font-size:0.72rem;color:var(--muted);">{{ $investments->count() }} positions</span>
+    </div>
+    @if($investments->count() > 0)
+    <div style="overflow-x:auto;">
+        <table class="act-table">
+            <thead>
+                <tr>
+                    <th>Company</th>
+                    <th>Investment</th>
+                    <th class="mi-hide-sm">Shares</th>
+                    <th class="mi-hide-sm">Ownership</th>
+                    <th class="mi-hide-sm">P/L</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($investments as $inv)
+                <tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            @if($inv->company->logo)
+                            <img src="{{ asset('storage/'.$inv->company->logo) }}" alt="{{ $inv->company->name }}"
+                                style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0;">
+                            @else
+                            <div style="width:36px;height:36px;border-radius:8px;background:var(--card2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;">
+                                <i class="bi bi-building"></i>
+                            </div>
+                            @endif
+                            <div>
+                                <div style="font-weight:700;font-size:0.85rem;">{{ $inv->company->name }}</div>
+                                <div style="font-size:0.68rem;color:var(--muted);">${{ number_format($inv->company->share_price, 2) }}/share</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--accent);">${{ number_format($inv->invested_amount, 2) }}</div>
+                        @if($inv->status == 'active')
+                        <div style="font-size:0.68rem;color:var(--muted);">Now: ${{ number_format($inv->current_value, 2) }}</div>
+                        @endif
+                    </td>
+                    <td class="mi-hide-sm">
+                        <span class="s-pill info">{{ number_format($inv->share_quantity, 2) }}</span>
+                    </td>
+                    <td class="mi-hide-sm">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div style="background:var(--card2);border-radius:99px;height:5px;width:80px;overflow:hidden;flex-shrink:0;">
+                                <div style="height:100%;width:{{ min($inv->share_percentage, 100) }}%;background:var(--accent);border-radius:99px;"></div>
+                            </div>
+                            <span style="font-size:0.78rem;font-weight:700;">{{ number_format($inv->share_percentage, 2) }}%</span>
+                        </div>
+                    </td>
+                    <td class="mi-hide-sm">
+                        @if($inv->status == 'active')
+                        <div style="font-weight:700;color:{{ $inv->unrealized_profit_loss >= 0 ? 'var(--green)' : 'var(--red)' }};">
+                            {{ $inv->unrealized_profit_loss >= 0 ? '+' : '' }}${{ number_format($inv->unrealized_profit_loss, 2) }}
+                        </div>
+                        <div style="font-size:0.68rem;color:{{ $inv->unrealized_profit_loss >= 0 ? 'var(--green)' : 'var(--red)' }};">
+                            {{ $inv->unrealized_profit_loss >= 0 ? '+' : '' }}{{ number_format($inv->unrealized_profit_loss_percentage, 2) }}%
+                        </div>
+                        @elseif($inv->status == 'sold')
+                        <div style="font-weight:700;color:{{ $inv->profit_loss >= 0 ? 'var(--green)' : 'var(--red)' }};">
+                            {{ $inv->profit_loss >= 0 ? '+' : '' }}${{ number_format($inv->profit_loss, 2) }}
+                        </div>
+                        <div style="font-size:0.65rem;color:var(--muted);">Realized</div>
+                        @else
+                        <span style="color:var(--muted);font-size:0.78rem;">N/A</span>
+                        @endif
+                    </td>
+                    <td>
+                        @if($inv->status == 'active')
+                        <span class="s-pill approved">Active</span>
+                        @elseif($inv->status == 'sold')
+                        <span class="s-pill pending">Sold</span>
+                        @else
+                        <span class="s-pill inactive">{{ ucfirst($inv->status) }}</span>
+                        @endif
+                    </td>
+                    <td>
+                        <a href="{{ route('companies.show', $inv->company->id) }}" class="cy-hbtn outline" style="padding:5px 10px;font-size:0.72rem;">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @if($investments->hasPages())
+    <div style="padding:12px 16px;border-top:1px solid var(--border);">{{ $investments->links() }}</div>
     @endif
-
-    <!-- Summary Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="card shadow-sm border-start border-primary border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted mb-1 small">Total Invested</p>
-                            <h3 class="mb-0">${{ number_format($totalInvested, 2) }}</h3>
-                        </div>
-                        <div class="bg-primary bg-opacity-10 rounded-circle p-3">
-                            <i class="bi bi-cash-stack text-primary" style="font-size: 2rem;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card shadow-sm border-start border-success border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted mb-1 small">Total Shares</p>
-                            <h3 class="mb-0">{{ number_format($totalShares, 2) }}</h3>
-                        </div>
-                        <div class="bg-success bg-opacity-10 rounded-circle p-3">
-                            <i class="bi bi-graph-up text-success" style="font-size: 2rem;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card shadow-sm border-start border-info border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted mb-1 small">Active Partnerships</p>
-                            <h3 class="mb-0">{{ $investments->where('status', 'active')->count() }}</h3>
-                        </div>
-                        <div class="bg-info bg-opacity-10 rounded-circle p-3">
-                            <i class="bi bi-building text-info" style="font-size: 2rem;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    @else
+    <div class="empty-state">
+        <i class="bi bi-briefcase"></i>
+        <p>No investments yet — start investing to become a partner</p>
+        <div style="margin-top:12px;">
+            <a href="{{ route('companies.index') }}" class="cy-hbtn primary">
+                <i class="bi bi-plus-circle"></i> Browse Companies
+            </a>
         </div>
     </div>
+    @endif
+</div>
 
-    <!-- Investments List -->
-    <div class="card shadow-sm">
-        <div class="card-header bg-light">
-            <h5 class="mb-0">Investment Portfolio</h5>
-        </div>
-        <div class="card-body p-0">
-            @if($investments->count() > 0)
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Company</th>
-                                <th>Investment</th>
-                                <th>Shares</th>
-                                <th>Ownership</th>
-                                <th>Purchase Date</th>
-                                <th>Status</th>
-                                <th class="text-end">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($investments as $investment)
-                            <tr>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        @if($investment->company->logo)
-                                            <img src="{{ asset('storage/'.$investment->company->logo) }}"
-                                                alt="{{ $investment->company->name }}"
-                                                class="rounded me-2"
-                                                width="40"
-                                                height="40"
-                                                style="object-fit: cover;">
-                                        @else
-                                            <div class="bg-secondary rounded me-2 d-flex align-items-center justify-content-center"
-                                                style="width: 40px; height: 40px;">
-                                                <i class="bi bi-building text-white"></i>
-                                            </div>
-                                        @endif
-                                        <div>
-                                            <div class="fw-semibold">{{ $investment->company->name }}</div>
-                                            <small class="text-muted">Share Price: ৳{{ number_format($investment->company->share_price, 2) }}</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="fw-semibold text-primary">৳{{ number_format($investment->invested_amount, 2) }}</div>
-                                    @if($investment->status == 'active')
-                                        <small class="text-muted">Current: ৳{{ number_format($investment->current_value, 2) }}</small>
-                                    @endif
-                                </td>
-                                <td>
-                                    <span class="badge bg-info">{{ number_format($investment->share_quantity, 2) }}</span>
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="progress flex-grow-1 me-2" style="height: 20px; max-width: 100px;">
-                                            <div class="progress-bar bg-success"
-                                                role="progressbar"
-                                                style="width: {{ min($investment->share_percentage, 100) }}%"
-                                                aria-valuenow="{{ $investment->share_percentage }}"
-                                                aria-valuemin="0"
-                                                aria-valuemax="100">
-                                            </div>
-                                        </div>
-                                        <span class="fw-semibold">{{ number_format($investment->share_percentage, 2) }}%</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    @if($investment->status == 'active')
-                                        <div class="text-{{ $investment->unrealized_profit_loss >= 0 ? 'success' : 'danger' }} fw-semibold">
-                                            {{ $investment->unrealized_profit_loss >= 0 ? '+' : '' }}৳{{ number_format($investment->unrealized_profit_loss, 2) }}
-                                        </div>
-                                        <small class="text-{{ $investment->unrealized_profit_loss >= 0 ? 'success' : 'danger' }}">
-                                            {{ $investment->unrealized_profit_loss >= 0 ? '+' : '' }}{{ number_format($investment->unrealized_profit_loss_percentage, 2) }}%
-                                        </small>
-                                    @elseif($investment->status == 'sold')
-                                        <div class="text-{{ $investment->profit_loss >= 0 ? 'success' : 'danger' }} fw-semibold">
-                                            {{ $investment->profit_loss >= 0 ? '+' : '' }}৳{{ number_format($investment->profit_loss, 2) }}
-                                        </div>
-                                        <small class="text-muted">Realized</small>
-                                    @else
-                                        <span class="text-muted">N/A</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <small>{{ $investment->purchase_date->format('d M Y') }}</small>
-                                </td>
-                                <td>
-                                    @if($investment->status == 'active')
-                                        <span class="badge bg-success">Active</span>
-                                    @elseif($investment->status == 'sold')
-                                        <span class="badge bg-warning">Sold</span>
-                                    @else
-                                        <span class="badge bg-secondary">{{ ucfirst($investment->status) }}</span>
-                                    @endif
-                                </td>
-                                <td class="text-end">
-                                    <a href="{{ route('companies.show', $investment->company->id) }}"
-                                    class="btn btn-sm btn-outline-primary"
-                                    title="View Company">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="card-footer bg-light">
-                    {!! $investments->links('pagination::bootstrap-5') !!}
-                </div>
-            @else
-                <div class="text-center py-5">
-                    <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
-                    <h5 class="text-muted mt-3">No Investments Yet</h5>
-                    <p class="text-muted">Start investing in companies to become a partner and earn profits.</p>
-                    <a href="{{ route('companies.index') }}" class="btn btn-primary mt-3">
-                        <i class="bi bi-plus-circle"></i> Browse Companies
-                    </a>
-                </div>
-            @endif
-        </div>
+{{-- WHY INVEST --}}
+<div class="s-card" style="margin-top:20px;">
+    <div class="s-card-head">
+        <span class="s-card-title"><i class="bi bi-stars"></i> Why Invest?</span>
     </div>
-
-    <!-- Investment Tips -->
-    <div class="card shadow-sm mt-4">
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-3 text-center mb-3 mb-md-0">
-                    <i class="bi bi-shield-check text-primary" style="font-size: 3rem;"></i>
-                    <h6 class="mt-2">Secure Investment</h6>
-                    <small class="text-muted">Your investments are protected</small>
-                </div>
-                <div class="col-md-3 text-center mb-3 mb-md-0">
-                    <i class="bi bi-graph-up-arrow text-success" style="font-size: 3rem;"></i>
-                    <h6 class="mt-2">Track Performance</h6>
-                    <small class="text-muted">Monitor your portfolio growth</small>
-                </div>
-                <div class="col-md-3 text-center mb-3 mb-md-0">
-                    <i class="bi bi-cash-coin text-warning" style="font-size: 3rem;"></i>
-                    <h6 class="mt-2">Earn Profits</h6>
-                    <small class="text-muted">Receive regular distributions</small>
-                </div>
-                <div class="col-md-3 text-center">
-                    <i class="bi bi-people text-info" style="font-size: 3rem;"></i>
-                    <h6 class="mt-2">Partner Network</h6>
-                    <small class="text-muted">Connect with other investors</small>
-                </div>
-            </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);">
+        @foreach([
+            ['icon'=>'bi-shield-check',     'color'=>'var(--accent)', 'title'=>'Secure',         'desc'=>'Your investments are protected'],
+            ['icon'=>'bi-graph-up-arrow',   'color'=>'var(--green)',  'title'=>'Track Growth',   'desc'=>'Monitor your portfolio'],
+            ['icon'=>'bi-cash-coin',        'color'=>'var(--gold)',   'title'=>'Earn Profits',   'desc'=>'Regular distributions'],
+            ['icon'=>'bi-people-fill',      'color'=>'var(--blue)',   'title'=>'Network',        'desc'=>'Connect with investors'],
+        ] as $w)
+        <div style="background:var(--card);padding:20px 14px;text-align:center;">
+            <i class="bi {{ $w['icon'] }}" style="font-size:1.5rem;color:{{ $w['color'] }};opacity:0.6;display:block;margin-bottom:8px;"></i>
+            <div style="font-weight:700;font-size:0.82rem;margin-bottom:4px;">{{ $w['title'] }}</div>
+            <div style="font-size:0.72rem;color:var(--muted);">{{ $w['desc'] }}</div>
         </div>
-    </div>
-
-
-    <!-- Summary Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card shadow-sm border-start border-primary border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted mb-1 small">Total Invested</p>
-                            <h3 class="mb-0">৳{{ number_format($totalInvested, 2) }}</h3>
-                        </div>
-                        <div class="bg-primary bg-opacity-10 rounded-circle p-3">
-                            <i class="bi bi-cash-stack text-primary" style="font-size: 2rem;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card shadow-sm border-start border-success border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted mb-1 small">Current Value</p>
-                            <h3 class="mb-0">৳{{ number_format($currentValue, 2) }}</h3>
-                        </div>
-                        <div class="bg-success bg-opacity-10 rounded-circle p-3">
-                            <i class="bi bi-graph-up text-success" style="font-size: 2rem;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card shadow-sm border-start border-{{ $totalProfitLoss >= 0 ? 'success' : 'danger' }} border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted mb-1 small">Total P/L</p>
-                            <h3 class="mb-0 text-{{ $totalProfitLoss >= 0 ? 'success' : 'danger' }}">
-                                {{ $totalProfitLoss >= 0 ? '+' : '' }}৳{{ number_format($totalProfitLoss, 2) }}
-                            </h3>
-                            <small class="text-{{ $totalProfitLoss >= 0 ? 'success' : 'danger' }}">
-                                {{ $totalInvested > 0 ? number_format(($totalProfitLoss / $totalInvested) * 100, 2) : 0 }}%
-                            </small>
-                        </div>
-                        <div class="bg-{{ $totalProfitLoss >= 0 ? 'success' : 'danger' }} bg-opacity-10 rounded-circle p-3">
-                            <i class="bi bi-{{ $totalProfitLoss >= 0 ? 'arrow-up-circle' : 'arrow-down-circle' }} text-{{ $totalProfitLoss >= 0 ? 'success' : 'danger' }}" style="font-size: 2rem;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card shadow-sm border-start border-info border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted mb-1 small">Total Shares</p>
-                            <h3 class="mb-0">{{ number_format($totalShares, 2) }}</h3>
-                        </div>
-                        <div class="bg-info bg-opacity-10 rounded-circle p-3">
-                            <i class="bi bi-pie-chart text-info" style="font-size: 2rem;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        @endforeach
     </div>
 </div>
 
 @endsection
+
+@push('scripts')
+<style>
+.mi-hide-sm {}
+@media(max-width: 768px) { .mi-hide-sm { display: none !important; } }
+@media(max-width: 900px) {
+    .page-header-actions { flex-direction: column; width: 100%; }
+    .page-header-actions .cy-hbtn { width: 100%; justify-content: center; }
+    [style*="grid-template-columns: repeat(4"] { grid-template-columns: 1fr 1fr !important; }
+}
+</style>
+@endpush

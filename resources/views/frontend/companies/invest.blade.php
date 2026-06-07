@@ -1,392 +1,348 @@
 @extends('layouts.app')
-@section('title')
-    Invest in {{ $company->name }}
-@endsection
+@section('title', 'Invest in '.$company->name)
+@section('page-title', 'Invest')
+
 @section('content')
 
-    <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0"><i class="bi bi-cash-stack"></i> Invest in {{ $company->name }}</h4>
-                    </div>
-                    <div class="card-body">
-                        @if ($errors->any())
-                            <div class="alert alert-danger alert-dismissible fade show">
-                                <strong>Error!</strong> Please fix the following issues:<br>
-                                <ul class="mb-0 mt-2">
-                                    @foreach ($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        @endif
+<div class="page-header-bar">
+    <div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:4px;">
+            <a href="{{ route('companies.index') }}" style="color:var(--muted);text-decoration:none;">Companies</a>
+            <i class="bi bi-chevron-right" style="font-size:0.6rem;margin:0 4px;"></i>
+            <a href="{{ route('companies.show', $company->id) }}" style="color:var(--muted);text-decoration:none;">{{ $company->name }}</a>
+            <i class="bi bi-chevron-right" style="font-size:0.6rem;margin:0 4px;"></i> Invest
+        </div>
+        <h1><i class="bi bi-cash-stack" style="color:var(--accent);font-size:1.1rem;"></i> Invest in {{ $company->name }}</h1>
+    </div>
+    <div class="page-header-actions">
+        <a href="{{ route('companies.show', $company->id) }}" class="cy-hbtn outline">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+</div>
 
-                        @if ($message = Session::get('error'))
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                {{ $message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        @endif
+<div class="ci-layout">
 
-                        <!-- Company Info -->
-                        <div class="row mb-4">
-                            <div class="col-md-4 text-center">
-                                @if ($company->logo)
-                                    <img src="{{ asset('storage/' . $company->logo) }}" alt="{{ $company->name }}"
-                                        class="img-fluid rounded" style="max-height: 150px;">
-                                @else
-                                    <div class="bg-gradient-primary rounded d-flex align-items-center justify-content-center mx-auto"
-                                        style="width: 150px; height: 150px;">
-                                        <i class="bi bi-building text-white" style="font-size: 3rem;"></i>
-                                    </div>
-                                @endif
-                            </div>
-                            <div class="col-md-8">
-                                <h5>{{ $company->name }}</h5>
-                                <p class="text-muted small">{{ $company->description }}</p>
+    {{-- LEFT: FORM --}}
+    <div>
 
-                                <div class="row g-2 mt-2">
-                                    <div class="col-6">
-                                        <div class="border rounded p-2">
-                                            <small class="text-muted d-block">Share Price</small>
-                                            <strong
-                                                class="text-primary">${{ number_format($company->share_price, 2) }}</strong>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="border rounded p-2">
-                                            <small class="text-muted d-block">Available Shares</small>
-                                            <strong
-                                                class="text-success">{{ number_format($company->available_shares, 2) }} %</strong>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <hr>
-
-                        <!-- Investment Form -->
-                        <form action="{{ route('companies.process-investment', $company->id) }}" method="POST"
-                            id="investmentForm">
-                            @csrf
-
-                            <!-- Share Percentage Input -->
-                            <div class="mb-4">
-                                <label for="share_percentage" class="form-label fw-bold">
-                                    Share Percentage (%) <span class="text-danger">*</span>
-                                </label>
-                                <input type="text" name="share_percentage" class="form-control form-control-lg"
-                                    id="share_percentage" value="{{ old('share_percentage') }}"
-                                    placeholder="e.g., 0.1, 0.9, 1, 1.5, 2" required>
-                                <small class="text-muted">
-                                    Enter percentage in format: 0.1%, 0.2%...0.9%, 1%, 1.1%...1.9%, 2%, etc.
-                                </small>
-                                <div id="percentageError" class="text-danger small mt-1" style="display: none;"></div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="invested_amount" class="form-label fw-bold">
-                                    Investment Amount ($) <span class="text-danger">*</span>
-                                </label>
-                                <input type="number" name="invested_amount" class="form-control form-control-lg"
-                                    id="invested_amount" value="{{ old('invested_amount') }}" step="0.01"
-                                    max="{{ min($user->balance, $company->available_shares * $company->share_price) }}"
-                                    readonly required>
-                                <small class="text-muted">
-                                    This will be calculated automatically based on share percentage (Percentage × Share Price)
-                                </small>
-                            </div>
-
-                            <!-- Calculation Display -->
-                            <div class="alert alert-info" id="calculationBox" style="display: none;">
-                                <h6 class="mb-3"><i class="bi bi-calculator"></i> Investment Summary</h6>
-                                <div class="row">
-                                    <div class="col-md-4 mb-2">
-                                        <small class="text-muted d-block">Investment Amount</small>
-                                        <strong id="displayAmount">$0.00</strong>
-                                    </div>
-                                    <div class="col-md-4 mb-2">
-                                        <small class="text-muted d-block">Shares You'll Get</small>
-                                        <strong id="displayShares" class="text-primary">0.00</strong>
-                                    </div>
-                                    <div class="col-md-4 mb-2">
-                                        <small class="text-muted d-block">Estimated Ownership</small>
-                                        <strong id="displayPercentage" class="text-success">0.00%</strong>
-                                    </div>
-                                </div>
-                                <hr class="my-2">
-                                <div class="row">
-                                    <div class="col-md-6 mb-2">
-                                        <small class="text-muted d-block">Your Current Balance</small>
-                                        <strong>${{ number_format($user->balance, 2) }}</strong>
-                                    </div>
-                                    <div class="col-md-6 mb-2">
-                                        <small class="text-muted d-block">Balance After Investment</small>
-                                        <strong id="displayBalance">${{ number_format($user->balance, 2) }}</strong>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Warning Messages -->
-                            <div id="warningBox"></div>
-
-                            <!-- Terms and Conditions -->
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="agreeTerms" required>
-                                <label class="form-check-label" for="agreeTerms">
-                                    I understand that this investment is subject to market risks and company performance.
-                                    I agree to the <a href="#" data-bs-toggle="modal"
-                                        data-bs-target="#termsModal">terms and conditions</a>.
-                                </label>
-                            </div>
-
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" disabled>
-                                    <i class="bi bi-check-circle"></i> Confirm Investment
-                                </button>
-                                <a href="{{ route('companies.show', $company->id) }}" class="btn btn-outline-secondary">
-                                    <i class="bi bi-x-circle"></i> Cancel
-                                </a>
-                            </div>
-                        </form>
-                    </div>
+        {{-- Company Info --}}
+        <div class="s-card ci-mb">
+            <div class="s-card-head">
+                <span class="s-card-title"><i class="bi bi-building-fill"></i> {{ $company->name }}</span>
+                <span class="s-pill approved">Available</span>
+            </div>
+            <div style="padding:16px 20px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+                @if($company->logo)
+                <img src="{{ asset('storage/'.$company->logo) }}" alt="{{ $company->name }}"
+                    style="width:64px;height:64px;border-radius:10px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;">
+                @else
+                <div style="width:64px;height:64px;border-radius:10px;background:var(--card2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:var(--muted);flex-shrink:0;">
+                    <i class="bi bi-building"></i>
                 </div>
-
-                <!-- Investment Tips -->
-                <div class="card shadow-sm mt-4">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Investment Tips</h6>
-                    </div>
-                    <div class="card-body">
-                        <ul class="mb-0">
-                            <li>Only invest what you can afford to lose</li>
-                            <li>Diversify your investments across multiple companies</li>
-                            <li>Research the company's performance and history</li>
-                            <li>Monitor your investments regularly</li>
-                            <li>Profits are distributed based on your ownership percentage</li>
-                        </ul>
+                @endif
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:0.85rem;color:var(--muted);margin-bottom:10px;">{{ $company->description }}</div>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-align:center;">
+                            <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:2px;">Share Price</div>
+                            <div style="font-family:'Syne',sans-serif;font-weight:800;color:var(--accent);">${{ number_format($company->share_price, 2) }}</div>
+                        </div>
+                        <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-align:center;">
+                            <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:2px;">Available</div>
+                            <div style="font-family:'Syne',sans-serif;font-weight:800;color:var(--green);">{{ number_format($company->available_shares, 2) }}%</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        {{-- Investment Form --}}
+        <div class="s-card ci-mb">
+            <div class="s-card-head">
+                <span class="s-card-title"><i class="bi bi-calculator"></i> Investment Form</span>
+            </div>
+            <div style="padding:20px;">
+                <form action="{{ route('companies.process-investment', $company->id) }}" method="POST" id="investmentForm">
+                    @csrf
+
+                    <div class="ci-field">
+                        <label class="ci-label">Share Percentage (%) <span style="color:var(--red);">*</span></label>
+                        <input type="text" name="share_percentage" id="share_percentage"
+                            class="pf-input"
+                            value="{{ old('share_percentage') }}"
+                            placeholder="e.g. 0.1, 0.5, 1, 1.5, 2"
+                            required>
+                        <div style="font-size:0.72rem;color:var(--muted);margin-top:5px;">
+                            Format: 0.1%, 0.2%...0.9%, 1%, 1.1%...etc.
+                        </div>
+                        <div id="percentageError" style="display:none;font-size:0.72rem;color:var(--red);margin-top:4px;"></div>
+                    </div>
+
+                    <div class="ci-field">
+                        <label class="ci-label">Investment Amount ($) <span style="color:var(--red);">*</span></label>
+                        <input type="number" name="invested_amount" id="invested_amount"
+                            class="pf-input" step="0.01"
+                            max="{{ min($user->balance, $company->available_shares * $company->share_price) }}"
+                            readonly required
+                            style="background:var(--card2) !important;color:var(--muted) !important;cursor:not-allowed;">
+                        <div style="font-size:0.72rem;color:var(--muted);margin-top:5px;">
+                            Auto-calculated from share percentage × share price
+                        </div>
+                    </div>
+
+                    {{-- Summary box --}}
+                    <div id="summaryBox" style="display:none;background:rgba(0,245,212,0.05);border:1px solid rgba(0,245,212,0.2);border-radius:10px;padding:16px;margin-bottom:16px;">
+                        <div style="font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                            <i class="bi bi-calculator" style="color:var(--accent);"></i> Investment Summary
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                            <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px 12px;">
+                                <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:3px;">Amount</div>
+                                <div id="dispAmount" style="font-family:'Syne',sans-serif;font-weight:800;color:var(--accent);">$0.00</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px 12px;">
+                                <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:3px;">Shares</div>
+                                <div id="dispShares" style="font-family:'Syne',sans-serif;font-weight:800;color:var(--green);">0.00</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px 12px;">
+                                <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:3px;">Ownership</div>
+                                <div id="dispPct" style="font-family:'Syne',sans-serif;font-weight:800;color:var(--blue);">0.00%</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:10px 12px;">
+                                <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:3px;">Balance After</div>
+                                <div id="dispBal" style="font-family:'Syne',sans-serif;font-weight:800;">$0.00</div>
+                            </div>
+                        </div>
+                        <div id="warningBox"></div>
+                    </div>
+
+                    {{-- Terms --}}
+                    <div style="display:flex;align-items:flex-start;gap:10px;background:rgba(0,0,0,0.15);border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-bottom:16px;">
+                        <input type="checkbox" id="agreeTerms" required
+                            style="width:16px;height:16px;accent-color:var(--accent);flex-shrink:0;margin-top:2px;cursor:pointer;">
+                        <label for="agreeTerms" style="font-size:0.82rem;color:var(--muted);cursor:pointer;line-height:1.55;">
+                            I understand this investment is subject to market risks. I agree to the
+                            <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal" style="color:var(--accent);">terms and conditions</a>.
+                        </label>
+                    </div>
+
+                    <div style="display:flex;gap:8px;">
+                        <button type="submit" class="cy-hbtn primary" id="submitBtn" disabled style="flex:1;justify-content:center;padding:12px;font-size:0.88rem;">
+                            <i class="bi bi-check-circle-fill"></i> Confirm Investment
+                        </button>
+                        <a href="{{ route('companies.show', $company->id) }}" class="cy-hbtn outline" style="padding:12px 18px;">
+                            <i class="bi bi-x"></i>
+                        </a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
     </div>
 
-    <!-- Terms Modal -->
-    <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="termsModalLabel">Terms and Conditions</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    {{-- RIGHT: Tips --}}
+    <div>
+
+        {{-- Balance --}}
+        <div class="s-card ci-mb">
+            <div style="padding:16px 18px;display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                    <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:4px;">Your Balance</div>
+                    <div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:var(--accent);">${{ number_format($user->balance, 2) }}</div>
                 </div>
-                <div class="modal-body">
-                    <h6>Investment Terms</h6>
-                    <ol>
+                <div style="width:40px;height:40px;border-radius:10px;background:rgba(0,245,212,0.1);border:1px solid rgba(0,245,212,0.2);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:1.1rem;">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+            </div>
+        </div>
+
+        {{-- Investment Tips --}}
+        <div class="s-card">
+            <div class="s-card-head">
+                <span class="s-card-title"><i class="bi bi-lightbulb-fill"></i> Investment Tips</span>
+            </div>
+            <div style="padding:4px 0;">
+                @foreach([
+                    ['icon'=>'bi-shield-check',   'color'=>'var(--green)',  'tip'=>'Only invest what you can afford to lose'],
+                    ['icon'=>'bi-pie-chart-fill',  'color'=>'var(--blue)',   'tip'=>'Diversify across multiple companies'],
+                    ['icon'=>'bi-search',          'color'=>'var(--accent)', 'tip'=>"Research the company's performance"],
+                    ['icon'=>'bi-eye-fill',         'color'=>'var(--gold)',   'tip'=>'Monitor your investments regularly'],
+                    ['icon'=>'bi-cash-coin',        'color'=>'var(--green)',  'tip'=>'Profits distributed by ownership %'],
+                ] as $tip)
+                <div style="display:flex;align-items:flex-start;gap:10px;padding:11px 18px;border-bottom:1px solid var(--border);">
+                    <i class="bi {{ $tip['icon'] }}" style="color:{{ $tip['color'] }};font-size:0.88rem;flex-shrink:0;margin-top:2px;"></i>
+                    <span style="font-size:0.82rem;color:var(--muted);">{{ $tip['tip'] }}</span>
+                </div>
+                @endforeach
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{{-- Terms Modal --}}
+<div class="modal fade" id="termsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" style="font-size:0.95rem !important;font-weight:700 !important;">
+                    <i class="bi bi-file-text-fill" style="color:var(--accent);margin-right:6px;"></i> Terms & Conditions
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="font-size:0.875rem;color:var(--muted);line-height:1.7;">
+                <div style="margin-bottom:14px;">
+                    <div style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:8px;">Investment Terms</div>
+                    <ol style="padding-left:16px;display:flex;flex-direction:column;gap:4px;">
                         <li>All investments are subject to market risks and company performance.</li>
                         <li>Share prices may fluctuate based on company valuation changes.</li>
                         <li>Profits will be distributed proportionally to your ownership percentage.</li>
-                        <li>Investment amounts will be deducted from your account balance immediately.</li>
+                        <li>Investment amounts will be deducted from your balance immediately.</li>
                     </ol>
-
-                    <h6 class="mt-3">Partner Rights</h6>
-                    <ol>
-                        <li>Partners are entitled to receive profit distributions based on ownership.</li>
+                </div>
+                <div style="margin-bottom:14px;">
+                    <div style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:8px;">Partner Rights</div>
+                    <ol style="padding-left:16px;display:flex;flex-direction:column;gap:4px;">
+                        <li>Partners receive profit distributions based on ownership percentage.</li>
                         <li>Partners can view company performance and statistics.</li>
                         <li>Shares cannot be transferred without company approval.</li>
                     </ol>
-
-                    <h6 class="mt-3">Risks</h6>
-                    <ol>
+                </div>
+                <div>
+                    <div style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:8px;">Risks</div>
+                    <ol style="padding-left:16px;display:flex;flex-direction:column;gap:4px;">
                         <li>Investment values may decrease based on company performance.</li>
                         <li>There is no guarantee of profit distribution.</li>
                         <li>Shares may not be immediately liquidated.</li>
                     </ol>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="cy-hbtn outline" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const sharePercentageInput = document.getElementById('share_percentage');
-            const investedAmountInput = document.getElementById('invested_amount');
-            const calculationBox = document.getElementById('calculationBox');
-            const warningBox = document.getElementById('warningBox');
-            const percentageError = document.getElementById('percentageError');
-            const agreeTerms = document.getElementById('agreeTerms');
-            const submitBtn = document.getElementById('submitBtn');
-
-            const sharePrice = {{ $company->share_price }};
-            const availableShares = {{ $company->available_shares }};
-            const userBalance = {{ $user->wallet_balance }};
-            const totalInvested = {{ $company->partnerShares->where('status', 'active')->sum('invested_amount') }};
-
-            // ----- Validate percentage format -----
-            function isValidPercentageFormat(value) {
-                // Remove % sign if present
-                value = value.toString().replace('%', '').trim();
-
-                const num = parseFloat(value);
-
-                // Check if it's a valid number
-                if (isNaN(num) || num <= 0) {
-                    return false;
-                }
-
-                // Valid formats: 0.1 to 0.9 (with single decimal)
-                if (num >= 0.1 && num < 1) {
-                    return /^0\.[1-9]$/.test(value);
-                }
-
-                // Valid formats: 1, 2, 3, etc. (whole numbers) OR 1.1 to 1.9, 2.1 to 2.9, etc.
-                if (num >= 1) {
-                    // Check if it's a whole number (1, 2, 3) or has .1 to .9 decimal (1.1, 1.5, 2.3)
-                    if (Number.isInteger(num)) {
-                        return true; // 1, 2, 3, etc.
-                    } else {
-                        // Must be X.Y where Y is 1-9
-                        const parts = value.split('.');
-                        if (parts.length === 2 && parts[1].length === 1 && /^[1-9]$/.test(parts[1])) {
-                            return true;
-                        }
-                    }
-                }
-
-                return false;
-            }
-
-            // ----- Update calculations and warnings -----
-            function updateCalculation() {
-                let percentageValue = sharePercentageInput.value.replace('%', '').trim();
-
-                // Clear previous states
-                percentageError.style.display = 'none';
-                percentageError.textContent = '';
-                sharePercentageInput.classList.remove('is-invalid');
-
-                if (!percentageValue) {
-                    calculationBox.style.display = 'none';
-                    warningBox.innerHTML = '';
-                    investedAmountInput.value = '';
-                    submitBtn.disabled = true;
-                    return;
-                }
-
-                // Validate format
-                if (!isValidPercentageFormat(percentageValue)) {
-                    percentageError.style.display = 'block';
-                    percentageError.textContent = 'Invalid format! Please enter: 0.1, 0.2...0.9, 1, 1.1...1.9, 2, 2.1, etc.';
-                    sharePercentageInput.classList.add('is-invalid');
-                    calculationBox.style.display = 'none';
-                    warningBox.innerHTML = '';
-                    investedAmountInput.value = '';
-                    submitBtn.disabled = true;
-                    return;
-                }
-
-                const percentage = parseFloat(percentageValue);
-
-                // Calculate investment amount based on percentage and share price
-                // Formula: Investment Amount = Percentage × Share Price
-                const amount = percentage * sharePrice;
-
-                investedAmountInput.value = amount.toFixed(2);
-
-                const shares = amount / sharePrice;
-                const newTotalInvested = totalInvested + amount;
-                const ownership = (amount / newTotalInvested) * 100;
-                const balanceAfter = userBalance - amount;
-
-                // Show calculation box
-                calculationBox.style.display = 'block';
-                document.getElementById('displayAmount').textContent =
-                    `$${amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-                document.getElementById('displayShares').textContent = shares.toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                });
-                document.getElementById('displayPercentage').textContent =
-                    `${ownership.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%`;
-                document.getElementById('displayBalance').textContent =
-                    `$${balanceAfter.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-
-                // Show warning messages
-                let warningHTML = '';
-                if (amount > userBalance) {
-                    warningHTML =
-                        `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Insufficient balance! You need $${(amount - userBalance).toLocaleString('en-US', {minimumFractionDigits: 2})} more.</div>`;
-                } else if (shares > availableShares) {
-                    warningHTML =
-                        `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Not enough shares available! Maximum available: ${availableShares.toLocaleString('en-US', {minimumFractionDigits: 2})} shares ($${(availableShares * sharePrice).toLocaleString('en-US', {minimumFractionDigits: 2})}).</div>`;
-                } else if (balanceAfter < 0) {
-                    warningHTML =
-                        `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> This investment exceeds your balance!</div>`;
-                } else {
-                    warningHTML =
-                        `<div class="alert alert-success"><i class="bi bi-check-circle"></i> Investment amount is valid!</div>`;
-                }
-                warningBox.innerHTML = warningHTML;
-
-                // Enable submit button only if valid
-                submitBtn.disabled = !(amount > 0 && amount <= userBalance && shares <= availableShares &&
-                    agreeTerms.checked && isValidPercentageFormat(percentageValue));
-            }
-
-            // Event listeners
-            sharePercentageInput.addEventListener('input', updateCalculation);
-            agreeTerms.addEventListener('change', updateCalculation);
-
-            // SweetAlert2 confirmation on submit
-            document.getElementById('investmentForm').addEventListener('submit', function(e) {
-                e.preventDefault(); // stop default submission
-
-                const amount = parseFloat(investedAmountInput.value);
-                const shares = amount / sharePrice;
-                const percentage = sharePercentageInput.value.replace('%', '').trim();
-
-                if (isNaN(amount) || amount <= 0 || !isValidPercentageFormat(percentage)) {
-                    Swal.fire('Error', 'Please enter a valid share percentage.', 'error');
-                    return;
-                }
-
-                Swal.fire({
-                    title: 'Confirm Investment',
-                    html: `
-                <p>You are about to invest <strong>$${amount.toLocaleString('en-US', {minimumFractionDigits: 2})}</strong></p>
-                <p>Share percentage: <strong>${percentage}%</strong></p>
-                <p>Shares you will receive: <strong>${shares.toLocaleString('en-US', {minimumFractionDigits: 2})}</strong></p>
-                <p>Balance after investment: <strong>$${(userBalance - amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</strong></p>
-            `,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, Invest',
-                    cancelButtonText: 'Cancel'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        this.submit(); // Submit the form if confirmed
-                    }
-                });
-            });
-        });
-    </script>
-
-
-    <style>
-        .form-control-lg {
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-
-        .is-invalid {
-            border-color: #dc3545;
-        }
-    </style>
+</div>
 
 @endsection
+
+@push('scripts')
+<style>
+.ci-layout { display: grid; grid-template-columns: 1fr 280px; gap: 16px; align-items: start; }
+.ci-mb { margin-bottom: 12px; }
+.ci-field { margin-bottom: 16px; }
+.ci-label { font-size: 0.75rem; font-weight: 600; color: var(--muted); display: block; margin-bottom: 6px; }
+@media(max-width: 900px) { .ci-layout { grid-template-columns: 1fr; } }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const shareInput   = document.getElementById('share_percentage');
+    const amountInput  = document.getElementById('invested_amount');
+    const summaryBox   = document.getElementById('summaryBox');
+    const warningBox   = document.getElementById('warningBox');
+    const pctError     = document.getElementById('percentageError');
+    const agreeTerms   = document.getElementById('agreeTerms');
+    const submitBtn    = document.getElementById('submitBtn');
+
+    const sharePrice     = {{ $company->share_price }};
+    const availShares    = {{ $company->available_shares }};
+    const userBalance    = {{ $user->wallet_balance }};
+    const totalInvested  = {{ $company->partnerShares->where('status','active')->sum('invested_amount') }};
+
+    function isValid(v) {
+        v = v.toString().replace('%','').trim();
+        const n = parseFloat(v);
+        if (isNaN(n) || n <= 0) return false;
+        if (n >= 0.1 && n < 1) return /^0\.[1-9]$/.test(v);
+        if (n >= 1) {
+            if (Number.isInteger(n)) return true;
+            const p = v.split('.');
+            return p.length === 2 && p[1].length === 1 && /^[1-9]$/.test(p[1]);
+        }
+        return false;
+    }
+
+    function update() {
+        const raw = shareInput.value.replace('%','').trim();
+        pctError.style.display = 'none';
+        shareInput.classList.remove('pf-invalid');
+
+        if (!raw) {
+            summaryBox.style.display = 'none';
+            amountInput.value = '';
+            submitBtn.disabled = true;
+            return;
+        }
+
+        if (!isValid(raw)) {
+            pctError.style.display = 'block';
+            pctError.textContent = 'Invalid format! Use: 0.1, 0.5, 1, 1.5, 2, etc.';
+            shareInput.classList.add('pf-invalid');
+            summaryBox.style.display = 'none';
+            amountInput.value = '';
+            submitBtn.disabled = true;
+            return;
+        }
+
+        const pct    = parseFloat(raw);
+        const amount = pct * sharePrice;
+        const shares = amount / sharePrice;
+        const newTotal  = totalInvested + amount;
+        const ownership = (amount / newTotal) * 100;
+        const balAfter  = userBalance - amount;
+
+        amountInput.value = amount.toFixed(2);
+        summaryBox.style.display = 'block';
+
+        const fmt = (n) => n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        document.getElementById('dispAmount').textContent = '$' + fmt(amount);
+        document.getElementById('dispShares').textContent = fmt(shares);
+        document.getElementById('dispPct').textContent    = fmt(ownership) + '%';
+        document.getElementById('dispBal').textContent    = '$' + fmt(balAfter);
+
+        let warn = '';
+        if (amount > userBalance) {
+            warn = `<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:10px 12px;font-size:0.78rem;color:var(--red);display:flex;gap:6px;"><i class="bi bi-exclamation-triangle-fill"></i> Insufficient balance! You need $${fmt(amount - userBalance)} more.</div>`;
+        } else if (shares > availShares) {
+            warn = `<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:10px 12px;font-size:0.78rem;color:var(--red);display:flex;gap:6px;"><i class="bi bi-exclamation-triangle-fill"></i> Not enough shares available!</div>`;
+        } else {
+            warn = `<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:8px;padding:10px 12px;font-size:0.78rem;color:var(--green);display:flex;gap:6px;"><i class="bi bi-check-circle-fill"></i> Investment amount is valid!</div>`;
+        }
+        warningBox.innerHTML = warn;
+
+        submitBtn.disabled = !(amount > 0 && amount <= userBalance && shares <= availShares && agreeTerms.checked);
+    }
+
+    shareInput.addEventListener('input', update);
+    agreeTerms.addEventListener('change', update);
+
+    document.getElementById('investmentForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const amount  = parseFloat(amountInput.value);
+        const shares  = amount / sharePrice;
+        const raw     = shareInput.value.replace('%','').trim();
+        if (isNaN(amount) || amount <= 0 || !isValid(raw)) {
+            Swal.fire('Error', 'Please enter a valid share percentage.', 'error');
+            return;
+        }
+        const fmt = (n) => n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        const self = this;
+        Swal.fire({
+            title: 'Confirm Investment',
+            html: `<div style="text-align:left;font-size:0.88rem;display:flex;flex-direction:column;gap:6px;">
+                <div>Amount: <strong>$${fmt(amount)}</strong></div>
+                <div>Percentage: <strong>${raw}%</strong></div>
+                <div>Shares: <strong>${fmt(shares)}</strong></div>
+                <div>Balance after: <strong>$${fmt(userBalance - amount)}</strong></div>
+            </div>`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Invest',
+            cancelButtonText: 'Cancel',
+        }).then(r => { if (r.isConfirmed) self.submit(); });
+    });
+});
+</script>
+@endpush

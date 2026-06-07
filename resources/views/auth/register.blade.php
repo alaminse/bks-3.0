@@ -1,117 +1,99 @@
 @extends('auth.auth')
-
-@section('title')
-Register
-@endsection
+@section('title', 'Register')
 
 @section('content')
-<div class="register-container">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-7 col-lg-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>{{ __('Register') }}</h2>
-                    </div>
 
-                    <div class="card-body">
-                        <form method="POST" action="{{ route('register') }}">
-                            @csrf
+{{-- Referral notice --}}
+@if(request()->has('ref') && $referrer)
+<div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:10px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--green);">
+    <i class="bi bi-person-plus-fill"></i>
+    You're being referred by <strong style="color:var(--text);margin-left:4px;">{{ $referrer->name }}</strong>
+</div>
+@endif
 
-                            {{-- Referral Info Display --}}
-                            @if(request()->has('ref') && $referrer)
-                            <div class="alert alert-success mb-4">
-                                <i class="fas fa-user-plus"></i>
-                                You're being referred by: <strong>{{ $referrer->name }}</strong>
-                            </div>
-                            @endif
-                            <div class="mb-4">
-                                <label for="name" class="form-label">{{ __('Name') }}</label>
-                                <input id="name" type="text"
-                                    class="form-control @error('name') is-invalid @enderror"
-                                    name="name"
-                                    value="{{ old('name') }}"
-                                    required
-                                    autocomplete="name"
-                                    autofocus
-                                    placeholder="Enter your name">
+<div class="auth-card">
+    <div class="auth-card-head">
+        <div class="auth-card-title">Create account</div>
+        <div class="auth-card-sub">Join TopTrade and start earning today</div>
+    </div>
+    <div class="auth-card-body">
+        <form method="POST" action="{{ route('register') }}">
+            @csrf
 
-                                @error('name')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
+            @if(request()->has('ref'))
+            <input type="hidden" name="ref" value="{{ request('ref') }}">
+            @endif
 
-                            <div class="mb-4">
-                                <label for="email" class="form-label">{{ __('Email Address') }}</label>
-                                <input id="email" type="email"
-                                    class="form-control @error('email') is-invalid @enderror"
-                                    name="email"
-                                    value="{{ old('email') }}"
-                                    required
-                                    autocomplete="email"
-                                    placeholder="Enter your email">
+            <div class="auth-field">
+                <label class="auth-label" for="name">Full Name</label>
+                <div class="auth-iw">
+                    <i class="bi bi-person auth-ii"></i>
+                    <input id="name" type="text" name="name"
+                        class="auth-input @error('name') is-invalid @enderror"
+                        value="{{ old('name') }}"
+                        placeholder="Your full name"
+                        required autocomplete="name" autofocus>
+                </div>
+                @error('name')
+                <div class="auth-error"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>
+                @enderror
+            </div>
 
-                                @error('email')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
+            <div class="auth-field">
+                <label class="auth-label" for="email">Email Address</label>
+                <div class="auth-iw">
+                    <i class="bi bi-envelope auth-ii"></i>
+                    <input id="email" type="email" name="email"
+                        class="auth-input @error('email') is-invalid @enderror"
+                        value="{{ old('email') }}"
+                        placeholder="you@example.com"
+                        required autocomplete="email">
+                </div>
+                @error('email')
+                <div class="auth-error"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>
+                @enderror
+            </div>
 
-                            <div class="mb-4">
-                                <label for="password" class="form-label">{{ __('Password') }}</label>
-                                <input id="password" type="password"
-                                    class="form-control @error('password') is-invalid @enderror"
-                                    name="password"
-                                    required
-                                    autocomplete="new-password"
-                                    placeholder="Enter your password">
+            <div class="auth-field">
+                <label class="auth-label" for="password">Password</label>
+                <div class="auth-iw">
+                    <i class="bi bi-lock auth-ii"></i>
+                    <input id="password" type="password" name="password"
+                        class="auth-input @error('password') is-invalid @enderror"
+                        placeholder="Min. 8 characters"
+                        required autocomplete="new-password">
+                </div>
+                @error('password')
+                <div class="auth-error"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>
+                @enderror
+            </div>
 
-                                @error('password')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="password-confirm" class="form-label">{{ __('Confirm Password') }}</label>
-                                <input id="password-confirm" type="password"
-                                    class="form-control"
-                                    name="password_confirmation"
-                                    required
-                                    autocomplete="new-password"
-                                    placeholder="Confirm your password">
-                            </div>
-
-                               {{-- Hidden Referral Code --}}
-                                @if(request()->has('ref'))
-                                    <input type="hidden" name="ref" value="{{ request('ref') }}">
-                                @endif
-
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary">
-                                    {{ __('Register') }}
-                                </button>
-
-                                <div class="text-center mt-3">
-                                    <a class="btn-link" href="{{ route('login') }}">
-                                        {{ __('Already have an account? Login') }}
-                                    </a>
-                                </div>
-                                <div class="text-center mt-3">
-                                    <a class="btn-link" href="{{ url('/') }}">
-                                        {{ __('Back to Home') }}
-                                    </a>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
+            <div class="auth-field" style="margin-bottom:20px;">
+                <label class="auth-label" for="password-confirm">Confirm Password</label>
+                <div class="auth-iw">
+                    <i class="bi bi-lock-fill auth-ii"></i>
+                    <input id="password-confirm" type="password" name="password_confirmation"
+                        class="auth-input"
+                        placeholder="Repeat your password"
+                        required autocomplete="new-password">
                 </div>
             </div>
-        </div>
+
+            <button type="submit" class="auth-btn">
+                <i class="bi bi-person-check-fill"></i> Create Account
+            </button>
+
+            <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:16px;">
+                <a href="{{ route('login') }}" class="auth-link">
+                    Already have an account? <span style="color:var(--accent);font-weight:600;">Sign in</span>
+                </a>
+                <a href="{{ url('/') }}" class="auth-link">
+                    <i class="bi bi-arrow-left" style="font-size:0.72rem;"></i> Back to Home
+                </a>
+            </div>
+
+        </form>
     </div>
 </div>
+
 @endsection

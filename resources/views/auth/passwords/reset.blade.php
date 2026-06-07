@@ -1,88 +1,70 @@
 @extends('auth.auth')
-
-@section('title')
-Reset Password
-@endsection
-@section('css')
-    <link rel="stylesheet" href="{{ asset('assets/css/auth.css') }}">
-@endsection
+@section('title', 'Reset Password')
 
 @section('content')
-<div class="register-container">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-7 col-lg-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>{{ __('Reset Password') }}</h2>
-                    </div>
 
-                    <div class="card-body">
-                        <form method="POST" action="{{ route('password.update') }}">
-                            @csrf
+<div class="auth-card">
+    <div class="auth-card-head">
+        <div class="auth-card-title">Reset password</div>
+        <div class="auth-card-sub">Enter your new password below</div>
+    </div>
+    <div class="auth-card-body">
+        <form method="POST" action="{{ route('password.update') }}">
+            @csrf
+            <input type="hidden" name="token" value="{{ $token }}">
 
-                            <input type="hidden" name="token" value="{{ $token }}">
+            <div class="auth-field">
+                <label class="auth-label" for="email">Email Address</label>
+                <div class="auth-iw">
+                    <i class="bi bi-envelope auth-ii"></i>
+                    <input id="email" type="email" name="email"
+                        class="auth-input @error('email') is-invalid @enderror"
+                        value="{{ $email ?? old('email') }}"
+                        placeholder="you@example.com"
+                        required autocomplete="email" autofocus>
+                </div>
+                @error('email')
+                <div class="auth-error"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>
+                @enderror
+            </div>
 
-                            <div class="mb-4">
-                                <label for="email" class="form-label">{{ __('Email Address') }}</label>
-                                <input id="email" type="email"
-                                    class="form-control @error('email') is-invalid @enderror"
-                                    name="email"
-                                    value="{{ $email ?? old('email') }}"
-                                    required
-                                    autocomplete="email"
-                                    autofocus
-                                    placeholder="Enter your email">
+            <div class="auth-field">
+                <label class="auth-label" for="password">New Password</label>
+                <div class="auth-iw">
+                    <i class="bi bi-key auth-ii"></i>
+                    <input id="password" type="password" name="password"
+                        class="auth-input @error('password') is-invalid @enderror"
+                        placeholder="Min. 8 characters"
+                        required autocomplete="new-password">
+                </div>
+                @error('password')
+                <div class="auth-error"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>
+                @enderror
+            </div>
 
-                                @error('email')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="password" class="form-label">{{ __('Password') }}</label>
-                                <input id="password" type="password"
-                                    class="form-control @error('password') is-invalid @enderror"
-                                    name="password"
-                                    required
-                                    autocomplete="new-password"
-                                    placeholder="Enter your new password">
-
-                                @error('password')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="password-confirm" class="form-label">{{ __('Confirm Password') }}</label>
-                                <input id="password-confirm" type="password"
-                                    class="form-control"
-                                    name="password_confirmation"
-                                    required
-                                    autocomplete="new-password"
-                                    placeholder="Confirm your new password">
-                            </div>
-
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary">
-                                    {{ __('Reset Password') }}
-                                </button>
-
-                                <div class="text-center mt-3">
-                                    <a class="btn-link" href="{{ url('/') }}">
-                                        {{ __('Back to Home') }}
-                                    </a>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
+            <div class="auth-field" style="margin-bottom:20px;">
+                <label class="auth-label" for="password-confirm">Confirm New Password</label>
+                <div class="auth-iw">
+                    <i class="bi bi-key-fill auth-ii"></i>
+                    <input id="password-confirm" type="password" name="password_confirmation"
+                        class="auth-input"
+                        placeholder="Repeat your new password"
+                        required autocomplete="new-password">
                 </div>
             </div>
-        </div>
+
+            <button type="submit" class="auth-btn">
+                <i class="bi bi-shield-check-fill"></i> Reset Password
+            </button>
+
+            <div style="display:flex;justify-content:center;margin-top:16px;">
+                <a href="{{ url('/') }}" class="auth-link">
+                    <i class="bi bi-arrow-left" style="font-size:0.72rem;"></i> Back to Home
+                </a>
+            </div>
+
+        </form>
     </div>
 </div>
+
 @endsection

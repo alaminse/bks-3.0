@@ -24,9 +24,6 @@
         <link rel="stylesheet" href="{{ asset('assets/css/style2.css') }}">
     @else
         <link rel="stylesheet" href="{{ asset('assets/css/dashboard.css') }}">
-        @if(request()->routeIs('wallet*') || request()->routeIs('withdraw*'))
-        <link rel="stylesheet" href="{{ asset('assets/css/wallet.css') }}">
-        @endif
     @endif
 
     @yield('css')

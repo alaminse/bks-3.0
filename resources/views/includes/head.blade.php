@@ -14,26 +14,21 @@
 
     {{-- Fonts --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     {{-- Bootstrap + Icons --}}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
-    {{-- Dashboard CSS --}}
-    <link rel="stylesheet" href="{{ asset('assets/css/dashboard.css') }}">
-
-    {{-- Wallet CSS (wallet, deposit, withdraw, transactions pages) --}}
-    @if(request()->routeIs('wallet*') || request()->routeIs('withdraw*'))
-    <link rel="stylesheet" href="{{ asset('assets/css/wallet.css') }}">
-    @endif
-
-    @if (Auth::user()->roles[0]->name == 'user')
+    @if(Auth::check() && Auth::user()->roles[0]->name == 'admin')
+        <link rel="stylesheet" href="{{ asset('assets/css/style2.css') }}">
+    @else
         <link rel="stylesheet" href="{{ asset('assets/css/dashboard.css') }}">
-    @elseif (Auth::user()->roles[0]->name == 'admin')
-        {{-- <link rel="stylesheet" href="{{ asset('assets/css/style2.css') }}"> --}}
+        @if(request()->routeIs('wallet*') || request()->routeIs('withdraw*'))
+        <link rel="stylesheet" href="{{ asset('assets/css/wallet.css') }}">
+        @endif
     @endif
+
     @yield('css')
 </head>
-
 <body>

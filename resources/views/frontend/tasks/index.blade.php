@@ -51,11 +51,11 @@
     </div>
 </div>
 
-{{-- MAIN GRID --}}
-<div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start;">
+{{-- MAIN GRID — use class instead of inline style --}}
+<div class="tk-page-grid">
 
     {{-- TASK LIST --}}
-    <div>
+    <div class="tk-list-col">
         <div class="s-card">
             <div class="s-card-head">
                 <span class="s-card-title">
@@ -74,13 +74,9 @@
             @endphp
 
             <div class="tk-item {{ $isAd ? 'type-ad' : 'type-std' }}" id="task-card-{{ $tid }}-{{ $upid }}">
-
-                {{-- Icon --}}
                 <div class="tk-item-ico {{ $isAd ? 'ad' : 'std' }}">
                     <i class="bi {{ $isAd ? 'bi-megaphone-fill' : 'bi-play-circle-fill' }}"></i>
                 </div>
-
-                {{-- Info --}}
                 <div class="tk-item-info">
                     <div class="tk-item-title">{{ $taskData['task']->title }}</div>
                     <div class="tk-item-tags">
@@ -104,14 +100,11 @@
                         @endif
                     </div>
                 </div>
-
-                {{-- Action --}}
                 <div class="tk-item-action">
                     <div>
                         <div class="tk-reward-num">${{ number_format($taskData['reward'], 2) }}</div>
                         <div class="tk-reward-sub">Per Task</div>
                     </div>
-
                     @if($isAd)
                     <button type="button" class="tk-start-btn ad adsterra-task-btn"
                         data-task-id="{{ $tid }}"
@@ -139,7 +132,6 @@
                         </span>
                     </button>
                     @endif
-
                     <div class="tk-timer" id="timer-box-{{ $tid }}-{{ $upid }}">
                         <div class="tk-timer-bar">
                             <div class="tk-timer-fill" id="progress-{{ $tid }}-{{ $upid }}"></div>
@@ -147,7 +139,6 @@
                         <span class="tk-timer-txt" id="timer-text-{{ $tid }}-{{ $upid }}">Waiting...</span>
                     </div>
                 </div>
-
             </div>
             @empty
             <div class="tk-empty">
@@ -162,12 +153,11 @@
                 </p>
             </div>
             @endforelse
-
-        </div>{{-- /s-card --}}
+        </div>
     </div>
 
     {{-- SIDEBAR --}}
-    <div style="display:flex;flex-direction:column;gap:16px;">
+    <div class="tk-side-col">
 
         {{-- Today Stats --}}
         <div class="s-card">
@@ -216,19 +206,14 @@
             </div>
         </div>
 
-        <a href="{{ route('tasks.history') }}"
-            style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:0.78rem;font-weight:600;text-decoration:none;transition:all 0.2s;"
-            onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
-            onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+        <a href="{{ route('tasks.history') }}" class="cy-hbtn outline" style="width:100%;justify-content:center;">
             <i class="bi bi-clock-history"></i> View Task History
         </a>
 
     </div>
 </div>
 
-{{-- ══ MODALS — outside layout to avoid overflow clip ══ --}}
-
-{{-- AD WAIT MODAL --}}
+{{-- MODALS --}}
 <div class="modal fade" id="adWaitModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -243,20 +228,16 @@
                 </div>
                 <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;margin-bottom:6px;">Ad is open in a new tab</div>
                 <p style="font-size:0.82rem;color:var(--muted);margin-bottom:20px;">Keep the ad tab open. Skip button appears after the timer.</p>
-
                 <div style="background:var(--card2);border-radius:99px;height:6px;overflow:hidden;margin-bottom:14px;">
                     <div id="modal-progress" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:99px;transition:width 0.9s linear;"></div>
                 </div>
                 <div style="font-family:'Syne',sans-serif;font-size:2.5rem;font-weight:800;color:var(--accent);line-height:1;margin-bottom:4px;" id="modal-countdown">--</div>
                 <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:8px;">seconds remaining</div>
                 <div style="font-size:0.75rem;color:var(--muted);margin-bottom:20px;" id="modal-status-text">Waiting for minimum view time...</div>
-
-                <button type="button" id="modal-skip-btn" style="display:none;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border-radius:10px;background:var(--accent);color:#000;border:none;cursor:pointer;font-size:0.88rem;font-weight:700;font-family:'DM Sans',sans-serif;margin-bottom:10px;transition:opacity 0.2s;">
-                    <i class="bi bi-check-circle-fill"></i>
-                    Skip & Claim $<span id="modal-reward-amt">0.00</span>
+                <button type="button" id="modal-skip-btn" style="display:none;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border-radius:10px;background:var(--accent);color:#000;border:none;cursor:pointer;font-size:0.88rem;font-weight:700;font-family:'DM Sans',sans-serif;margin-bottom:10px;">
+                    <i class="bi bi-check-circle-fill"></i> Skip & Claim $<span id="modal-reward-amt">0.00</span>
                 </button>
-                <button type="button" id="modal-cancel-btn" style="background:none;border:none;color:var(--muted);font-size:0.78rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:color 0.2s;"
-                    onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">
+                <button type="button" id="modal-cancel-btn" style="background:none;border:none;color:var(--muted);font-size:0.78rem;cursor:pointer;font-family:'DM Sans',sans-serif;">
                     <i class="bi bi-x-circle"></i> Cancel
                 </button>
             </div>
@@ -264,7 +245,6 @@
     </div>
 </div>
 
-{{-- SUCCESS MODAL --}}
 <div class="modal fade" id="successModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -286,7 +266,22 @@
 
 @push('scripts')
 <style>
-/* Task item styles */
+/* Task page grid */
+.tk-page-grid {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 20px;
+    align-items: start;
+}
+.tk-side-col { display: flex; flex-direction: column; gap: 16px; }
+
+@media (max-width: 991px) {
+    .tk-page-grid { grid-template-columns: 1fr; }
+    .tk-list-col  { order: 0; }
+    .tk-side-col  { order: 1; }
+}
+
+/* Task item */
 .tk-item {
     display: grid;
     grid-template-columns: 48px 1fr auto;
@@ -318,18 +313,18 @@
     font-size: 0.62rem; font-weight: 600; padding: 2px 8px;
     border-radius: 99px; border: 1px solid;
 }
-.tk-tag.pkg    { color: var(--blue);   border-color: rgba(59,130,246,0.25);  background: rgba(59,130,246,0.08);  }
-.tk-tag.ad     { color: var(--accent); border-color: rgba(0,245,212,0.25);   background: rgba(0,245,212,0.06);   }
-.tk-tag.auto   { color: var(--green);  border-color: rgba(34,197,94,0.25);   background: rgba(34,197,94,0.06);   }
-.tk-tag.remain { color: var(--muted);  border-color: var(--border2);          background: rgba(0,0,0,0.2);        }
+.tk-tag.pkg    { color: var(--blue);   border-color: rgba(59,130,246,0.25);  background: rgba(59,130,246,0.08); }
+.tk-tag.ad     { color: var(--accent); border-color: rgba(0,245,212,0.25);   background: rgba(0,245,212,0.06); }
+.tk-tag.auto   { color: var(--green);  border-color: rgba(34,197,94,0.25);   background: rgba(34,197,94,0.06); }
+.tk-tag.remain { color: var(--muted);  border-color: var(--border2);          background: rgba(0,0,0,0.2); }
 .tk-item-desc  { font-size: 0.82rem; color: var(--muted); line-height: 1.6; margin-bottom: 8px; }
 .tk-item-meta  { display: flex; gap: 14px; flex-wrap: wrap; }
 .tk-meta-pill  { display: flex; align-items: center; gap: 4px; font-size: 0.68rem; color: var(--muted); }
 .tk-meta-pill i { color: var(--accent); }
 
 .tk-item-action { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 150px; }
-.tk-reward-num { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--accent); line-height: 1; text-align: right; }
-.tk-reward-sub { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); text-align: right; }
+.tk-reward-num  { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--accent); line-height: 1; text-align: right; }
+.tk-reward-sub  { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); text-align: right; }
 
 .tk-start-btn {
     display: flex; align-items: center; justify-content: center; gap: 7px;
@@ -358,18 +353,32 @@
 .tk-empty-s { font-size: 0.82rem; }
 .tk-empty-s a { color: var(--accent); }
 
-@media(max-width:600px) {
-    .tk-item { grid-template-columns: 44px 1fr; gap: 12px; }
-    .tk-item-action { grid-column: 1/-1; align-items: stretch; flex-direction: row; flex-wrap: wrap; }
-    .tk-reward-num  { font-size: 1.1rem; }
-    .tk-start-btn   { flex: 1; }
+@media (max-width: 600px) {
+    .tk-item {
+        grid-template-columns: 40px 1fr;
+        gap: 10px;
+        padding: 14px;
+    }
+    .tk-item-action {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+    .tk-reward-num { font-size: 1.1rem; }
+    .tk-start-btn  { flex: 1; min-width: 120px; }
+    .tk-timer      { width: 100%; }
+    .tk-item-ico   { width: 36px; height: 36px; font-size: 0.9rem; }
+    .tk-item-title { font-size: 0.82rem; }
+    .tk-item-desc  { font-size: 0.75rem; }
+    .tk-tag        { font-size: 0.58rem; }
+    .tk-meta-pill  { font-size: 0.62rem; }
 }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-
-    // Move modals to body
     ['adWaitModal','successModal'].forEach(id => {
         const el = document.getElementById(id);
         if (el && el.parentElement !== document.body) document.body.appendChild(el);
@@ -380,18 +389,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const skipBtn   = document.getElementById('modal-skip-btn');
     const cancelBtn = document.getElementById('modal-cancel-btn');
 
-    // Skip
     skipBtn.addEventListener('click', function () {
         if (!window.adState.taskId || !window.adState.pkgId) return;
         clearInterval(window.adState.interval);
         skipBtn.disabled = true; skipBtn.style.opacity = '0.5';
-        if (window.adState.tabRef && !window.adState.tabRef.closed) {
-            try { window.adState.tabRef.close(); } catch(e){}
-        }
+        if (window.adState.tabRef && !window.adState.tabRef.closed) { try { window.adState.tabRef.close(); } catch(e){} }
         submitTask(window.adState.taskId, window.adState.pkgId, window.adState.elapsed, window.adState.reward, window.adState.btn, true);
     });
 
-    // Cancel
     cancelBtn.addEventListener('click', function () {
         clearInterval(window.adState.interval);
         const m = bootstrap.Modal.getInstance(document.getElementById('adWaitModal'));
@@ -401,13 +406,10 @@ document.addEventListener('DOMContentLoaded', function () {
             window.adState.btn.querySelector('.tk-btn-main').textContent = 'Watch & Earn';
             window.adState.btn.querySelector('.tk-btn-hint').textContent = 'Opens new tab';
         }
-        if (window.adState.tabRef && !window.adState.tabRef.closed) {
-            try { window.adState.tabRef.close(); } catch(e){}
-        }
+        if (window.adState.tabRef && !window.adState.tabRef.closed) { try { window.adState.tabRef.close(); } catch(e){} }
         window.adState.taskId = null; window.adState.pkgId = null; window.adState.btn = null;
     });
 
-    // Ad task buttons
     document.querySelectorAll('.adsterra-task-btn').forEach(btn => {
         btn.addEventListener('click', function () {
             window.adState.taskId   = this.dataset.taskId;
@@ -416,24 +418,18 @@ document.addEventListener('DOMContentLoaded', function () {
             window.adState.duration = parseInt(this.dataset.skipDelay);
             window.adState.elapsed  = 0;
             window.adState.btn      = this;
-
-            window.adState.tabRef = window.open(this.dataset.adUrl, '_blank');
+            window.adState.tabRef   = window.open(this.dataset.adUrl, '_blank');
             if (!window.adState.tabRef) { alert('Popup blocked! Please allow popups for this site.'); return; }
-
             this.disabled = true;
             this.querySelector('.tk-btn-main').textContent = 'Ad opened...';
             this.querySelector('.tk-btn-hint').textContent = 'Waiting...';
-
             document.getElementById('modal-reward-amt').textContent  = window.adState.reward.toFixed(2);
             document.getElementById('modal-countdown').textContent   = window.adState.duration;
             document.getElementById('modal-progress').style.width    = '0%';
             document.getElementById('modal-status-text').textContent = 'Waiting for minimum view time...';
             skipBtn.style.display = 'none';
-            skipBtn.disabled      = false;
-            skipBtn.style.opacity = '1';
-
+            skipBtn.disabled = false; skipBtn.style.opacity = '1';
             new bootstrap.Modal(document.getElementById('adWaitModal')).show();
-
             clearInterval(window.adState.interval);
             window.adState.interval = setInterval(function () {
                 window.adState.elapsed++;
@@ -451,27 +447,20 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Auto task buttons
     document.querySelectorAll('.auto-task-btn').forEach(btn => {
         btn.addEventListener('click', function () {
-            const taskId   = this.dataset.taskId;
-            const pkgId    = this.dataset.userPackageId;
-            const url      = this.dataset.taskUrl;
-            const reward   = this.dataset.reward;
+            const taskId = this.dataset.taskId, pkgId = this.dataset.userPackageId;
+            const url = this.dataset.taskUrl, reward = this.dataset.reward;
             const duration = parseInt(this.dataset.requiredDuration);
-            const self     = this;
-
-            if (!url) { alert('Task URL missing. Please contact support.'); return; }
+            const self = this;
+            if (!url) { alert('Task URL missing.'); return; }
             const tab = window.open(url, '_blank');
             if (!tab) { alert('Popup blocked! Please allow popups for this site.'); return; }
-
             self.disabled = true;
             self.querySelector('.tk-btn-main').textContent = 'Processing...';
             self.querySelector('.tk-btn-hint').textContent = 'Please wait...';
-
             const timerBox = document.getElementById(`timer-box-${taskId}-${pkgId}`);
             if (timerBox) timerBox.classList.add('on');
-
             let elapsed = 0;
             const iv = setInterval(function () {
                 elapsed++;
@@ -492,51 +481,29 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(r => r.json())
         .then(data => {
-            if (isAd) {
-                const m = bootstrap.Modal.getInstance(document.getElementById('adWaitModal'));
-                if (m) m.hide();
-            }
+            if (isAd) { const m = bootstrap.Modal.getInstance(document.getElementById('adWaitModal')); if (m) m.hide(); }
             if (data.success) {
                 const card = document.getElementById(`task-card-${taskId}-${userPackageId}`);
                 if (card) card.classList.add('task-done');
-
-                // Update sidebar stats
-                const sEarned = document.getElementById('sb-earned');
-                const sDone   = document.getElementById('sb-done');
-                const sRem    = document.getElementById('sb-remaining');
-                const hEarned = document.getElementById('stat-earned');
-                const hDone   = document.getElementById('stat-done');
-                const hRem    = document.getElementById('stat-remaining');
-
-                if (sEarned) { const cur = parseFloat(sEarned.textContent.replace('$','').replace(',',''))||0; sEarned.textContent = '$'+(cur+parseFloat(reward)).toFixed(2); }
-                if (hEarned) { const cur = parseFloat(hEarned.textContent.replace('$','').replace(',',''))||0; hEarned.textContent = '$'+(cur+parseFloat(reward)).toFixed(2); }
-                if (sDone)   { sDone.textContent   = (parseInt(sDone.textContent)||0)+1; }
-                if (hDone)   { hDone.textContent   = (parseInt(hDone.textContent)||0)+1; }
-                if (sRem)    { sRem.textContent    = Math.max((parseInt(sRem.textContent)||0)-1,0); }
-                if (hRem)    { hRem.textContent    = Math.max((parseInt(hRem.textContent)||0)-1,0); }
-
+                const sEarned = document.getElementById('sb-earned'), sDone = document.getElementById('sb-done'), sRem = document.getElementById('sb-remaining');
+                const hEarned = document.getElementById('stat-earned'), hDone = document.getElementById('stat-done'), hRem = document.getElementById('stat-remaining');
+                if (sEarned) { const c = parseFloat(sEarned.textContent.replace('$','').replace(',',''))||0; sEarned.textContent = '$'+(c+parseFloat(reward)).toFixed(2); }
+                if (hEarned) { const c = parseFloat(hEarned.textContent.replace('$','').replace(',',''))||0; hEarned.textContent = '$'+(c+parseFloat(reward)).toFixed(2); }
+                if (sDone) sDone.textContent = (parseInt(sDone.textContent)||0)+1;
+                if (hDone) hDone.textContent = (parseInt(hDone.textContent)||0)+1;
+                if (sRem)  sRem.textContent  = Math.max((parseInt(sRem.textContent)||0)-1,0);
+                if (hRem)  hRem.textContent  = Math.max((parseInt(hRem.textContent)||0)-1,0);
                 document.getElementById('earnedAmount').textContent = data.reward || parseFloat(reward).toFixed(2);
                 new bootstrap.Modal(document.getElementById('successModal')).show();
             } else {
                 alert('Task failed: ' + data.message);
-                if (btn) {
-                    btn.disabled = false;
-                    btn.querySelector('.tk-btn-main').textContent = isAd ? 'Watch & Earn' : 'Start Task';
-                    btn.querySelector('.tk-btn-hint').textContent = isAd ? 'Opens new tab' : 'Try again';
-                }
-                if (!isAd) {
-                    const tb = document.getElementById(`timer-box-${taskId}-${userPackageId}`);
-                    if (tb) tb.classList.remove('on');
-                }
+                if (btn) { btn.disabled = false; btn.querySelector('.tk-btn-main').textContent = isAd ? 'Watch & Earn' : 'Start Task'; btn.querySelector('.tk-btn-hint').textContent = isAd ? 'Opens new tab' : 'Try again'; }
+                if (!isAd) { const tb = document.getElementById(`timer-box-${taskId}-${userPackageId}`); if (tb) tb.classList.remove('on'); }
             }
         })
         .catch(e => {
             alert('Network error: ' + e.message);
-            if (btn) {
-                btn.disabled = false;
-                btn.querySelector('.tk-btn-main').textContent = isAd ? 'Watch & Earn' : 'Start Task';
-                btn.querySelector('.tk-btn-hint').textContent = isAd ? 'Opens new tab' : 'Try again';
-            }
+            if (btn) { btn.disabled = false; btn.querySelector('.tk-btn-main').textContent = isAd ? 'Watch & Earn' : 'Start Task'; btn.querySelector('.tk-btn-hint').textContent = isAd ? 'Opens new tab' : 'Try again'; }
         });
     }
 });

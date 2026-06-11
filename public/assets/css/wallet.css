@@ -1045,3 +1045,16 @@
 
 /* ── PREVENT OVERFLOW ── */
 .dep-grid, .wd-grid, .wlt-grid, .txh-grid { max-width: 100%; }
+
+/* ── DEPOSIT RIGHT ORDER FIX ── */
+/* Right sidebar should come AFTER form on mobile, not before */
+@media (max-width: 768px) {
+    .dep-right { order: 1 !important; }  /* show after left form */
+    .dep-grid > div:first-child { order: 0; } /* form first */
+}
+
+/* Same fix for withdraw — keep form first */
+@media (max-width: 768px) {
+    .wd-right { order: 1 !important; }
+    .wd-grid > div:first-child { order: 0; }
+}

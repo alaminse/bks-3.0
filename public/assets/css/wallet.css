@@ -1103,3 +1103,71 @@
 @media (max-width: 480px) {
     .dep-hide-sm { display: none !important; }
 }
+
+/* ============================================================
+   WALLET / WITHDRAW / TXH — CLASS-BASED GRID FIX
+   ============================================================ */
+
+/* ── WALLET PAGE ── */
+.wlt-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    align-items: start;
+}
+@media (max-width: 991px) {
+    .wlt-grid { grid-template-columns: 1fr; }
+    .wlt-left  { order: 0; }
+    .wlt-right { order: 1; }
+}
+
+/* ── WITHDRAW PAGE ── */
+.wd-page-grid {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 20px;
+    align-items: start;
+    margin-bottom: 24px;
+}
+.wd-left-col  { display: flex; flex-direction: column; }
+.wd-right-col { display: flex; flex-direction: column; gap: 14px; }
+
+@media (max-width: 991px) {
+    .wd-page-grid { grid-template-columns: 1fr; }
+    .wd-left-col  { order: 0; }
+    .wd-right-col { order: 1; }
+}
+
+/* ── TRANSACTION HISTORY ── */
+.txh-page-grid {
+    display: grid;
+    grid-template-columns: 1fr 240px;
+    gap: 20px;
+    align-items: start;
+}
+.txh-left-col  { display: flex; flex-direction: column; gap: 16px; }
+.txh-right-col { display: flex; flex-direction: column; gap: 14px; }
+
+@media (max-width: 991px) {
+    .txh-page-grid { grid-template-columns: 1fr; }
+    .txh-left-col  { order: 0; }
+    .txh-right-col {
+        order: 1;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+}
+@media (max-width: 600px) {
+    .txh-right-col { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+    .txh-right-col { grid-template-columns: 1fr; }
+}
+
+/* Hide helpers */
+@media (max-width: 480px) {
+    .wlt-hide-sm,
+    .wd-hide-sm,
+    .txh-hide-sm { display: none !important; }
+}

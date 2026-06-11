@@ -1523,3 +1523,180 @@ html, body { overflow-x: hidden; max-width: 100vw; }
 /* Close button */
 .swal2-close { color: var(--muted) !important; }
 .swal2-close:hover { color: var(--text) !important; }
+
+/* ============================================================
+   LAYOUT OVERFLOW MASTER FIX
+   ============================================================ */
+
+/* Prevent ALL horizontal overflow */
+html {
+    overflow-x: hidden !important;
+}
+body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+}
+
+/* dash-wrap must not overflow */
+.dash-wrap {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+}
+
+/* dash-main — mobile margin reset */
+@media (max-width: 992px) {
+    .dash-main {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+    }
+}
+
+/* dash-content padding tight on mobile */
+@media (max-width: 576px) {
+    .dash-content {
+        padding: 12px !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+}
+
+/* topbar must not overflow */
+@media (max-width: 576px) {
+    .dash-topbar {
+        padding: 0 12px !important;
+        max-width: 100vw !important;
+        overflow: hidden !important;
+    }
+    .topbar-right {
+        gap: 6px !important;
+    }
+}
+
+/* All wallet page grids — force single col + no overflow */
+@media (max-width: 992px) {
+    .wlt-grid,
+    .dep-page-grid,
+    .dep-grid,
+    .wd-grid,
+    .wd-page-grid,
+    .txh-grid,
+    .txh-page-grid {
+        grid-template-columns: 1fr !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    /* Right cols after left */
+    .wlt-right   { order: 1 !important; }
+    .wlt-left    { order: 0 !important; }
+    .dep-right-col { order: 1 !important; }
+    .dep-left-col  { order: 0 !important; }
+    .txh-right-col { order: 1 !important; }
+    .txh-left-col  { order: 0 !important; }
+
+    /* All children full width */
+    .wlt-right, .wlt-left,
+    .dep-right-col, .dep-left-col,
+    .txh-right-col, .txh-left-col,
+    .wd-right, .wd-left-col, .wd-right-col {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+}
+
+/* Hero inner — force column */
+@media (max-width: 992px) {
+    .wlt-hero-inner {
+        flex-direction: column !important;
+        gap: 14px !important;
+    }
+    .wlt-bal-side,
+    .wlt-mini-stats {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+    .wlt-mini-stats {
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+    }
+    .wlt-mini-item {
+        flex: 1 1 120px !important;
+    }
+}
+
+/* Cards and panels full width */
+@media (max-width: 992px) {
+    .dep-panel,
+    .dep-addr-box,
+    .wlt-hero,
+    .wlt-chart-card,
+    .wlt-card-widget,
+    .cyber-card,
+    .wlt-qa,
+    .wlt-ql,
+    .wlt-txn,
+    .txh-filter,
+    .txh-panel,
+    .wd-panel,
+    .wd-avail-card,
+    .wd-notes {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+}
+
+/* txh right — grid on tablet, stack on phone */
+@media (max-width: 992px) {
+    .txh-right-col,
+    .txh-right {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 10px !important;
+        width: 100% !important;
+    }
+}
+@media (max-width: 480px) {
+    .txh-right-col,
+    .txh-right {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Inputs/selects full width */
+.cy-sel, .cy-inp,
+.dep-input, .dep-select,
+.wd-input {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Page header buttons wrap */
+@media (max-width: 576px) {
+    .page-header-bar {
+        flex-direction: column !important;
+    }
+    .page-header-actions {
+        width: 100% !important;
+    }
+    .page-header-actions .cy-hbtn {
+        flex: 1 !important;
+        justify-content: center !important;
+    }
+}
+
+/* ── SIDEBAR WIDTH VAR OVERRIDE ON MOBILE ── */
+@media (max-width: 992px) {
+    :root {
+        --sidebar-w: 0px !important;
+    }
+    .dash-sidebar {
+        width: 260px !important; /* still 260 when open, but hidden off-screen */
+    }
+}

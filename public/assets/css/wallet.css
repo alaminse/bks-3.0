@@ -864,3 +864,184 @@
     .dep-method-item { padding: 10px 12px; }
     .dep-method-name { font-size: 0.8rem; }
 }
+
+/* ============================================================
+   WALLET MOBILE RESPONSIVE FIX
+   ============================================================ */
+
+/* ── WALLET PAGE ── */
+@media (max-width: 768px) {
+    .wlt-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px;
+    }
+    .wlt-right { order: -1; }
+    .wlt-hero  { padding: 20px; }
+    .wlt-hero-inner { flex-direction: column; gap: 14px; }
+    .wlt-bal-amount { font-size: 2rem; }
+    .wlt-bal-actions { flex-direction: row; flex-wrap: wrap; }
+    .wlt-action-btn { flex: 1; min-width: 100px; justify-content: center; font-size: 0.78rem; padding: 8px 10px; }
+    .wlt-mini-stats { flex-direction: row; flex-wrap: wrap; gap: 8px; }
+    .wlt-mini-item  { flex: 1; min-width: 120px; padding: 10px 12px; }
+    .wlt-mini-value { font-size: 0.9rem; }
+    .wlt-qa-grid { grid-template-columns: repeat(5,1fr); }
+    .wlt-qa-item { padding: 12px 4px; font-size: 0.58rem; }
+    .wlt-qa-icon { font-size: 1.1rem; }
+    .wlt-chart-wrap { height: 150px; }
+    .wlt-chart-stats { grid-template-columns: repeat(3,1fr); }
+    .wcs-item { padding: 10px 12px; }
+    .wlt-ql-grid { grid-template-columns: repeat(2,1fr); }
+    /* Table */
+    .wlt-table th,
+    .wlt-table td { padding: 8px 10px; font-size: 0.78rem; }
+}
+
+@media (max-width: 480px) {
+    .wlt-bal-amount { font-size: 1.7rem; }
+    .wlt-mini-item  { min-width: 100px; }
+    .wlt-mini-label { font-size: 0.58rem; }
+    .wlt-mini-value { font-size: 0.82rem; }
+    /* Hide description col in wallet table */
+    .wlt-table th:nth-child(3),
+    .wlt-table td:nth-child(3) { display: none; }
+    .wlt-chart-stats .wcs-label { font-size: 0.55rem; }
+    .wlt-chart-stats .wcs-val   { font-size: 0.82rem; }
+    /* Cyber card */
+    .cyber-card   { padding: 16px; margin: 10px; }
+    .cc-bal-val   { font-size: 1.3rem; }
+    .cc-avail-val { font-size: 0.78rem; }
+    /* Quick links */
+    .wlt-ql-grid  { grid-template-columns: repeat(2,1fr); }
+    .wlt-ql-item  { padding: 14px 8px; font-size: 0.62rem; }
+    .wlt-ql-icon  { font-size: 1.2rem; }
+}
+
+/* ── DEPOSIT PAGE ── */
+@media (max-width: 768px) {
+    .dep-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px;
+    }
+    .dep-right  { order: -1; }
+    .dep-panel-body { padding: 16px; }
+    .dep-bal-val    { font-size: 1.6rem; }
+    .dep-addr-code  { font-size: 0.8rem; padding: 10px 12px; }
+    .dep-copy-btn   { font-size: 0.78rem; padding: 9px; }
+    .dep-file-area  { padding: 20px 14px; }
+    .dep-file-icon  { font-size: 1.5rem; }
+    .dep-btn        { padding: 12px; font-size: 0.85rem; }
+    /* Deposit history table */
+    .dep-table th,
+    .dep-table td { padding: 8px 10px; font-size: 0.78rem; }
+}
+
+@media (max-width: 480px) {
+    .dep-addr-code { font-size: 0.72rem; }
+    .dep-method-item { padding: 12px; }
+    .dep-ins-text  { font-size: 0.75rem; }
+    .dep-steps li  { font-size: 0.75rem; }
+    /* Hide Txn ID and Proof columns */
+    .dep-table th:nth-child(5),
+    .dep-table td:nth-child(5),
+    .dep-table th:nth-child(7),
+    .dep-table td:nth-child(7) { display: none; }
+    /* Quick amount buttons wrap */
+    .dep-panel-body > div[style*="display:flex;gap:8px"] {
+        gap: 6px;
+    }
+}
+
+/* ── WITHDRAW PAGE ── */
+@media (max-width: 768px) {
+    .wd-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px;
+    }
+    .wd-right   { order: -1; }
+    .wd-panel-body { padding: 16px; }
+    .wd-avail-val  { font-size: 1.6rem; }
+    .wd-stat-row   { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .wd-btn        { padding: 12px; font-size: 0.85rem; }
+    .wd-method-box { flex-wrap: wrap; gap: 8px; }
+    .wd-method-tag { margin-left: 0; }
+    /* Withdraw history table */
+    .wd-table th,
+    .wd-table td { padding: 8px 10px; font-size: 0.78rem; }
+}
+
+@media (max-width: 480px) {
+    .wd-avail-val { font-size: 1.4rem; }
+    /* Hide Account column */
+    .wd-table th:nth-child(4),
+    .wd-table td:nth-child(4) { display: none; }
+    /* Quick amount buttons */
+    .wd-panel-body > div[style*="display:flex;gap:8px"] {
+        gap: 6px;
+    }
+}
+
+/* ── TRANSACTION HISTORY PAGE ── */
+@media (max-width: 1024px) {
+    .txh-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px;
+    }
+    .txh-right {
+        display: grid;
+        grid-template-columns: repeat(3,1fr);
+        gap: 10px;
+    }
+}
+
+@media (max-width: 768px) {
+    .txh-right { grid-template-columns: 1fr 1fr; }
+    .txh-filter-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .txh-stat  { padding: 12px; }
+    .txh-stat-val { font-size: 1.1rem; }
+    .txh-table th,
+    .txh-table td { padding: 8px 10px; font-size: 0.78rem; }
+    /* Hide After Balance col */
+    .txh-table th.col-after,
+    .txh-table td.col-after { display: none; }
+}
+
+@media (max-width: 480px) {
+    .txh-right { grid-template-columns: 1fr; }
+    .txh-filter-grid { grid-template-columns: 1fr; }
+    .txh-filter-body { padding: 12px; }
+    .cy-sel, .cy-inp { padding: 8px 10px; font-size: 0.82rem; }
+    /* Hide ID and Description cols */
+    .txh-table th.col-id,
+    .txh-table td.col-id,
+    .txh-table th:nth-child(4),
+    .txh-table td:nth-child(4) { display: none; }
+    .tc-desc { max-width: 120px; }
+    .txh-stat-val { font-size: 1rem; }
+}
+
+/* ── PAGE HEADER (wallet pages) ── */
+@media (max-width: 480px) {
+    .page-header-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 16px;
+        padding-bottom: 14px;
+    }
+    .page-header-bar h1    { font-size: 1rem; }
+    .page-header-bar p     { font-size: 0.75rem; }
+    .page-header-actions   { width: 100%; display: flex; gap: 6px; }
+    .page-header-actions .cy-hbtn { flex: 1; justify-content: center; font-size: 0.75rem; padding: 8px 10px; }
+}
+
+/* ── GLOBAL TABLE SCROLL ── */
+.dep-history > div,
+.wd-history  > div,
+.wlt-txn     > div,
+.txh-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ── PREVENT OVERFLOW ── */
+.dep-grid, .wd-grid, .wlt-grid, .txh-grid { max-width: 100%; }

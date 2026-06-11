@@ -6,12 +6,12 @@
 @endsection
 
 @section('content')
-    @include('includes.header', ['pageTitle' => 'Deposit Money'])
+@include('includes.header', ['pageTitle' => 'Deposit Money'])
 
-<div class="dep-grid">
+<div class="dep-page-grid">
 
-    {{-- ════ LEFT ════ --}}
-    <div>
+    {{-- ════ LEFT — Form (always first on mobile) ════ --}}
+    <div class="dep-left-col">
 
         {{-- BINANCE ADDRESS --}}
         <div class="dep-panel">
@@ -75,9 +75,7 @@
                     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
                         @foreach([50, 100, 200, 500, 1000] as $amt)
                         <button type="button" onclick="setAmount({{ $amt }})"
-                            style="padding:5px 14px;border-radius:99px;background:var(--card2);border:1px solid var(--border2);color:var(--muted);font-size:0.75rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;"
-                            onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
-                            onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'">
+                            class="dep-quick-btn">
                             ${{ $amt }}
                         </button>
                         @endforeach
@@ -155,8 +153,8 @@
 
     </div>{{-- /left --}}
 
-    {{-- ════ RIGHT ════ --}}
-    <div class="dep-right">
+    {{-- ════ RIGHT — Sidebar (after form on mobile) ════ --}}
+    <div class="dep-right-col">
 
         {{-- Balance --}}
         <div class="dep-bal-card">
@@ -168,7 +166,6 @@
         {{-- Payment Methods Guide --}}
         <div class="dep-method">
             <div class="dep-method-head">Payment Methods</div>
-
             <div class="dep-method-item">
                 <div class="dep-method-badge rec"><i class="bi bi-star-fill"></i> Recommended</div>
                 <div class="dep-method-name">Binance Pay</div>
@@ -184,7 +181,6 @@
                     <li>Paste ID in the form</li>
                 </ol>
             </div>
-
             <div class="dep-method-item">
                 <div class="dep-method-badge p2p"><i class="bi bi-people-fill"></i> P2P</div>
                 <div class="dep-method-name">Binance P2P</div>
@@ -201,7 +197,7 @@
             </div>
         </div>
 
-        {{-- Step by step --}}
+        {{-- Instructions --}}
         <div class="dep-instructions">
             <div class="dep-ins-head">How to Deposit</div>
             <div class="dep-ins-body">
@@ -227,7 +223,7 @@
 </div>
 
 {{-- DEPOSIT HISTORY --}}
-<div class="dep-history">
+<div class="dep-history" style="margin-top:24px;">
     <div class="dep-history-head">
         <h2 class="dep-history-title">
             <span class="pulse"></span> Recent Deposits
@@ -242,9 +238,9 @@
                     <th>Reference</th>
                     <th>Amount</th>
                     <th>Method</th>
-                    <th>Txn ID</th>
+                    <th class="dep-hide-sm">Txn ID</th>
                     <th>Status</th>
-                    <th>Proof</th>
+                    <th class="dep-hide-sm">Proof</th>
                 </tr>
             </thead>
             <tbody>
@@ -265,7 +261,7 @@
                             <span class="dt-method oth">{{ strtoupper($deposit->payment_method) }}</span>
                         @endif
                     </td>
-                    <td><span class="dt-txid">{{ Str::limit($deposit->transaction_id, 14) }}</span></td>
+                    <td class="dep-hide-sm"><span class="dt-txid">{{ Str::limit($deposit->transaction_id, 14) }}</span></td>
                     <td>
                         @php $sc = strtolower($deposit->status); @endphp
                         <span class="dt-status {{ $sc }}">
@@ -273,7 +269,7 @@
                             {{ ucfirst($sc) }}
                         </span>
                     </td>
-                    <td>
+                    <td class="dep-hide-sm">
                         @if($deposit->payment_proof)
                             <a href="{{ asset('storage/'.$deposit->payment_proof) }}" target="_blank" class="dt-view">
                                 <i class="bi bi-image"></i> View

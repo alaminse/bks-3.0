@@ -1058,3 +1058,48 @@
     .wd-right { order: 1 !important; }
     .wd-grid > div:first-child { order: 0; }
 }
+
+/* ============================================================
+   DEPOSIT PAGE — CLASS-BASED GRID FIX
+   ============================================================ */
+.dep-page-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    align-items: start;
+}
+.dep-left-col  { display: flex; flex-direction: column; gap: 0; }
+.dep-right-col { display: flex; flex-direction: column; gap: 16px; }
+
+/* Mobile — single column, form first, sidebar after */
+@media (max-width: 768px) {
+    .dep-page-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px;
+    }
+    .dep-left-col  { order: 0; } /* form first */
+    .dep-right-col { order: 1; } /* sidebar after */
+}
+
+/* Quick amount buttons */
+.dep-quick-btn {
+    padding: 5px 14px;
+    border-radius: 99px;
+    background: var(--card2);
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+}
+.dep-quick-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Hide columns on mobile */
+@media (max-width: 480px) {
+    .dep-hide-sm { display: none !important; }
+}

@@ -81,7 +81,7 @@
                 $hasSmartlink = !empty($adUrls);
             @endphp
 
-            <div class="tk-item {{ $isAd ? 'type-ad' : 'type-std' }}" id="task-card-{{ $tid }}-{{ $upid }}">
+            <div class="tk-item {{ $isAd ? 'type-ad' : 'type-std' }}" id="task-card-{{ $tid }}-{{ $upid }}" data-duration="{{ $duration }}">
 
                 {{-- Icon --}}
                 <div class="tk-item-ico {{ $isAd ? 'ad' : 'std' }}">
@@ -128,71 +128,73 @@
                     @endif
                 </div>
 
-                {{-- Action (right side) --}}
-                <div class="tk-item-action">
-
-                    @if($isAd)
-                    {{-- ── AD ZONE — shown directly in place of button ── --}}
-                    <div class="tk-ad-zone"
-                         id="ad-zone-{{ $tid }}-{{ $upid }}"
-                         data-task-id="{{ $tid }}"
-                         data-pkg-id="{{ $upid }}"
-                         data-duration="{{ $duration }}"
-                         data-reward="{{ $reward }}">
-
-                        {{-- State 1: Click to start (default) --}}
-                        <div class="tk-ad-idle" id="ad-idle-{{ $tid }}-{{ $upid }}">
-                            @if($hasSmartlink)
-                            <a href="{{ $adUrls[0] }}" target="_blank"
-                               class="tk-ad-btn"
-                               onclick="startAdTimer('{{ $tid }}','{{ $upid }}',{{ $duration }},{{ $reward }})">
-                                <i class="bi bi-megaphone-fill"></i>
-                                <span class="tk-ad-btn-main">Watch & Earn</span>
-                                <span class="tk-ad-btn-sub">click · {{ $duration }}s</span>
-                            </a>
-                            @elseif($hasDiv)
-                            <div class="tk-ad-banner-zone"
-                                 onclick="startAdTimer('{{ $tid }}','{{ $upid }}',{{ $duration }},{{ $reward }})">
-                                @foreach($adDivs as $div) {!! $div !!} @endforeach
-                                <div class="tk-ad-banner-overlay">Click to start</div>
+                {{-- AD SLOT — middle column (only for ad tasks) --}}
+                @if($isAd)
+                <div class="tk-ad-mid" id="ad-mid-{{ $tid }}-{{ $upid }}">
+                    @if($hasDiv)
+                        {{-- Banner ad --}}
+                        <div class="tk-ad-mid-banner"
+                             onclick="startAdTimer('{{ $tid }}','{{ $upid }}',{{ $duration }},{{ $reward }})"
+                             id="ad-banner-click-{{ $tid }}-{{ $upid }}">
+                            @foreach($adDivs as $div){!! $div !!}@endforeach
+                            <div class="tk-ad-mid-overlay" id="ad-overlay-{{ $tid }}-{{ $upid }}">
+                                <i class="bi bi-cursor-fill"></i> Click to start
                             </div>
-                            @else
-                            <button type="button" class="tk-ad-btn"
-                                onclick="startAdTimer('{{ $tid }}','{{ $upid }}',{{ $duration }},{{ $reward }})">
-                                <i class="bi bi-megaphone-fill"></i>
-                                <span class="tk-ad-btn-main">Watch & Earn</span>
-                                <span class="tk-ad-btn-sub">click · {{ $duration }}s</span>
-                            </button>
-                            @endif
-
-                            <div class="tk-reward-num" style="margin-top:6px;">${{ number_format($reward, 2) }}</div>
-                            <div class="tk-reward-sub">Per Task</div>
                         </div>
-
-                        {{-- State 2: Timer running --}}
-                        <div class="tk-ad-counting" id="ad-counting-{{ $tid }}-{{ $upid }}" style="display:none;">
-                            <div class="tk-ad-countdown" id="ad-cd-{{ $tid }}-{{ $upid }}">{{ $duration }}</div>
-                            <div class="tk-ad-cd-label">seconds left</div>
+                    @elseif($hasSmartlink)
+                        {{-- Smartlink --}}
+                        <a href="{{ $adUrls[0] }}" target="_blank"
+                           class="tk-ad-mid-link"
+                           onclick="startAdTimer('{{ $tid }}','{{ $upid }}',{{ $duration }},{{ $reward }})">
+                            <i class="bi bi-megaphone-fill"></i>
+                            <span>Click Ad</span>
+                        </a>
+                    @else
+                        {{-- Script-only placeholder --}}
+                        <div class="tk-ad-mid-placeholder"
+                             onclick="startAdTimer('{{ $tid }}','{{ $upid }}',{{ $duration }},{{ $reward }})">
+                            <i class="bi bi-megaphone-fill"></i>
+                            <span>Click to Activate</span>
                         </div>
+                    @endif
 
-                        {{-- State 3: Claim --}}
-                        <div class="tk-ad-done" id="ad-done-{{ $tid }}-{{ $upid }}" style="display:none;">
-                            <button type="button" class="tk-claim-btn"
-                                onclick="claimTask('{{ $tid }}','{{ $upid }}',{{ $reward }})">
-                                <i class="bi bi-check-circle-fill"></i>
-                                Claim ${{ number_format($reward, 2) }}
-                            </button>
-                        </div>
-
+                    {{-- Progress bar inside mid slot --}}
+                    <div class="tk-ad-mid-prog-wrap" id="prog-wrap-{{ $tid }}-{{ $upid }}" style="display:none;">
+                        <div class="tk-ad-mid-prog-bar" id="prog-bar-{{ $tid }}-{{ $upid }}"></div>
                     </div>
 
-                    {{-- Inject ad scripts --}}
+                    {{-- Inject scripts --}}
                     @foreach($adInlines as $inline)
                         @if(trim($inline))<script>{{ $inline }}</script>@endif
                     @endforeach
                     @foreach($adSrcs as $src)
                         <script src="{{ $src }}"></script>
                     @endforeach
+                </div>
+                @endif
+
+                {{-- Action (right side) --}}
+                <div class="tk-item-action">
+                    @if($isAd)
+                    {{-- State 1: idle --}}
+                    <div id="ad-idle-{{ $tid }}-{{ $upid }}">
+                        <div class="tk-reward-num">${{ number_format($reward, 2) }}</div>
+                        <div class="tk-reward-sub">Per Task</div>
+                        <div style="font-size:0.65rem;color:var(--muted);margin-top:4px;">← click ad</div>
+                    </div>
+                    {{-- State 2: counting --}}
+                    <div id="ad-counting-{{ $tid }}-{{ $upid }}" style="display:none;text-align:center;">
+                        <div class="tk-ad-countdown" id="ad-cd-{{ $tid }}-{{ $upid }}">{{ $duration }}</div>
+                        <div class="tk-ad-cd-label">sec left</div>
+                    </div>
+                    {{-- State 3: claim --}}
+                    <div id="ad-done-{{ $tid }}-{{ $upid }}" style="display:none;">
+                        <button type="button" class="tk-claim-btn"
+                            onclick="claimTask('{{ $tid }}','{{ $upid }}',{{ $reward }})">
+                            <i class="bi bi-check-circle-fill"></i>
+                            Claim ${{ number_format($reward, 2) }}
+                        </button>
+                    </div>
 
                     @else
                     {{-- Non-ad task --}}
@@ -213,7 +215,6 @@
                         </span>
                     </button>
                     @endif
-
                 </div>
             </div>
 
@@ -310,7 +311,8 @@
 .tk-side-col  { display:flex; flex-direction:column; gap:16px; }
 @media(max-width:991px) { .tk-page-grid{grid-template-columns:1fr;} .tk-list-col{order:0;} .tk-side-col{order:1;} }
 
-.tk-item { display:grid; grid-template-columns:48px 1fr auto; gap:16px; align-items:start; padding:18px 20px; border-bottom:1px solid var(--border); transition:background 0.2s; border-left:3px solid transparent; }
+.tk-item { display:grid; grid-template-columns:48px 1fr auto; gap:16px; align-items:center; padding:18px 20px; border-bottom:1px solid var(--border); transition:background 0.2s; border-left:3px solid transparent; }
+.tk-item.type-ad { grid-template-columns: 48px 1fr 200px auto; }
 .tk-item:last-child { border-bottom:none; }
 .tk-item:hover { background:rgba(255,255,255,0.02); }
 .tk-item.type-ad  { border-left-color:var(--blue); }
@@ -348,9 +350,70 @@
 .tk-timer-fill { height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:99px; }
 .tk-timer-txt { font-size:0.65rem;color:var(--muted);text-align:center;display:block; }
 
-/* ── AD ZONE (right side, replaces button) ── */
-.tk-ad-zone { width: 100%; display:flex; flex-direction:column; align-items:stretch; gap:6px; }
-.tk-ad-idle  { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+/* ── AD MID COLUMN ── */
+.tk-ad-mid {
+    display: flex; flex-direction: column; gap: 6px;
+    min-width: 0; width: 100%;
+}
+.tk-ad-mid-banner {
+    position: relative; border-radius: 8px; overflow: hidden;
+    cursor: pointer; border: 1px solid var(--border);
+    background: var(--card2); min-height: 60px;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s;
+}
+.tk-ad-mid-banner:hover { border-color: var(--accent); }
+.tk-ad-mid-banner iframe { max-width: 100% !important; pointer-events: none; }
+.tk-ad-mid-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; color: var(--accent); font-size: 0.75rem; font-weight: 600;
+    border-radius: 8px; transition: opacity 0.3s;
+}
+.tk-ad-mid-overlay.hidden { opacity: 0; pointer-events: none; }
+
+.tk-ad-mid-link, .tk-ad-mid-placeholder {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 14px 12px; border-radius: 8px;
+    border: 2px dashed rgba(59,130,246,0.5);
+    background: rgba(59,130,246,0.06);
+    color: var(--blue); font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; text-decoration: none;
+    transition: all 0.2s; width: 100%; min-height: 60px;
+}
+.tk-ad-mid-link:hover, .tk-ad-mid-placeholder:hover {
+    border-color: var(--accent); background: rgba(0,245,212,0.06);
+    color: var(--accent); transform: none;
+}
+.tk-ad-mid-link i, .tk-ad-mid-placeholder i { font-size: 1.2rem; }
+
+.tk-ad-mid-prog-wrap {
+    height: 3px; background: rgba(0,0,0,0.3);
+    border-radius: 99px; overflow: hidden;
+}
+.tk-ad-mid-prog-bar {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 99px; transition: width 1s linear;
+}
+
+/* Countdown on right side */
+.tk-ad-countdown {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.8rem; font-weight: 800;
+    color: var(--accent); line-height: 1;
+    text-align: center;
+    animation: countPulse 1s infinite;
+}
+@keyframes countPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.tk-ad-cd-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); text-align: center; }
+
+/* Mobile — hide mid col, show inline */
+@media(max-width:768px) {
+    .tk-item.type-ad { grid-template-columns: 40px 1fr auto; }
+    .tk-ad-mid { display: none; }
+}
 
 /* The clickable ad button */
 .tk-ad-btn {
@@ -457,14 +520,17 @@ const adTimers = {};
 
 function startAdTimer(taskId, pkgId, duration, reward) {
     const key = `${taskId}-${pkgId}`;
-    if (adTimers[key]) return; // already running
+    if (adTimers[key]) return;
 
     const idle     = document.getElementById(`ad-idle-${key}`);
     const counting = document.getElementById(`ad-counting-${key}`);
     const cdEl     = document.getElementById(`ad-cd-${key}`);
     const progWrap = document.getElementById(`prog-wrap-${key}`);
     const progBar  = document.getElementById(`prog-bar-${key}`);
-    const progTxt  = document.getElementById(`prog-txt-${key}`);
+    const overlay  = document.getElementById(`ad-overlay-${key}`);
+
+    // Hide overlay on banner
+    if (overlay) overlay.classList.add('hidden');
 
     // Show counting state
     if (idle)     idle.style.display     = 'none';
@@ -476,20 +542,16 @@ function startAdTimer(taskId, pkgId, duration, reward) {
         elapsed++;
         const rem = Math.max(duration - elapsed, 0);
         const pct = Math.min((elapsed / duration) * 100, 100);
-        if (cdEl)    cdEl.textContent      = rem;
-        if (progBar) progBar.style.width   = pct + '%';
-        if (progTxt) progTxt.textContent   = elapsed + 's / ' + duration + 's';
+        if (cdEl)    cdEl.textContent    = rem;
+        if (progBar) progBar.style.width = pct + '%';
 
         if (elapsed >= duration) {
             clearInterval(adTimers[key]);
             delete adTimers[key];
-
-            // Show claim
             if (counting) counting.style.display = 'none';
             const done = document.getElementById(`ad-done-${key}`);
             if (done) done.style.display = 'flex';
             if (cdEl) cdEl.textContent = '✓';
-            if (progTxt) progTxt.textContent = 'Done!';
         }
     }, 1000);
 }
@@ -499,13 +561,8 @@ function claimTask(taskId, pkgId, reward) {
     const claimBtn= document.querySelector(`#ad-done-${key} .tk-claim-btn`);
     if (claimBtn) { claimBtn.disabled = true; claimBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...'; }
 
-    // Get elapsed from progress text
-    const progTxt = document.getElementById(`prog-txt-${key}`);
-    let elapsed = 0;
-    if (progTxt) {
-        const match = progTxt.textContent.match(/^(\d+)/);
-        if (match) elapsed = parseInt(match[1]);
-    }
+    const taskCard = document.getElementById(`task-card-${key}`);
+    const duration = taskCard ? parseInt(taskCard.dataset.duration || 30) : 30;
 
     fetch('/tasks/auto-verify', {
         method: 'POST',
@@ -516,7 +573,7 @@ function claimTask(taskId, pkgId, reward) {
         body: JSON.stringify({
             user_package_id: parseInt(pkgId),
             task_id: parseInt(taskId),
-            duration: elapsed
+            duration: duration
         })
     })
     .then(r => r.json())

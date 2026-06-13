@@ -171,8 +171,14 @@
                         @endif
 
                         {{-- Ad scripts injected here --}}
-                        @foreach($adInlines as $il)@if(trim($il))<script>{{ $il }}</script>@endif@endforeach
-                        @foreach($adSrcs as $src)<script src="{{ $src }}"></script>@endforeach
+                        @foreach($adInlines as $il)
+                            @if(trim($il))
+                            <script>{{ $il }}</script>
+                            @endif
+                        @endforeach
+                        @foreach($adSrcs as $src)
+                            <script src="{{ $src }}"></script>
+                        @endforeach
                     </div>
 
                     {{-- ── State: COUNTING ── --}}

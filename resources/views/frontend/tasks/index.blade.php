@@ -140,30 +140,27 @@
                             @foreach($adDivs as $div){!! $div !!}@endforeach
                             <div class="tk-ad-overlay" id="ad-overlay-{{ $tid }}-{{ $upid }}">
                                 <i class="bi bi-hand-index-fill"></i>
-                                <span>Click to start timer</span>
                             </div>
                         </div>
 
                         @elseif($hasLink)
-                        {{-- Smartlink —  open link + start timer --}}
                         <a href="{{ $adUrls[0] }}" target="_blank"
                            class="tk-ad-smartlink"
                            onclick="adClicked('{{ $tid }}','{{ $upid }}',{{ $duration }},{{ $reward }})">
                             <i class="bi bi-megaphone-fill"></i>
                             <div>
-                                <div class="tk-ad-smartlink-title">View Advertisement</div>
+                                <div class="tk-ad-smartlink-title">Watch & Earn</div>
                                 <div class="tk-ad-smartlink-sub">{{ $duration }}s · ${{ number_format($reward, 2) }}</div>
                             </div>
                             <i class="bi bi-arrow-right-circle-fill" style="margin-left:auto;font-size:1.1rem;"></i>
                         </a>
 
                         @else
-                        {{-- Script-only — clickable placeholder --}}
                         <button class="tk-ad-smartlink"
                                 onclick="adClicked('{{ $tid }}','{{ $upid }}',{{ $duration }},{{ $reward }})">
                             <i class="bi bi-megaphone-fill"></i>
                             <div>
-                                <div class="tk-ad-smartlink-title">Activate Ad</div>
+                                <div class="tk-ad-smartlink-title">Watch & Earn</div>
                                 <div class="tk-ad-smartlink-sub">{{ $duration }}s · ${{ number_format($reward, 2) }}</div>
                             </div>
                             <i class="bi bi-play-fill" style="margin-left:auto;font-size:1.1rem;"></i>
@@ -173,7 +170,7 @@
                         {{-- Ad scripts injected here --}}
                         @foreach($adInlines as $il)
                             @if(trim($il))
-                            <script>{{ $il }}</script>
+                            <script>{!! $il !!}</script>
                             @endif
                         @endforeach
                         @foreach($adSrcs as $src)

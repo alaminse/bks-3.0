@@ -4,7 +4,6 @@
 
 @section('content')
 
-{{-- PAGE HEADER --}}
 <div class="page-header-bar">
     <div>
         <h1><i class="bi bi-lightning-charge-fill" style="color:var(--accent);font-size:1.2rem;"></i> Available Tasks</h1>
@@ -17,7 +16,6 @@
     </div>
 </div>
 
-{{-- STATS ROW --}}
 <div class="stats-row" style="margin-bottom:20px;">
     <div class="stat-card">
         <div class="stat-card-icon" style="color:var(--accent);"><i class="bi bi-cash-coin"></i></div>
@@ -51,16 +49,13 @@
     </div>
 </div>
 
-{{-- MAIN GRID — use class instead of inline style --}}
 <div class="tk-page-grid">
 
     {{-- TASK LIST --}}
     <div class="tk-list-col">
         <div class="s-card">
             <div class="s-card-head">
-                <span class="s-card-title">
-                    <span class="pulse"></span> Task Queue
-                </span>
+                <span class="s-card-title"><span class="pulse"></span> Task Queue</span>
                 <span style="font-size:0.72rem;color:var(--muted);background:var(--card2);border:1px solid var(--border);padding:3px 10px;border-radius:99px;">
                     {{ count($tasks) }} tasks
                 </span>
@@ -71,8 +66,20 @@
                 $isAd  = $taskData['task']->task_type === 'adsterra';
                 $tid   = $taskData['task']->id;
                 $upid  = $taskData['user_package_id'];
+
+                // Parse ad code for inline injection
+                $adCode = $taskData['task']->adsterra_ad_code ?? '';
+                preg_match_all('/src=["\']([^"\']+)["\']/', $adCode, $srcM);
+                $adSrcs = $srcM[1] ?? [];
+                preg_match_all('/<script(?![^>]*src)[^>]*>(.*?)<\/script>/s', $adCode, $inlM);
+                $adInlines = array_filter($inlM[1] ?? [], fn($s) => trim($s));
+                preg_match_all('/<div[^>]*>.*?<\/div>/s', $adCode, $divM);
+                $adDivs = $divM[0] ?? [];
+                preg_match_all('/https?:\/\/[^\s<>"\']+/', strip_tags($adCode), $urlM);
+                $adUrls = array_filter($urlM[0] ?? [], fn($u) => !str_contains($u, '.js'));
             @endphp
 
+            {{-- TASK ROW --}}
             <div class="tk-item {{ $isAd ? 'type-ad' : 'type-std' }}" id="task-card-{{ $tid }}-{{ $upid }}">
                 <div class="tk-item-ico {{ $isAd ? 'ad' : 'std' }}">
                     <i class="bi {{ $isAd ? 'bi-megaphone-fill' : 'bi-play-circle-fill' }}"></i>
@@ -110,8 +117,7 @@
                         data-task-id="{{ $tid }}"
                         data-user-package-id="{{ $upid }}"
                         data-reward="{{ $taskData['reward'] }}"
-                        data-skip-delay="{{ $taskData['task']->effective_skip_delay }}"
-                        data-ad-url="{{ $taskData['task']->task_url ?? route('tasks.ad.view', $taskData['task']->slug) }}">
+                        data-skip-delay="{{ $taskData['task']->effective_skip_delay }}">
                         <i class="bi bi-megaphone-fill"></i>
                         <span class="tk-btn-label">
                             <span class="tk-btn-main">Watch & Earn</span>
@@ -140,6 +146,64 @@
                     </div>
                 </div>
             </div>
+
+            {{-- INLINE AD PANEL (hidden until Watch & Earn clicked) --}}
+            @if($isAd)
+            <div class="tk-ad-panel" id="ad-panel-{{ $tid }}-{{ $upid }}">
+                <div class="tk-ad-panel-inner">
+                    <div class="tk-ad-label">
+                        <span class="pulse"></span> Advertisement — Watch for
+                        <strong id="ad-countdown-{{ $tid }}-{{ $upid }}">{{ $taskData['task']->effective_skip_delay }}</strong>s
+                    </div>
+
+                    {{-- Ad content --}}
+                    <div class="tk-ad-slot" id="ad-slot-{{ $tid }}-{{ $upid }}">
+                        @if(!empty($adUrls))
+                            {{-- Smartlink --}}
+                            <a href="{{ reset($adUrls) }}" target="_blank" class="tk-ad-smartlink" id="smartlink-{{ $tid }}-{{ $upid }}">
+                                🔗 Open Advertisement
+                            </a>
+                        @elseif(!empty($adDivs))
+                            {{-- Banner with div --}}
+                            @foreach($adDivs as $div)
+                                {!! $div !!}
+                            @endforeach
+                        @else
+                            {{-- Script-only (popunder/social bar) — show placeholder --}}
+                            <div class="tk-ad-placeholder">
+                                <i class="bi bi-megaphone-fill"></i>
+                                <span>Ad is running in background</span>
+                            </div>
+                        @endif
+                    </div>
+
+                    {{-- Timer bar --}}
+                    <div class="tk-ad-progress-wrap">
+                        <div class="tk-ad-progress-bar" id="ad-progress-{{ $tid }}-{{ $upid }}"></div>
+                    </div>
+
+                    {{-- Claim button (hidden until timer done) --}}
+                    <button type="button" class="tk-ad-claim-btn" id="claim-btn-{{ $tid }}-{{ $upid }}" style="display:none;">
+                        <i class="bi bi-check-circle-fill"></i>
+                        Claim ${{ number_format($taskData['reward'], 2) }}
+                    </button>
+
+                    {{-- Cancel --}}
+                    <button type="button" class="tk-ad-cancel-btn" id="cancel-btn-{{ $tid }}-{{ $upid }}">
+                        <i class="bi bi-x"></i> Cancel
+                    </button>
+                </div>
+
+                {{-- Inject ad scripts when panel opens --}}
+                @foreach($adInlines as $inline)
+                <script id="ad-inline-{{ $tid }}-{{ $upid }}-{{ $loop->index }}">{{ $inline }}</script>
+                @endforeach
+                @foreach($adSrcs as $src)
+                <script src="{{ $src }}" data-ad-task="{{ $tid }}"></script>
+                @endforeach
+            </div>
+            @endif
+
             @empty
             <div class="tk-empty">
                 <i class="bi bi-inbox"></i>
@@ -153,13 +217,12 @@
                 </p>
             </div>
             @endforelse
+
         </div>
     </div>
 
     {{-- SIDEBAR --}}
     <div class="tk-side-col">
-
-        {{-- Today Stats --}}
         <div class="s-card">
             <div class="s-card-head">
                 <span class="s-card-title"><i class="bi bi-bar-chart-fill"></i> Today's Stats</span>
@@ -184,16 +247,15 @@
             </div>
         </div>
 
-        {{-- How It Works --}}
         <div class="s-card">
             <div class="s-card-head">
                 <span class="s-card-title"><i class="bi bi-info-circle-fill"></i> How It Works</span>
             </div>
             <div style="padding:14px 20px;display:flex;flex-direction:column;gap:10px;">
                 @foreach([
-                    ['icon'=>'bi-cursor-fill','text'=>'Click Start Task — a new tab opens'],
-                    ['icon'=>'bi-hourglass-split','text'=>'Stay on the page for the required time'],
-                    ['icon'=>'bi-megaphone-fill','text'=>'Ad tasks: watch the ad then click Skip & Claim'],
+                    ['icon'=>'bi-cursor-fill','text'=>'Click Watch & Earn — ad appears below'],
+                    ['icon'=>'bi-hourglass-split','text'=>'Wait for the timer to complete'],
+                    ['icon'=>'bi-check-circle-fill','text'=>'Click Claim to get your reward'],
                     ['icon'=>'bi-wallet2','text'=>'Rewards instantly added to your wallet'],
                 ] as $tip)
                 <div style="display:flex;align-items:flex-start;gap:10px;">
@@ -209,42 +271,10 @@
         <a href="{{ route('tasks.history') }}" class="cy-hbtn outline" style="width:100%;justify-content:center;">
             <i class="bi bi-clock-history"></i> View Task History
         </a>
-
     </div>
 </div>
 
-{{-- MODALS --}}
-<div class="modal fade" id="adWaitModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span style="font-size:0.82rem;font-weight:700;display:flex;align-items:center;gap:6px;">
-                    <i class="bi bi-megaphone-fill" style="color:var(--accent);"></i> Ad Viewing In Progress
-                </span>
-            </div>
-            <div class="modal-body" style="text-align:center;padding:32px 24px;">
-                <div style="width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.8rem;color:var(--blue);">
-                    <i class="bi bi-eye-fill"></i>
-                </div>
-                <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;margin-bottom:6px;">Ad is open in a new tab</div>
-                <p style="font-size:0.82rem;color:var(--muted);margin-bottom:20px;">Keep the ad tab open. Skip button appears after the timer.</p>
-                <div style="background:var(--card2);border-radius:99px;height:6px;overflow:hidden;margin-bottom:14px;">
-                    <div id="modal-progress" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:99px;transition:width 0.9s linear;"></div>
-                </div>
-                <div style="font-family:'Syne',sans-serif;font-size:2.5rem;font-weight:800;color:var(--accent);line-height:1;margin-bottom:4px;" id="modal-countdown">--</div>
-                <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:8px;">seconds remaining</div>
-                <div style="font-size:0.75rem;color:var(--muted);margin-bottom:20px;" id="modal-status-text">Waiting for minimum view time...</div>
-                <button type="button" id="modal-skip-btn" style="display:none;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border-radius:10px;background:var(--accent);color:#000;border:none;cursor:pointer;font-size:0.88rem;font-weight:700;font-family:'DM Sans',sans-serif;margin-bottom:10px;">
-                    <i class="bi bi-check-circle-fill"></i> Skip & Claim $<span id="modal-reward-amt">0.00</span>
-                </button>
-                <button type="button" id="modal-cancel-btn" style="background:none;border:none;color:var(--muted);font-size:0.78rem;cursor:pointer;font-family:'DM Sans',sans-serif;">
-                    <i class="bi bi-x-circle"></i> Cancel
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
+{{-- Success Modal --}}
 <div class="modal fade" id="successModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -266,193 +296,180 @@
 
 @push('scripts')
 <style>
-/* Task page grid */
-.tk-page-grid {
-    display: grid;
-    grid-template-columns: 1fr 280px;
-    gap: 20px;
-    align-items: start;
-}
-.tk-side-col { display: flex; flex-direction: column; gap: 16px; }
-
-@media (max-width: 991px) {
-    .tk-page-grid { grid-template-columns: 1fr; }
-    .tk-list-col  { order: 0; }
-    .tk-side-col  { order: 1; }
+/* ── TASK PAGE GRID ── */
+.tk-page-grid { display:grid; grid-template-columns:1fr 280px; gap:20px; align-items:start; }
+.tk-side-col  { display:flex; flex-direction:column; gap:16px; }
+@media(max-width:991px) {
+    .tk-page-grid { grid-template-columns:1fr; }
+    .tk-list-col  { order:0; }
+    .tk-side-col  { order:1; }
 }
 
-/* Task item */
+/* ── TASK ITEM ── */
 .tk-item {
-    display: grid;
-    grid-template-columns: 48px 1fr auto;
-    gap: 16px;
-    align-items: start;
-    padding: 18px 20px;
+    display:grid; grid-template-columns:48px 1fr auto;
+    gap:16px; align-items:start;
+    padding:18px 20px; border-bottom:1px solid var(--border);
+    transition:background 0.2s; border-left:3px solid transparent;
+}
+.tk-item:last-child { border-bottom:none; }
+.tk-item:hover { background:rgba(255,255,255,0.02); }
+.tk-item.type-ad  { border-left-color:var(--blue); }
+.tk-item.type-std { border-left-color:rgba(0,245,212,0.3); }
+.tk-item.task-done { opacity:0.3; pointer-events:none; }
+.tk-item-ico { width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;border:1px solid; }
+.tk-item-ico.ad  { background:rgba(59,130,246,0.1);color:var(--blue);border-color:rgba(59,130,246,0.2); }
+.tk-item-ico.std { background:rgba(0,0,0,0.2);color:var(--accent);border-color:rgba(255,255,255,0.1); }
+.tk-item-title { font-family:'Syne',sans-serif;font-size:0.88rem;font-weight:700;margin-bottom:8px; }
+.tk-item-tags  { display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px; }
+.tk-tag { display:inline-flex;align-items:center;gap:4px;font-size:0.62rem;font-weight:600;padding:2px 8px;border-radius:99px;border:1px solid; }
+.tk-tag.pkg    { color:var(--blue);  border-color:rgba(59,130,246,0.25); background:rgba(59,130,246,0.08); }
+.tk-tag.ad     { color:var(--accent);border-color:rgba(0,245,212,0.25);  background:rgba(0,245,212,0.06); }
+.tk-tag.auto   { color:var(--green); border-color:rgba(34,197,94,0.25);  background:rgba(34,197,94,0.06); }
+.tk-tag.remain { color:var(--muted); border-color:var(--border2);         background:rgba(0,0,0,0.2); }
+.tk-item-desc  { font-size:0.82rem;color:var(--muted);line-height:1.6;margin-bottom:8px; }
+.tk-item-meta  { display:flex;gap:14px;flex-wrap:wrap; }
+.tk-meta-pill  { display:flex;align-items:center;gap:4px;font-size:0.68rem;color:var(--muted); }
+.tk-meta-pill i { color:var(--accent); }
+.tk-item-action { display:flex;flex-direction:column;align-items:flex-end;gap:8px;min-width:150px; }
+.tk-reward-num  { font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:var(--accent);line-height:1;text-align:right; }
+.tk-reward-sub  { font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);text-align:right; }
+.tk-start-btn { display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 16px;border:none;cursor:pointer;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:700;width:100%;transition:all 0.25s; }
+.tk-start-btn:hover { transform:translateY(-2px); }
+.tk-start-btn:disabled { opacity:0.4;cursor:not-allowed;transform:none; }
+.tk-start-btn.std { background:var(--accent);color:#000; }
+.tk-start-btn.ad  { background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff; }
+.tk-btn-label { display:flex;flex-direction:column;align-items:center;gap:2px; }
+.tk-btn-main  { font-size:0.78rem;font-weight:700; }
+.tk-btn-hint  { font-size:0.65rem;opacity:0.75;font-weight:400; }
+.tk-timer { background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;display:none;width:100%; }
+.tk-timer.on { display:block; }
+.tk-timer-bar { background:rgba(0,0,0,0.3);border-radius:99px;height:3px;margin-bottom:5px;overflow:hidden; }
+.tk-timer-fill { height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:99px; }
+.tk-timer-txt { font-size:0.65rem;color:var(--muted);text-align:center;display:block; }
+.tk-empty { text-align:center;padding:48px 20px;color:var(--muted); }
+.tk-empty i { font-size:2.5rem;display:block;margin-bottom:12px;opacity:0.2; }
+.tk-empty-t { font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:700;margin-bottom:6px;color:var(--text); }
+.tk-empty-s { font-size:0.82rem; }
+.tk-empty-s a { color:var(--accent); }
+
+/* ── INLINE AD PANEL ── */
+.tk-ad-panel {
+    display: none;
+    border-left: 3px solid var(--blue);
     border-bottom: 1px solid var(--border);
-    transition: background 0.2s;
-    border-left: 3px solid transparent;
+    background: rgba(59,130,246,0.04);
+    animation: slideDown 0.3s ease;
 }
-.tk-item:last-child { border-bottom: none; }
-.tk-item:hover { background: rgba(255,255,255,0.02); }
-.tk-item.type-ad  { border-left-color: var(--blue); }
-.tk-item.type-std { border-left-color: rgba(0,245,212,0.3); }
-.tk-item.task-done { opacity: 0.3; pointer-events: none; }
+.tk-ad-panel.open { display: block; }
+@keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
 
-.tk-item-ico {
-    width: 44px; height: 44px; border-radius: 50%;
+.tk-ad-panel-inner { padding: 16px 20px; }
+
+.tk-ad-label {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.72rem; color: var(--muted);
+    margin-bottom: 14px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+}
+.tk-ad-label strong { color: var(--accent); }
+
+/* Ad slot */
+.tk-ad-slot {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    min-height: 80px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem; flex-shrink: 0; border: 1px solid;
+    margin-bottom: 14px;
+    overflow: hidden;
+    text-align: center;
 }
-.tk-item-ico.ad  { background: rgba(59,130,246,0.1); color: var(--blue); border-color: rgba(59,130,246,0.2); }
-.tk-item-ico.std { background: rgba(0,0,0,0.2); color: var(--accent); border-color: rgba(255,255,255,0.1); }
+.tk-ad-slot iframe { max-width: 100% !important; }
+.tk-ad-slot > * { max-width: 100%; }
 
-.tk-item-title { font-family: 'Syne', sans-serif; font-size: 0.88rem; font-weight: 700; margin-bottom: 8px; }
-.tk-item-tags  { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
-.tk-tag {
-    display: inline-flex; align-items: center; gap: 4px;
-    font-size: 0.62rem; font-weight: 600; padding: 2px 8px;
-    border-radius: 99px; border: 1px solid;
+.tk-ad-placeholder {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--muted); font-size: 0.82rem;
 }
-.tk-tag.pkg    { color: var(--blue);   border-color: rgba(59,130,246,0.25);  background: rgba(59,130,246,0.08); }
-.tk-tag.ad     { color: var(--accent); border-color: rgba(0,245,212,0.25);   background: rgba(0,245,212,0.06); }
-.tk-tag.auto   { color: var(--green);  border-color: rgba(34,197,94,0.25);   background: rgba(34,197,94,0.06); }
-.tk-tag.remain { color: var(--muted);  border-color: var(--border2);          background: rgba(0,0,0,0.2); }
-.tk-item-desc  { font-size: 0.82rem; color: var(--muted); line-height: 1.6; margin-bottom: 8px; }
-.tk-item-meta  { display: flex; gap: 14px; flex-wrap: wrap; }
-.tk-meta-pill  { display: flex; align-items: center; gap: 4px; font-size: 0.68rem; color: var(--muted); }
-.tk-meta-pill i { color: var(--accent); }
+.tk-ad-placeholder i { color: var(--blue); font-size: 1.2rem; }
 
-.tk-item-action { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 150px; }
-.tk-reward-num  { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--accent); line-height: 1; text-align: right; }
-.tk-reward-sub  { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); text-align: right; }
-
-.tk-start-btn {
-    display: flex; align-items: center; justify-content: center; gap: 7px;
-    padding: 10px 16px; border: none; cursor: pointer;
-    border-radius: 9px; font-family: 'DM Sans', sans-serif;
-    font-size: 0.82rem; font-weight: 700; width: 100%;
-    transition: all 0.25s;
+.tk-ad-smartlink {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 24px; border-radius: 9px;
+    background: var(--accent); color: #000;
+    font-weight: 700; font-size: 0.85rem;
+    text-decoration: none; transition: opacity 0.2s;
 }
-.tk-start-btn:hover { transform: translateY(-2px); }
-.tk-start-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-.tk-start-btn.std { background: var(--accent); color: #000; }
-.tk-start-btn.ad  { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff; }
-.tk-btn-label { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.tk-btn-main  { font-size: 0.78rem; font-weight: 700; }
-.tk-btn-hint  { font-size: 0.65rem; opacity: 0.75; font-weight: 400; }
+.tk-ad-smartlink:hover { opacity: 0.88; color: #000; }
 
-.tk-timer { background: var(--card2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; display: none; width: 100%; }
-.tk-timer.on { display: block; }
-.tk-timer-bar { background: rgba(0,0,0,0.3); border-radius: 99px; height: 3px; margin-bottom: 5px; overflow: hidden; }
-.tk-timer-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); border-radius: 99px; }
-.tk-timer-txt { font-size: 0.65rem; color: var(--muted); text-align: center; display: block; }
+/* Progress bar */
+.tk-ad-progress-wrap {
+    background: rgba(0,0,0,0.3);
+    border-radius: 99px; height: 4px;
+    overflow: hidden; margin-bottom: 12px;
+}
+.tk-ad-progress-bar {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 99px;
+    transition: width 1s linear;
+}
 
-.tk-empty { text-align: center; padding: 48px 20px; color: var(--muted); }
-.tk-empty i { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: 0.2; }
-.tk-empty-t { font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; color: var(--text); }
-.tk-empty-s { font-size: 0.82rem; }
-.tk-empty-s a { color: var(--accent); }
+/* Claim button */
+.tk-ad-claim-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 12px; border-radius: 9px;
+    background: var(--accent); color: #000;
+    border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 700;
+    margin-bottom: 8px; transition: opacity 0.2s;
+}
+.tk-ad-claim-btn:hover { opacity: 0.9; }
 
-@media (max-width: 600px) {
-    .tk-item {
-        grid-template-columns: 40px 1fr;
-        gap: 10px;
-        padding: 14px;
-    }
-    .tk-item-action {
-        grid-column: 1 / -1;
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px;
-    }
-    .tk-reward-num { font-size: 1.1rem; }
-    .tk-start-btn  { flex: 1; min-width: 120px; }
-    .tk-timer      { width: 100%; }
-    .tk-item-ico   { width: 36px; height: 36px; font-size: 0.9rem; }
-    .tk-item-title { font-size: 0.82rem; }
-    .tk-item-desc  { font-size: 0.75rem; }
-    .tk-tag        { font-size: 0.58rem; }
-    .tk-meta-pill  { font-size: 0.62rem; }
+.tk-ad-cancel-btn {
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    width: 100%; padding: 7px; border-radius: 9px;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); font-size: 0.78rem; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+}
+.tk-ad-cancel-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* Mobile */
+@media(max-width:600px) {
+    .tk-item { grid-template-columns:40px 1fr; gap:10px; padding:14px; }
+    .tk-item-action { grid-column:1/-1; flex-direction:row; flex-wrap:wrap; align-items:center; gap:8px; }
+    .tk-reward-num { font-size:1.1rem; }
+    .tk-start-btn  { flex:1; min-width:120px; }
+    .tk-timer      { width:100%; }
+    .tk-item-ico   { width:36px; height:36px; font-size:0.9rem; }
+    .tk-item-title { font-size:0.82rem; }
+    .tk-item-desc  { font-size:0.75rem; }
+    .tk-tag        { font-size:0.58rem; }
+    .tk-meta-pill  { font-size:0.62rem; }
 }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    ['adWaitModal','successModal'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el && el.parentElement !== document.body) document.body.appendChild(el);
-    });
 
-    window.adState = { taskId:null, pkgId:null, reward:0, duration:0, elapsed:0, interval:null, tabRef:null, btn:null };
+    // Move success modal to body
+    const successModal = document.getElementById('successModal');
+    if (successModal && successModal.parentElement !== document.body) {
+        document.body.appendChild(successModal);
+    }
 
-    const skipBtn   = document.getElementById('modal-skip-btn');
-    const cancelBtn = document.getElementById('modal-cancel-btn');
-
-    skipBtn.addEventListener('click', function () {
-        if (!window.adState.taskId || !window.adState.pkgId) return;
-        clearInterval(window.adState.interval);
-        skipBtn.disabled = true; skipBtn.style.opacity = '0.5';
-        if (window.adState.tabRef && !window.adState.tabRef.closed) { try { window.adState.tabRef.close(); } catch(e){} }
-        submitTask(window.adState.taskId, window.adState.pkgId, window.adState.elapsed, window.adState.reward, window.adState.btn, true);
-    });
-
-    cancelBtn.addEventListener('click', function () {
-        clearInterval(window.adState.interval);
-        const m = bootstrap.Modal.getInstance(document.getElementById('adWaitModal'));
-        if (m) m.hide();
-        if (window.adState.btn) {
-            window.adState.btn.disabled = false;
-            window.adState.btn.querySelector('.tk-btn-main').textContent = 'Watch & Earn';
-            window.adState.btn.querySelector('.tk-btn-hint').textContent = 'Opens new tab';
-        }
-        if (window.adState.tabRef && !window.adState.tabRef.closed) { try { window.adState.tabRef.close(); } catch(e){} }
-        window.adState.taskId = null; window.adState.pkgId = null; window.adState.btn = null;
-    });
-
-    document.querySelectorAll('.adsterra-task-btn').forEach(btn => {
-        btn.addEventListener('click', function () {
-            window.adState.taskId   = this.dataset.taskId;
-            window.adState.pkgId    = this.dataset.userPackageId;
-            window.adState.reward   = parseFloat(this.dataset.reward);
-            window.adState.duration = parseInt(this.dataset.skipDelay);
-            window.adState.elapsed  = 0;
-            window.adState.btn      = this;
-            window.adState.tabRef   = window.open(this.dataset.adUrl, '_blank');
-            if (!window.adState.tabRef) { alert('Popup blocked! Please allow popups for this site.'); return; }
-            this.disabled = true;
-            this.querySelector('.tk-btn-main').textContent = 'Ad opened...';
-            this.querySelector('.tk-btn-hint').textContent = 'Waiting...';
-            document.getElementById('modal-reward-amt').textContent  = window.adState.reward.toFixed(2);
-            document.getElementById('modal-countdown').textContent   = window.adState.duration;
-            document.getElementById('modal-progress').style.width    = '0%';
-            document.getElementById('modal-status-text').textContent = 'Waiting for minimum view time...';
-            skipBtn.style.display = 'none';
-            skipBtn.disabled = false; skipBtn.style.opacity = '1';
-            new bootstrap.Modal(document.getElementById('adWaitModal')).show();
-            clearInterval(window.adState.interval);
-            window.adState.interval = setInterval(function () {
-                window.adState.elapsed++;
-                const rem = Math.max(window.adState.duration - window.adState.elapsed, 0);
-                const pct = Math.min((window.adState.elapsed / window.adState.duration) * 100, 100);
-                document.getElementById('modal-countdown').textContent = rem;
-                document.getElementById('modal-progress').style.width  = pct + '%';
-                if (window.adState.elapsed >= window.adState.duration) {
-                    clearInterval(window.adState.interval);
-                    skipBtn.style.display = 'flex';
-                    document.getElementById('modal-countdown').textContent   = '✓';
-                    document.getElementById('modal-status-text').textContent = 'Time complete — click Skip & Claim!';
-                }
-            }, 1000);
-        });
-    });
-
+    // ── AUTO TASK BUTTONS ──
     document.querySelectorAll('.auto-task-btn').forEach(btn => {
         btn.addEventListener('click', function () {
-            const taskId = this.dataset.taskId, pkgId = this.dataset.userPackageId;
-            const url = this.dataset.taskUrl, reward = this.dataset.reward;
+            const taskId   = this.dataset.taskId;
+            const pkgId    = this.dataset.userPackageId;
+            const url      = this.dataset.taskUrl;
+            const reward   = this.dataset.reward;
             const duration = parseInt(this.dataset.requiredDuration);
-            const self = this;
+            const self     = this;
             if (!url) { alert('Task URL missing.'); return; }
             const tab = window.open(url, '_blank');
             if (!tab) { alert('Popup blocked! Please allow popups for this site.'); return; }
@@ -462,7 +479,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const timerBox = document.getElementById(`timer-box-${taskId}-${pkgId}`);
             if (timerBox) timerBox.classList.add('on');
             let elapsed = 0;
-            const iv = setInterval(function () {
+            const iv = setInterval(() => {
                 elapsed++;
                 const bar = document.getElementById(`progress-${taskId}-${pkgId}`);
                 const txt = document.getElementById(`timer-text-${taskId}-${pkgId}`);
@@ -473,37 +490,123 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    function submitTask(taskId, userPackageId, duration, reward, btn, isAd) {
+    // ── ADSTERRA INLINE TASK BUTTONS ──
+    document.querySelectorAll('.adsterra-task-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const taskId   = this.dataset.taskId;
+            const pkgId    = this.dataset.userPackageId;
+            const reward   = parseFloat(this.dataset.reward);
+            const duration = parseInt(this.dataset.skipDelay);
+            const panel    = document.getElementById(`ad-panel-${taskId}-${pkgId}`);
+            const claimBtn = document.getElementById(`claim-btn-${taskId}-${pkgId}`);
+            const cancelBtn= document.getElementById(`cancel-btn-${taskId}-${pkgId}`);
+            const progBar  = document.getElementById(`ad-progress-${taskId}-${pkgId}`);
+            const countdown= document.getElementById(`ad-countdown-${taskId}-${pkgId}`);
+
+            if (!panel) return;
+
+            // Show panel
+            panel.classList.add('open');
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            // Disable button
+            this.disabled = true;
+            this.querySelector('.tk-btn-main').textContent = 'Watching...';
+            this.querySelector('.tk-btn-hint').textContent = 'Ad is showing';
+
+            // Timer
+            let elapsed = 0;
+            const iv = setInterval(() => {
+                elapsed++;
+                const pct = Math.min((elapsed / duration) * 100, 100);
+                if (progBar)  progBar.style.width = pct + '%';
+                if (countdown) countdown.textContent = Math.max(duration - elapsed, 0);
+                if (elapsed >= duration) {
+                    clearInterval(iv);
+                    if (countdown) countdown.textContent = '✓';
+                    if (claimBtn) claimBtn.style.display = 'flex';
+                }
+            }, 1000);
+
+            // Claim
+            if (claimBtn) {
+                claimBtn.onclick = () => {
+                    claimBtn.disabled = true;
+                    claimBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
+                    submitTask(taskId, pkgId, elapsed, reward, btn, true, panel);
+                };
+            }
+
+            // Cancel
+            if (cancelBtn) {
+                cancelBtn.onclick = () => {
+                    clearInterval(iv);
+                    panel.classList.remove('open');
+                    btn.disabled = false;
+                    btn.querySelector('.tk-btn-main').textContent = 'Watch & Earn';
+                    btn.querySelector('.tk-btn-hint').textContent = `skip after ${duration}s`;
+                    if (progBar)  progBar.style.width = '0%';
+                    if (countdown) countdown.textContent = duration;
+                    if (claimBtn) claimBtn.style.display = 'none';
+                };
+            }
+        });
+    });
+
+    // ── SUBMIT TASK ──
+    function submitTask(taskId, userPackageId, duration, reward, btn, isAd, panel) {
         fetch('/tasks/auto-verify', {
             method: 'POST',
-            headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
-            body: JSON.stringify({ user_package_id:parseInt(userPackageId), task_id:parseInt(taskId), duration:parseInt(duration) })
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                user_package_id: parseInt(userPackageId),
+                task_id: parseInt(taskId),
+                duration: parseInt(duration)
+            })
         })
         .then(r => r.json())
         .then(data => {
-            if (isAd) { const m = bootstrap.Modal.getInstance(document.getElementById('adWaitModal')); if (m) m.hide(); }
             if (data.success) {
+                // Mark done
                 const card = document.getElementById(`task-card-${taskId}-${userPackageId}`);
-                if (card) card.classList.add('task-done');
-                const sEarned = document.getElementById('sb-earned'), sDone = document.getElementById('sb-done'), sRem = document.getElementById('sb-remaining');
-                const hEarned = document.getElementById('stat-earned'), hDone = document.getElementById('stat-done'), hRem = document.getElementById('stat-remaining');
+                if (card)  card.classList.add('task-done');
+                if (panel) panel.classList.remove('open');
+
+                // Update stats
+                const sEarned = document.getElementById('sb-earned');
+                const sDone   = document.getElementById('sb-done');
+                const sRem    = document.getElementById('sb-remaining');
+                const hEarned = document.getElementById('stat-earned');
+                const hDone   = document.getElementById('stat-done');
+                const hRem    = document.getElementById('stat-remaining');
                 if (sEarned) { const c = parseFloat(sEarned.textContent.replace('$','').replace(',',''))||0; sEarned.textContent = '$'+(c+parseFloat(reward)).toFixed(2); }
                 if (hEarned) { const c = parseFloat(hEarned.textContent.replace('$','').replace(',',''))||0; hEarned.textContent = '$'+(c+parseFloat(reward)).toFixed(2); }
                 if (sDone) sDone.textContent = (parseInt(sDone.textContent)||0)+1;
                 if (hDone) hDone.textContent = (parseInt(hDone.textContent)||0)+1;
                 if (sRem)  sRem.textContent  = Math.max((parseInt(sRem.textContent)||0)-1,0);
                 if (hRem)  hRem.textContent  = Math.max((parseInt(hRem.textContent)||0)-1,0);
+
+                // Show success modal
                 document.getElementById('earnedAmount').textContent = data.reward || parseFloat(reward).toFixed(2);
                 new bootstrap.Modal(document.getElementById('successModal')).show();
             } else {
-                alert('Task failed: ' + data.message);
-                if (btn) { btn.disabled = false; btn.querySelector('.tk-btn-main').textContent = isAd ? 'Watch & Earn' : 'Start Task'; btn.querySelector('.tk-btn-hint').textContent = isAd ? 'Opens new tab' : 'Try again'; }
-                if (!isAd) { const tb = document.getElementById(`timer-box-${taskId}-${userPackageId}`); if (tb) tb.classList.remove('on'); }
+                alert('Task failed: ' + (data.message || 'Unknown error'));
+                if (btn) {
+                    btn.disabled = false;
+                    btn.querySelector('.tk-btn-main').textContent = isAd ? 'Watch & Earn' : 'Start Task';
+                    btn.querySelector('.tk-btn-hint').textContent = isAd ? 'Try again' : 'Try again';
+                }
             }
         })
         .catch(e => {
             alert('Network error: ' + e.message);
-            if (btn) { btn.disabled = false; btn.querySelector('.tk-btn-main').textContent = isAd ? 'Watch & Earn' : 'Start Task'; btn.querySelector('.tk-btn-hint').textContent = isAd ? 'Opens new tab' : 'Try again'; }
+            if (btn) {
+                btn.disabled = false;
+                btn.querySelector('.tk-btn-main').textContent = isAd ? 'Watch & Earn' : 'Start Task';
+            }
         });
     }
 });

@@ -1,4 +1,4 @@
-<header class="cy-header">
+<header class="header">
     <div class="container-fluid">
         <div class="cy-header-inner">
 

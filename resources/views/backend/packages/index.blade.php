@@ -7,7 +7,10 @@
     'pageTitle' => 'Packages',
     'createRoute' => route('backend.packages.create'),
     'createText' => 'Create Package',
-    'createPermission' => 'package-create'
+    'createPermission' => 'package-create',
+    'backRoute' => route('backend.packages.index'),
+    'backText' => 'Back to Package',
+    'backPermission' => 'package-list'
 ])
 
 <div class="card">

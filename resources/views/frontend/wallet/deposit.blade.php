@@ -89,10 +89,10 @@
                                 class="dep-select @error('payment_method') is-invalid @enderror" required>
                                 <option value="">Select payment method</option>
                                 <option value="binance_pay" {{ old('payment_method')=='binance_pay'?'selected':'' }}>
-                                    ⚡ Binance Pay — Recommended (FREE, Instant)
+                                    BNB Smart Chain (BEP20)
                                 </option>
                                 <option value="binance_p2p" {{ old('payment_method')=='binance_p2p'?'selected':'' }}>
-                                    👥 Binance P2P
+                                    Tron (TRC20)
                                 </option>
                             </select>
                         </div>

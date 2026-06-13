@@ -64,33 +64,31 @@
                 $isAd     = $taskData['task']->task_type === 'adsterra';
                 $tid      = $taskData['task']->id;
                 $upid     = $taskData['user_package_id'];
-                $adCode   = $taskData['task']->adsterra_ad_code ?? '';
                 $duration = $taskData['task']->effective_skip_delay ?? 30;
+                $reward   = $taskData['reward'];
 
                 // Parse ad code
+                $adCode = $taskData['task']->adsterra_ad_code ?? '';
                 preg_match_all('/src=["\']([^"\']+)["\']/', $adCode, $srcM);
                 $adSrcs = $srcM[1] ?? [];
-
                 preg_match_all('/<script(?![^>]*src)[^>]*>(.*?)<\/script>/s', $adCode, $inlM);
                 $adInlines = array_filter($inlM[1] ?? [], fn($s) => trim($s));
-
-                preg_match_all('/<div[^>]*id=[^>]*>.*?<\/div>/s', $adCode, $divM);
+                preg_match_all('/<div[^>]*>.*?<\/div>/s', $adCode, $divM);
                 $adDivs = $divM[0] ?? [];
-
-                // Plain URLs (smartlinks)
                 preg_match_all('/https?:\/\/[^\s<>"\']+/', strip_tags($adCode), $urlM);
                 $adUrls = array_values(array_filter($urlM[0] ?? [], fn($u) => !str_ends_with($u, '.js') && !str_contains($u, 'googleapis')));
-
-                $hasDiv      = !empty($adDivs);
-                $hasSmartlink= !empty($adUrls);
-                $hasScript   = !empty($adSrcs);
+                $hasDiv       = !empty($adDivs);
+                $hasSmartlink = !empty($adUrls);
             @endphp
 
-            {{-- Task row --}}
             <div class="tk-item {{ $isAd ? 'type-ad' : 'type-std' }}" id="task-card-{{ $tid }}-{{ $upid }}">
+
+                {{-- Icon --}}
                 <div class="tk-item-ico {{ $isAd ? 'ad' : 'std' }}">
                     <i class="bi {{ $isAd ? 'bi-megaphone-fill' : 'bi-play-circle-fill' }}"></i>
                 </div>
+
+                {{-- Info --}}
                 <div class="tk-item-info">
                     <div class="tk-item-title">{{ $taskData['task']->title }}</div>
                     <div class="tk-item-tags">
@@ -113,30 +111,100 @@
                         <span class="tk-meta-pill"><i class="bi bi-hourglass-split"></i> Stay {{ $taskData['task']->required_duration ?? 30 }}s</span>
                         @endif
                     </div>
+
+                    {{-- Progress bar (under info, full width) --}}
+                    @if($isAd)
+                    <div class="tk-ad-progress-wrap" id="prog-wrap-{{ $tid }}-{{ $upid }}" style="display:none;margin-top:10px;">
+                        <div class="tk-ad-progress-bar" id="prog-bar-{{ $tid }}-{{ $upid }}"></div>
+                        <span class="tk-ad-prog-txt" id="prog-txt-{{ $tid }}-{{ $upid }}">0s</span>
+                    </div>
+                    @else
+                    <div class="tk-timer" id="timer-box-{{ $tid }}-{{ $upid }}" style="margin-top:10px;">
+                        <div class="tk-timer-bar">
+                            <div class="tk-timer-fill" id="progress-{{ $tid }}-{{ $upid }}"></div>
+                        </div>
+                        <span class="tk-timer-txt" id="timer-text-{{ $tid }}-{{ $upid }}">Waiting...</span>
+                    </div>
+                    @endif
                 </div>
+
+                {{-- Action (right side) --}}
                 <div class="tk-item-action">
+
+                    @if($isAd)
+                    {{-- ── AD ZONE — shown directly in place of button ── --}}
+                    <div class="tk-ad-zone"
+                         id="ad-zone-{{ $tid }}-{{ $upid }}"
+                         data-task-id="{{ $tid }}"
+                         data-pkg-id="{{ $upid }}"
+                         data-duration="{{ $duration }}"
+                         data-reward="{{ $reward }}">
+
+                        {{-- State 1: Click to start (default) --}}
+                        <div class="tk-ad-idle" id="ad-idle-{{ $tid }}-{{ $upid }}">
+                            @if($hasSmartlink)
+                            <a href="{{ $adUrls[0] }}" target="_blank"
+                               class="tk-ad-btn"
+                               onclick="startAdTimer('{{ $tid }}','{{ $upid }}',{{ $duration }},{{ $reward }})">
+                                <i class="bi bi-megaphone-fill"></i>
+                                <span class="tk-ad-btn-main">Watch & Earn</span>
+                                <span class="tk-ad-btn-sub">click · {{ $duration }}s</span>
+                            </a>
+                            @elseif($hasDiv)
+                            <div class="tk-ad-banner-zone"
+                                 onclick="startAdTimer('{{ $tid }}','{{ $upid }}',{{ $duration }},{{ $reward }})">
+                                @foreach($adDivs as $div) {!! $div !!} @endforeach
+                                <div class="tk-ad-banner-overlay">Click to start</div>
+                            </div>
+                            @else
+                            <button type="button" class="tk-ad-btn"
+                                onclick="startAdTimer('{{ $tid }}','{{ $upid }}',{{ $duration }},{{ $reward }})">
+                                <i class="bi bi-megaphone-fill"></i>
+                                <span class="tk-ad-btn-main">Watch & Earn</span>
+                                <span class="tk-ad-btn-sub">click · {{ $duration }}s</span>
+                            </button>
+                            @endif
+
+                            <div class="tk-reward-num" style="margin-top:6px;">${{ number_format($reward, 2) }}</div>
+                            <div class="tk-reward-sub">Per Task</div>
+                        </div>
+
+                        {{-- State 2: Timer running --}}
+                        <div class="tk-ad-counting" id="ad-counting-{{ $tid }}-{{ $upid }}" style="display:none;">
+                            <div class="tk-ad-countdown" id="ad-cd-{{ $tid }}-{{ $upid }}">{{ $duration }}</div>
+                            <div class="tk-ad-cd-label">seconds left</div>
+                        </div>
+
+                        {{-- State 3: Claim --}}
+                        <div class="tk-ad-done" id="ad-done-{{ $tid }}-{{ $upid }}" style="display:none;">
+                            <button type="button" class="tk-claim-btn"
+                                onclick="claimTask('{{ $tid }}','{{ $upid }}',{{ $reward }})">
+                                <i class="bi bi-check-circle-fill"></i>
+                                Claim ${{ number_format($reward, 2) }}
+                            </button>
+                        </div>
+
+                    </div>
+
+                    {{-- Inject ad scripts --}}
+                    @foreach($adInlines as $inline)
+                        @if(trim($inline))<script>{{ $inline }}</script>@endif
+                    @endforeach
+                    @foreach($adSrcs as $src)
+                        <script src="{{ $src }}"></script>
+                    @endforeach
+
+                    @else
+                    {{-- Non-ad task --}}
                     <div>
-                        <div class="tk-reward-num">${{ number_format($taskData['reward'], 2) }}</div>
+                        <div class="tk-reward-num">${{ number_format($reward, 2) }}</div>
                         <div class="tk-reward-sub">Per Task</div>
                     </div>
-                    @if($isAd)
-                    <button type="button" class="tk-start-btn ad adsterra-task-btn"
-                        data-task-id="{{ $tid }}"
-                        data-user-package-id="{{ $upid }}"
-                        data-reward="{{ $taskData['reward'] }}"
-                        data-skip-delay="{{ $duration }}">
-                        <i class="bi bi-megaphone-fill"></i>
-                        <span class="tk-btn-label">
-                            <span class="tk-btn-main">Watch & Earn</span>
-                            <span class="tk-btn-hint">click ad for {{ $duration }}s</span>
-                        </span>
-                    </button>
-                    @else
                     <button type="button" class="tk-start-btn std auto-task-btn"
                         data-task-id="{{ $tid }}"
                         data-user-package-id="{{ $upid }}"
                         data-task-url="{{ $taskData['task']->task_url }}"
-                        data-reward="{{ $taskData['reward'] }}"
+                        data-reward="{{ $reward }}"
                         data-required-duration="{{ $taskData['task']->required_duration ?? 30 }}">
                         <i class="bi bi-play-circle-fill"></i>
                         <span class="tk-btn-label">
@@ -145,118 +213,9 @@
                         </span>
                     </button>
                     @endif
-                    <div class="tk-timer" id="timer-box-{{ $tid }}-{{ $upid }}">
-                        <div class="tk-timer-bar">
-                            <div class="tk-timer-fill" id="progress-{{ $tid }}-{{ $upid }}"></div>
-                        </div>
-                        <span class="tk-timer-txt" id="timer-text-{{ $tid }}-{{ $upid }}">Waiting...</span>
-                    </div>
+
                 </div>
             </div>
-
-            {{-- ── INLINE AD PANEL ── --}}
-            @if($isAd)
-            <div class="tk-ad-panel" id="ad-panel-{{ $tid }}-{{ $upid }}"
-                data-task-id="{{ $tid }}"
-                data-pkg-id="{{ $upid }}"
-                data-duration="{{ $duration }}"
-                data-reward="{{ $taskData['reward'] }}">
-
-                <div class="tk-ad-header">
-                    <div class="tk-ad-status">
-                        <span class="pulse"></span>
-                        <span id="ad-status-{{ $tid }}-{{ $upid }}">Click the ad to start timer</span>
-                    </div>
-                    <div class="tk-ad-timer-num" id="ad-countdown-{{ $tid }}-{{ $upid }}">{{ $duration }}s</div>
-                </div>
-
-                {{-- Progress bar --}}
-                <div class="tk-ad-progress-wrap">
-                    <div class="tk-ad-progress-bar" id="ad-progress-{{ $tid }}-{{ $upid }}"></div>
-                </div>
-
-                {{-- ── AD CONTENT ── --}}
-                <div class="tk-ad-content" id="ad-content-{{ $tid }}-{{ $upid }}">
-
-                    @if($hasSmartlink)
-                    {{-- SMARTLINK — big clickable button --}}
-                    <a href="{{ $adUrls[0] }}"
-                       target="_blank"
-                       class="tk-ad-click-zone smartlink-ad"
-                       id="ad-click-{{ $tid }}-{{ $upid }}"
-                       data-task-id="{{ $tid }}"
-                       data-pkg-id="{{ $upid }}">
-                        <div class="tk-ad-icon-wrap">
-                            <i class="bi bi-megaphone-fill"></i>
-                        </div>
-                        <div>
-                            <div class="tk-ad-click-title">Click to View Advertisement</div>
-                            <div class="tk-ad-click-sub">Opens ad · Timer starts after click</div>
-                        </div>
-                        <i class="bi bi-arrow-right-circle-fill tk-ad-arrow"></i>
-                    </a>
-
-                    @elseif($hasDiv)
-                    {{-- BANNER AD — render div + wrap in click zone --}}
-                    <div class="tk-ad-click-zone banner-ad"
-                         id="ad-click-{{ $tid }}-{{ $upid }}"
-                         data-task-id="{{ $tid }}"
-                         data-pkg-id="{{ $upid }}">
-                        <div class="tk-ad-banner-wrap">
-                            @foreach($adDivs as $div)
-                                {!! $div !!}
-                            @endforeach
-                        </div>
-                        <div class="tk-ad-banner-overlay">
-                            <span><i class="bi bi-cursor-fill"></i> Click ad to start timer</span>
-                        </div>
-                    </div>
-
-                    @else
-                    {{-- SCRIPT-ONLY (popunder/social bar) — clickable placeholder --}}
-                    <div class="tk-ad-click-zone script-ad"
-                         id="ad-click-{{ $tid }}-{{ $upid }}"
-                         data-task-id="{{ $tid }}"
-                         data-pkg-id="{{ $upid }}">
-                        <div class="tk-ad-icon-wrap pulse-glow">
-                            <i class="bi bi-megaphone-fill"></i>
-                        </div>
-                        <div>
-                            <div class="tk-ad-click-title">Click to Activate Advertisement</div>
-                            <div class="tk-ad-click-sub">Ad will run · Timer starts automatically</div>
-                        </div>
-                        <i class="bi bi-play-circle-fill tk-ad-arrow"></i>
-                    </div>
-                    @endif
-
-                </div>
-
-                {{-- Claim button (hidden until done) --}}
-                <button type="button" class="tk-ad-claim-btn" id="claim-btn-{{ $tid }}-{{ $upid }}" style="display:none;"
-                    data-task-id="{{ $tid }}" data-pkg-id="{{ $upid }}">
-                    <i class="bi bi-check-circle-fill"></i>
-                    Claim ${{ number_format($taskData['reward'], 2) }}
-                </button>
-
-                <button type="button" class="tk-ad-cancel-btn" id="cancel-btn-{{ $tid }}-{{ $upid }}"
-                    data-task-id="{{ $tid }}" data-pkg-id="{{ $upid }}">
-                    <i class="bi bi-x"></i> Cancel
-                </button>
-
-                {{-- Inject inline scripts (atOptions etc.) --}}
-                @foreach($adInlines as $inline)
-                    @if(trim($inline))
-                    <script>{{ $inline }}</script>
-                    @endif
-                @endforeach
-
-                {{-- Inject external scripts --}}
-                @foreach($adSrcs as $src)
-                    <script src="{{ $src }}"></script>
-                @endforeach
-
-            </div>
-            @endif
 
             @empty
             <div class="tk-empty">
@@ -299,17 +258,16 @@
                 @endforeach
             </div>
         </div>
-
         <div class="s-card">
             <div class="s-card-head">
                 <span class="s-card-title"><i class="bi bi-info-circle-fill"></i> How It Works</span>
             </div>
             <div style="padding:14px 20px;display:flex;flex-direction:column;gap:10px;">
                 @foreach([
-                    ['icon'=>'bi-cursor-fill','text'=>'Click Watch & Earn to show the ad'],
-                    ['icon'=>'bi-hand-index-fill','text'=>'Click the ad to start the timer'],
-                    ['icon'=>'bi-hourglass-split','text'=>'Wait for timer to complete'],
-                    ['icon'=>'bi-wallet2','text'=>'Click Claim to get your reward'],
+                    ['icon'=>'bi-hand-index-fill','text'=>'Click the Watch & Earn button'],
+                    ['icon'=>'bi-hourglass-split','text'=>'Wait for the countdown to finish'],
+                    ['icon'=>'bi-check-circle-fill','text'=>'Claim button appears — click it'],
+                    ['icon'=>'bi-wallet2','text'=>'Reward instantly added to wallet'],
                 ] as $tip)
                 <div style="display:flex;align-items:flex-start;gap:10px;">
                     <div style="width:26px;height:26px;border-radius:7px;background:rgba(0,0,0,0.2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:0.78rem;flex-shrink:0;margin-top:1px;">
@@ -320,7 +278,6 @@
                 @endforeach
             </div>
         </div>
-
         <a href="{{ route('tasks.history') }}" class="cy-hbtn outline" style="width:100%;justify-content:center;">
             <i class="bi bi-clock-history"></i> View Task History
         </a>
@@ -373,14 +330,15 @@
 .tk-item-meta  { display:flex;gap:14px;flex-wrap:wrap; }
 .tk-meta-pill  { display:flex;align-items:center;gap:4px;font-size:0.68rem;color:var(--muted); }
 .tk-meta-pill i { color:var(--accent); }
-.tk-item-action { display:flex;flex-direction:column;align-items:flex-end;gap:8px;min-width:150px; }
+.tk-item-action { display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:140px; }
 .tk-reward-num  { font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:var(--accent);line-height:1;text-align:right; }
 .tk-reward-sub  { font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);text-align:right; }
+
+/* Auto task */
 .tk-start-btn { display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 16px;border:none;cursor:pointer;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:700;width:100%;transition:all 0.25s; }
 .tk-start-btn:hover { transform:translateY(-2px); }
 .tk-start-btn:disabled { opacity:0.4;cursor:not-allowed;transform:none; }
 .tk-start-btn.std { background:var(--accent);color:#000; }
-.tk-start-btn.ad  { background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff; }
 .tk-btn-label { display:flex;flex-direction:column;align-items:center;gap:2px; }
 .tk-btn-main  { font-size:0.78rem;font-weight:700; }
 .tk-btn-hint  { font-size:0.65rem;opacity:0.75;font-weight:400; }
@@ -389,315 +347,237 @@
 .tk-timer-bar { background:rgba(0,0,0,0.3);border-radius:99px;height:3px;margin-bottom:5px;overflow:hidden; }
 .tk-timer-fill { height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:99px; }
 .tk-timer-txt { font-size:0.65rem;color:var(--muted);text-align:center;display:block; }
+
+/* ── AD ZONE (right side, replaces button) ── */
+.tk-ad-zone { width: 100%; display:flex; flex-direction:column; align-items:stretch; gap:6px; }
+.tk-ad-idle  { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+
+/* The clickable ad button */
+.tk-ad-btn {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px; padding: 12px 16px; border-radius: 10px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: #fff; border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s; text-decoration: none;
+    width: 100%; text-align: center;
+    font-size: 0.82rem;
+}
+.tk-ad-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59,130,246,0.4); color: #fff; }
+.tk-ad-btn i { font-size: 1.1rem; }
+.tk-ad-btn-main { font-size: 0.82rem; font-weight: 700; line-height: 1; }
+.tk-ad-btn-sub  { font-size: 0.62rem; opacity: 0.75; }
+
+/* Banner zone */
+.tk-ad-banner-zone {
+    position: relative; cursor: pointer;
+    border-radius: 10px; overflow: hidden;
+    width: 100%; text-align: center;
+    min-height: 60px; background: var(--card2);
+    border: 1px solid var(--border);
+}
+.tk-ad-banner-zone iframe { max-width: 100% !important; pointer-events: none; }
+.tk-ad-banner-overlay {
+    position: absolute; inset: 0;
+    background: rgba(59,130,246,0.7);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.78rem; font-weight: 700; color: #fff;
+    border-radius: 10px; transition: opacity 0.3s;
+}
+
+/* Timer running state */
+.tk-ad-counting {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 2px;
+    padding: 14px; border-radius: 10px;
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.3);
+    width: 100%;
+}
+.tk-ad-countdown {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem; font-weight: 800;
+    color: var(--accent); line-height: 1;
+    animation: countPulse 1s infinite;
+}
+@keyframes countPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+.tk-ad-cd-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+
+/* Progress bar under info */
+.tk-ad-progress-wrap {
+    height: 4px; background: rgba(0,0,0,0.3);
+    border-radius: 99px; overflow: hidden;
+    position: relative;
+}
+.tk-ad-progress-bar {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 99px; transition: width 1s linear;
+}
+.tk-ad-prog-txt {
+    font-size: 0.6rem; color: var(--muted);
+    margin-top: 3px; display: block; text-align: right;
+}
+
+/* Claim button */
+.tk-claim-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; padding: 12px; border-radius: 9px;
+    background: var(--accent); color: #000;
+    border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 700;
+    transition: opacity 0.2s;
+    animation: claimPop 0.4s ease;
+}
+@keyframes claimPop { from{transform:scale(0.85);opacity:0} to{transform:scale(1);opacity:1} }
+.tk-claim-btn:hover { opacity: 0.9; }
+.tk-claim-btn:disabled { opacity: 0.5; cursor:not-allowed; }
+
 .tk-empty { text-align:center;padding:48px 20px;color:var(--muted); }
 .tk-empty i { font-size:2.5rem;display:block;margin-bottom:12px;opacity:0.2; }
 .tk-empty-t { font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:700;margin-bottom:6px;color:var(--text); }
 .tk-empty-s { font-size:0.82rem; }
 .tk-empty-s a { color:var(--accent); }
 
-/* ── AD PANEL ── */
-.tk-ad-panel {
-    display: none;
-    border-left: 3px solid var(--blue);
-    border-bottom: 1px solid var(--border);
-    background: rgba(15,15,30,0.6);
-    padding: 16px 20px;
-    animation: adSlide 0.3s ease;
-}
-.tk-ad-panel.open { display: block; }
-@keyframes adSlide { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
-
-.tk-ad-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 10px;
-}
-.tk-ad-status {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 0.72rem; color: var(--muted);
-}
-.tk-ad-timer-num {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.1rem; font-weight: 800;
-    color: var(--accent);
-    min-width: 48px; text-align: right;
-}
-
-.tk-ad-progress-wrap {
-    background: rgba(0,0,0,0.3);
-    border-radius: 99px; height: 4px;
-    overflow: hidden; margin-bottom: 14px;
-}
-.tk-ad-progress-bar {
-    height: 100%; width: 0%;
-    background: linear-gradient(90deg, var(--accent2), var(--accent));
-    border-radius: 99px;
-    transition: width 1s linear;
-}
-
-/* ── CLICK ZONES ── */
-.tk-ad-click-zone {
-    display: flex; align-items: center; gap: 14px;
-    padding: 16px 20px; border-radius: 12px;
-    border: 2px dashed rgba(59,130,246,0.4);
-    background: rgba(59,130,246,0.06);
-    cursor: pointer; transition: all 0.2s;
-    text-decoration: none; color: var(--text);
-    margin-bottom: 12px; width: 100%;
-    position: relative; overflow: hidden;
-}
-.tk-ad-click-zone:hover {
-    border-color: var(--accent);
-    background: rgba(0,245,212,0.06);
-    transform: translateY(-1px);
-}
-.tk-ad-click-zone.clicked {
-    border-color: var(--green);
-    background: rgba(34,197,94,0.06);
-    border-style: solid;
-    cursor: default;
-}
-
-.tk-ad-icon-wrap {
-    width: 48px; height: 48px; border-radius: 12px;
-    background: rgba(59,130,246,0.15);
-    border: 1px solid rgba(59,130,246,0.3);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.3rem; color: var(--blue); flex-shrink: 0;
-    transition: all 0.2s;
-}
-.tk-ad-click-zone:hover .tk-ad-icon-wrap {
-    background: rgba(0,245,212,0.15);
-    border-color: var(--accent);
-    color: var(--accent);
-}
-.tk-ad-click-zone.clicked .tk-ad-icon-wrap {
-    background: rgba(34,197,94,0.15);
-    border-color: var(--green);
-    color: var(--green);
-}
-.pulse-glow {
-    animation: pulseGlow 2s infinite;
-}
-@keyframes pulseGlow {
-    0%,100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.3); }
-    50%      { box-shadow: 0 0 0 8px rgba(59,130,246,0); }
-}
-
-.tk-ad-click-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.88rem; font-weight: 700;
-    margin-bottom: 3px;
-}
-.tk-ad-click-sub {
-    font-size: 0.72rem; color: var(--muted);
-}
-.tk-ad-arrow {
-    margin-left: auto; font-size: 1.4rem;
-    color: var(--blue); flex-shrink: 0;
-    transition: all 0.2s;
-}
-.tk-ad-click-zone:hover .tk-ad-arrow { color: var(--accent); transform: translateX(3px); }
-.tk-ad-click-zone.clicked .tk-ad-arrow { color: var(--green); }
-
-/* Banner ad */
-.tk-ad-banner-wrap {
-    display: flex; align-items: center; justify-content: center;
-    min-height: 60px; width: 100%;
-    pointer-events: none; /* click goes to parent */
-}
-.tk-ad-banner-wrap iframe { max-width: 100% !important; pointer-events: none; }
-.tk-ad-banner-overlay {
-    position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    background: rgba(0,0,0,0.4); border-radius: 10px;
-    font-size: 0.78rem; color: var(--accent);
-    transition: opacity 0.3s;
-}
-.tk-ad-click-zone.clicked .tk-ad-banner-overlay { opacity: 0; pointer-events: none; }
-.tk-ad-click-zone.clicked .tk-ad-banner-wrap { pointer-events: auto; }
-
-/* Claim & Cancel */
-.tk-ad-claim-btn {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    width: 100%; padding: 13px; border-radius: 9px;
-    background: var(--accent); color: #000;
-    border: none; cursor: pointer;
-    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 700;
-    margin-bottom: 8px; transition: opacity 0.2s;
-    animation: claimPop 0.4s ease;
-}
-@keyframes claimPop { from{transform:scale(0.9);opacity:0} to{transform:scale(1);opacity:1} }
-.tk-ad-claim-btn:hover { opacity: 0.9; }
-.tk-ad-claim-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.tk-ad-cancel-btn {
-    display: flex; align-items: center; justify-content: center; gap: 4px;
-    width: 100%; padding: 8px; border-radius: 9px;
-    background: transparent; border: 1px solid var(--border);
-    color: var(--muted); font-size: 0.78rem; cursor: pointer;
-    font-family: 'DM Sans', sans-serif; transition: all 0.2s;
-}
-.tk-ad-cancel-btn:hover { border-color: var(--red); color: var(--red); }
-
 @media(max-width:600px) {
     .tk-item { grid-template-columns:40px 1fr; gap:10px; padding:14px; }
-    .tk-item-action { grid-column:1/-1; flex-direction:row; flex-wrap:wrap; align-items:center; gap:8px; }
+    .tk-item-action { grid-column:1/-1; }
+    .tk-ad-zone, .tk-item-action { width:100%; align-items:stretch; }
     .tk-reward-num { font-size:1.1rem; }
-    .tk-start-btn  { flex:1; min-width:120px; }
     .tk-item-ico   { width:36px; height:36px; font-size:0.9rem; }
     .tk-item-title { font-size:0.82rem; }
-    .tk-ad-click-zone { padding: 12px 14px; gap: 10px; }
-    .tk-ad-icon-wrap  { width: 38px; height: 38px; font-size: 1rem; }
-    .tk-ad-click-title { font-size: 0.82rem; }
+    .tk-item-desc  { font-size:0.75rem; }
+    .tk-tag        { font-size:0.58rem; }
 }
 </style>
 
 <script>
+// Active timers tracker
+const adTimers = {};
+
+function startAdTimer(taskId, pkgId, duration, reward) {
+    const key = `${taskId}-${pkgId}`;
+    if (adTimers[key]) return; // already running
+
+    const idle     = document.getElementById(`ad-idle-${key}`);
+    const counting = document.getElementById(`ad-counting-${key}`);
+    const cdEl     = document.getElementById(`ad-cd-${key}`);
+    const progWrap = document.getElementById(`prog-wrap-${key}`);
+    const progBar  = document.getElementById(`prog-bar-${key}`);
+    const progTxt  = document.getElementById(`prog-txt-${key}`);
+
+    // Show counting state
+    if (idle)     idle.style.display     = 'none';
+    if (counting) counting.style.display = 'flex';
+    if (progWrap) progWrap.style.display = 'block';
+
+    let elapsed = 0;
+    adTimers[key] = setInterval(() => {
+        elapsed++;
+        const rem = Math.max(duration - elapsed, 0);
+        const pct = Math.min((elapsed / duration) * 100, 100);
+        if (cdEl)    cdEl.textContent      = rem;
+        if (progBar) progBar.style.width   = pct + '%';
+        if (progTxt) progTxt.textContent   = elapsed + 's / ' + duration + 's';
+
+        if (elapsed >= duration) {
+            clearInterval(adTimers[key]);
+            delete adTimers[key];
+
+            // Show claim
+            if (counting) counting.style.display = 'none';
+            const done = document.getElementById(`ad-done-${key}`);
+            if (done) done.style.display = 'flex';
+            if (cdEl) cdEl.textContent = '✓';
+            if (progTxt) progTxt.textContent = 'Done!';
+        }
+    }, 1000);
+}
+
+function claimTask(taskId, pkgId, reward) {
+    const key     = `${taskId}-${pkgId}`;
+    const claimBtn= document.querySelector(`#ad-done-${key} .tk-claim-btn`);
+    if (claimBtn) { claimBtn.disabled = true; claimBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...'; }
+
+    // Get elapsed from progress text
+    const progTxt = document.getElementById(`prog-txt-${key}`);
+    let elapsed = 0;
+    if (progTxt) {
+        const match = progTxt.textContent.match(/^(\d+)/);
+        if (match) elapsed = parseInt(match[1]);
+    }
+
+    fetch('/tasks/auto-verify', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            user_package_id: parseInt(pkgId),
+            task_id: parseInt(taskId),
+            duration: elapsed
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const card = document.getElementById(`task-card-${key}`);
+            if (card) card.classList.add('task-done');
+            ['sb-earned','stat-earned'].forEach(id => { const el=document.getElementById(id); if(el){const c=parseFloat(el.textContent.replace(/[$,]/g,''))||0; el.textContent='$'+(c+parseFloat(reward)).toFixed(2);} });
+            ['sb-done','stat-done'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=(parseInt(el.textContent)||0)+1; });
+            ['sb-remaining','stat-remaining'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=Math.max((parseInt(el.textContent)||0)-1,0); });
+            document.getElementById('earnedAmount').textContent = data.reward || parseFloat(reward).toFixed(2);
+            new bootstrap.Modal(document.getElementById('successModal')).show();
+        } else {
+            alert('Failed: ' + (data.message || 'Unknown error'));
+            if (claimBtn) { claimBtn.disabled=false; claimBtn.innerHTML='<i class="bi bi-check-circle-fill"></i> Claim $'+parseFloat(reward).toFixed(2); }
+        }
+    })
+    .catch(e => { alert('Network error: '+e.message); });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     document.body.appendChild(document.getElementById('successModal'));
 
-    // ── AUTO TASK ──
+    // Auto task
     document.querySelectorAll('.auto-task-btn').forEach(btn => {
         btn.addEventListener('click', function () {
-            const taskId = this.dataset.taskId, pkgId = this.dataset.userPackageId;
-            const url = this.dataset.taskUrl, reward = this.dataset.reward;
-            const duration = parseInt(this.dataset.requiredDuration);
+            const taskId=this.dataset.taskId, pkgId=this.dataset.userPackageId;
+            const url=this.dataset.taskUrl, reward=this.dataset.reward;
+            const duration=parseInt(this.dataset.requiredDuration);
             if (!url) { alert('Task URL missing.'); return; }
-            const tab = window.open(url, '_blank');
+            const tab=window.open(url,'_blank');
             if (!tab) { alert('Popup blocked!'); return; }
-            this.disabled = true;
-            this.querySelector('.tk-btn-main').textContent = 'Processing...';
-            this.querySelector('.tk-btn-hint').textContent = 'Please wait...';
-            const timerBox = document.getElementById(`timer-box-${taskId}-${pkgId}`);
+            this.disabled=true;
+            this.querySelector('.tk-btn-main').textContent='Processing...';
+            this.querySelector('.tk-btn-hint').textContent='Please wait...';
+            const timerBox=document.getElementById(`timer-box-${taskId}-${pkgId}`);
             if (timerBox) timerBox.classList.add('on');
-            let elapsed = 0;
-            const iv = setInterval(() => {
+            let elapsed=0;
+            const iv=setInterval(()=>{
                 elapsed++;
-                const bar = document.getElementById(`progress-${taskId}-${pkgId}`);
-                const txt = document.getElementById(`timer-text-${taskId}-${pkgId}`);
-                if (bar) bar.style.width = Math.min((elapsed/duration)*100,100)+'%';
-                if (txt) txt.textContent = Math.max(duration-elapsed,0)+'s remaining...';
-                if (elapsed >= duration) { clearInterval(iv); submitTask(taskId, pkgId, elapsed, reward, this, false, null); }
-            }, 1000);
-        });
-    });
-
-    // ── AD TASK — show panel ──
-    document.querySelectorAll('.adsterra-task-btn').forEach(btn => {
-        btn.addEventListener('click', function () {
-            const taskId = this.dataset.taskId;
-            const pkgId  = this.dataset.userPackageId;
-            const panel  = document.getElementById(`ad-panel-${taskId}-${pkgId}`);
-            if (!panel) return;
-            panel.classList.add('open');
-            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            this.disabled = true;
-            this.querySelector('.tk-btn-main').textContent = 'Ad Showing...';
-            this.querySelector('.tk-btn-hint').textContent = 'Click the ad below';
-            setupAdPanel(panel, this);
-        });
-    });
-
-    function setupAdPanel(panel, startBtn) {
-        const taskId   = panel.dataset.taskId;
-        const pkgId    = panel.dataset.pkgId;
-        const duration = parseInt(panel.dataset.duration);
-        const reward   = panel.dataset.reward;
-        const claimBtn = document.getElementById(`claim-btn-${taskId}-${pkgId}`);
-        const cancelBtn= document.getElementById(`cancel-btn-${taskId}-${pkgId}`);
-        const progBar  = document.getElementById(`ad-progress-${taskId}-${pkgId}`);
-        const countdown= document.getElementById(`ad-countdown-${taskId}-${pkgId}`);
-        const statusEl = document.getElementById(`ad-status-${taskId}-${pkgId}`);
-        const clickZone= document.getElementById(`ad-click-${taskId}-${pkgId}`);
-
-        let elapsed = 0;
-        let timerInterval = null;
-        let timerStarted = false;
-
-        function startTimer() {
-            if (timerStarted) return;
-            timerStarted = true;
-            if (statusEl) statusEl.textContent = 'Timer running...';
-            timerInterval = setInterval(() => {
-                elapsed++;
-                const pct = Math.min((elapsed / duration) * 100, 100);
-                if (progBar)   progBar.style.width = pct + '%';
-                if (countdown) countdown.textContent = Math.max(duration - elapsed, 0) + 's';
-                if (elapsed >= duration) {
-                    clearInterval(timerInterval);
-                    if (countdown) countdown.textContent = '✓';
-                    if (statusEl)  statusEl.textContent = 'Done! Claim your reward';
-                    if (claimBtn)  claimBtn.style.display = 'flex';
+                const bar=document.getElementById(`progress-${taskId}-${pkgId}`);
+                const txt=document.getElementById(`timer-text-${taskId}-${pkgId}`);
+                if (bar) bar.style.width=Math.min((elapsed/duration)*100,100)+'%';
+                if (txt) txt.textContent=Math.max(duration-elapsed,0)+'s remaining...';
+                if (elapsed>=duration) {
+                    clearInterval(iv);
+                    fetch('/tasks/auto-verify',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').getAttribute('content')},body:JSON.stringify({user_package_id:parseInt(pkgId),task_id:parseInt(taskId),duration:elapsed})})
+                    .then(r=>r.json()).then(data=>{
+                        if(data.success){
+                            document.getElementById(`task-card-${taskId}-${pkgId}`)?.classList.add('task-done');
+                            ['sb-earned','stat-earned'].forEach(id=>{const el=document.getElementById(id);if(el){const c=parseFloat(el.textContent.replace(/[$,]/g,''))||0;el.textContent='$'+(c+parseFloat(reward)).toFixed(2);}});
+                            ['sb-done','stat-done'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=(parseInt(el.textContent)||0)+1;});
+                            ['sb-remaining','stat-remaining'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=Math.max((parseInt(el.textContent)||0)-1,0);});
+                            document.getElementById('earnedAmount').textContent=data.reward||parseFloat(reward).toFixed(2);
+                            new bootstrap.Modal(document.getElementById('successModal')).show();
+                        } else { alert('Failed: '+data.message); }
+                    });
                 }
-            }, 1000);
-        }
-
-        // Click zone starts timer
-        if (clickZone) {
-            clickZone.addEventListener('click', function () {
-                this.classList.add('clicked');
-                startTimer();
-            }, { once: true }); // only fires once
-        }
-
-        // Claim
-        if (claimBtn) {
-            claimBtn.addEventListener('click', function () {
-                this.disabled = true;
-                this.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
-                submitTask(taskId, pkgId, elapsed, reward, startBtn, true, panel);
-            }, { once: true });
-        }
-
-        // Cancel
-        if (cancelBtn) {
-            cancelBtn.addEventListener('click', function () {
-                clearInterval(timerInterval);
-                panel.classList.remove('open');
-                startBtn.disabled = false;
-                startBtn.querySelector('.tk-btn-main').textContent = 'Watch & Earn';
-                startBtn.querySelector('.tk-btn-hint').textContent = `click ad for ${duration}s`;
-            });
-        }
-    }
-
-    function submitTask(taskId, userPackageId, duration, reward, btn, isAd, panel) {
-        fetch('/tasks/auto-verify', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({
-                user_package_id: parseInt(userPackageId),
-                task_id: parseInt(taskId),
-                duration: parseInt(duration)
-            })
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                const card = document.getElementById(`task-card-${taskId}-${userPackageId}`);
-                if (card)  card.classList.add('task-done');
-                if (panel) panel.classList.remove('open');
-                ['sb-earned','stat-earned'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) { const c = parseFloat(el.textContent.replace(/[$,]/g,''))||0; el.textContent = '$'+(c+parseFloat(reward)).toFixed(2); }
-                });
-                ['sb-done','stat-done'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = (parseInt(el.textContent)||0)+1; });
-                ['sb-remaining','stat-remaining'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = Math.max((parseInt(el.textContent)||0)-1,0); });
-                document.getElementById('earnedAmount').textContent = data.reward || parseFloat(reward).toFixed(2);
-                new bootstrap.Modal(document.getElementById('successModal')).show();
-            } else {
-                alert('Task failed: ' + (data.message || 'Unknown error'));
-                if (btn) { btn.disabled = false; btn.querySelector('.tk-btn-main').textContent = isAd ? 'Watch & Earn' : 'Start Task'; }
-            }
-        })
-        .catch(e => {
-            alert('Network error: ' + e.message);
-            if (btn) { btn.disabled = false; btn.querySelector('.tk-btn-main').textContent = isAd ? 'Watch & Earn' : 'Start Task'; }
+            },1000);
         });
-    }
+    });
 });
 </script>
 @endpush

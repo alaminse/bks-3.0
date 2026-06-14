@@ -54,9 +54,7 @@
         <div class="s-card">
             <div class="s-card-head">
                 <span class="s-card-title"><span class="pulse"></span> Task Queue</span>
-                <span style="font-size:0.72rem;color:var(--muted);background:var(--card2);border:1px solid var(--border);padding:3px 10px;border-radius:99px;">
-                    {{ count($tasks) }} tasks
-                </span>
+                <span style="font-size:0.72rem;color:var(--muted);background:var(--card2);border:1px solid var(--border);padding:3px 10px;border-radius:99px;">{{ count($tasks) }} tasks</span>
             </div>
 
             @forelse($tasks as $taskData)
@@ -66,57 +64,79 @@
                 $upid     = $taskData['user_package_id'];
                 $duration = $taskData['task']->effective_skip_delay ?? 30;
                 $reward   = $taskData['reward'];
+                $adCode   = $isAd ? ($taskData['task']->adsterra_ad_code ?? '') : '';
 
-                $adCode = $isAd ? ($taskData['task']->adsterra_ad_code ?? '') : '';
+                // Parse ad code
                 preg_match_all('/<script[^>]+src=["\']([^"\']+)["\'][^>]*>/i', $adCode, $sm);
                 $adSrcs = $sm[1] ?? [];
                 preg_match_all('/<script(?![^>]*src)[^>]*>(.*?)<\/script>/si', $adCode, $im);
                 $adInlines = array_filter($im[1] ?? [], fn($s) => trim($s));
                 preg_match_all('/<div[^>]*>.*?<\/div>/si', $adCode, $dm);
                 $adDivs = $dm[0] ?? [];
-                preg_match_all('/https?:\/\/[^\s<>"\']+/', strip_tags($adCode), $um);
-                $adUrls = array_values(array_filter($um[0] ?? [], fn($u) => !str_ends_with($u, '.js')));
-                $hasDiv  = !empty($adDivs);
-                $hasLink = !empty($adUrls);
+
+                // Find smartlink — plain URL on its own line
+                $lines = explode("\n", $adCode);
+                $plainUrls = [];
+                foreach ($lines as $line) {
+                    $line = trim($line);
+                    if (preg_match('/^https?:\/\/\S+$/', $line) && !str_ends_with($line, '.js')) {
+                        $plainUrls[] = $line;
+                    }
+                }
+
+                // Extract atOptions key to build ad URL
+                $adKey = '';
+                if (preg_match("/['\"]key['\"]\s*:\s*['\"]([a-f0-9]+)['\"]/", $adCode, $km)) {
+                    $adKey = $km[1];
+                }
+
+                $hasDiv = !empty($adDivs);
+
+                // Build adLink: task_url → plain smartlink URL → first script src domain
+                $taskUrl = trim($taskData['task']->task_url ?? '');
+                if (!empty($taskUrl)) {
+                    $adLink = $taskUrl;
+                } elseif (!empty($plainUrls)) {
+                    $adLink = $plainUrls[0];
+                } elseif (!empty($adSrcs)) {
+                    // Extract domain from first script src
+                    $parsed = parse_url($adSrcs[0]);
+                    $adLink = ($parsed['scheme'] ?? 'https') . '://' . ($parsed['host'] ?? '');
+                } else {
+                    $adLink = '';
+                }
             @endphp
 
-            <div class="tk-item {{ $isAd ? 'is-ad' : 'is-std' }}"
-                 id="task-card-{{ $tid }}-{{ $upid }}"
-                 data-tid="{{ $tid }}"
-                 data-upid="{{ $upid }}"
-                 data-duration="{{ $duration }}"
-                 data-reward="{{ $reward }}">
+            <div class="tk-item {{ $isAd ? 'is-ad' : 'is-std' }}" id="tk-{{ $tid }}-{{ $upid }}">
 
-                {{-- Info row --}}
-                <div class="tk-info-row">
+                {{-- Header row --}}
+                <div class="tk-head">
                     <div class="tk-ico {{ $isAd ? 'ad' : 'std' }}">
                         <i class="bi {{ $isAd ? 'bi-megaphone-fill' : 'bi-play-circle-fill' }}"></i>
                     </div>
                     <div class="tk-info">
                         <div class="tk-title">{{ $taskData['task']->title }}</div>
                         <div class="tk-tags">
-                            <span class="tk-tag pkg">{{ $taskData['package']->name }}</span>
-                            @if($isAd)
-                                <span class="tk-tag ad">Ad</span>
-                            @else
-                                <span class="tk-tag std">Auto</span>
-                            @endif
-                            <span class="tk-tag rem">{{ $taskData['remaining_tasks'] }} left</span>
+                            <span class="tk-tag t-pkg">{{ $taskData['package']->name }}</span>
+                            <span class="tk-tag {{ $isAd ? 't-ad' : 't-std' }}">{{ $isAd ? 'Ad·'.$duration.'s' : 'Auto' }}</span>
+                            <span class="tk-tag t-rem">{{ $taskData['remaining_tasks'] }} left</span>
                         </div>
                     </div>
-                    <div class="tk-reward-badge">
-                        <span class="tk-reward-amt">${{ number_format($reward, 2) }}</span>
-                        @if($isAd)
-                            <span class="tk-duration">{{ $duration }}s</span>
-                        @endif
-                    </div>
+                    <div class="tk-reward">${{ number_format($reward, 2) }}</div>
                 </div>
 
-                {{-- AD CONTENT —  shown inline, click = timer in modal --}}
                 @if($isAd)
-                <div class="tk-ad-content" id="adc-{{ $tid }}-{{ $upid }}">
-                    {{-- All ad types: click anywhere on ad = open claim modal --}}
-                    <div class="tk-ad-clickable" onclick="tkOpenModal('{{ $tid }}','{{ $upid }}',{{ $duration }},{{ $reward }}{{ $hasLink ? ",'" . $adUrls[0] . "'" : '' }})">
+                {{-- AD BODY --}}
+                <div class="tk-ad-body"
+                     id="adb-{{ $tid }}-{{ $upid }}"
+                     data-tid="{{ $tid }}"
+                     data-upid="{{ $upid }}"
+                     data-duration="{{ $duration }}"
+                     data-reward="{{ $reward }}"
+                     data-link="{{ $adLink }}">
+
+                    {{-- Ad content — pointer-events:none so clicks bubble up --}}
+                    <div class="tk-ad-inner" style="pointer-events:none;">
                         @if($hasDiv)
                             @foreach($adDivs as $div){!! $div !!}@endforeach
                         @else
@@ -135,8 +155,8 @@
 
                 @else
                 {{-- AUTO TASK --}}
-                <div class="tk-auto-row">
-                    <button type="button" class="tk-start-btn auto-task-btn"
+                <div class="tk-auto">
+                    <button type="button" class="tk-start auto-task-btn"
                         data-task-id="{{ $tid }}"
                         data-user-package-id="{{ $upid }}"
                         data-task-url="{{ $taskData['task']->task_url }}"
@@ -144,8 +164,8 @@
                         data-required-duration="{{ $taskData['task']->required_duration ?? 30 }}">
                         <i class="bi bi-play-fill"></i> Start Task
                     </button>
-                    <div class="tk-auto-bar" id="timer-box-{{ $tid }}-{{ $upid }}">
-                        <div class="tk-auto-fill" id="progress-{{ $tid }}-{{ $upid }}"></div>
+                    <div class="tk-bar" id="bar-{{ $tid }}-{{ $upid }}">
+                        <div class="tk-bar-fill" id="fill-{{ $tid }}-{{ $upid }}"></div>
                     </div>
                 </div>
                 @endif
@@ -179,15 +199,15 @@
                     ['icon'=>'bi-check-circle-fill','color'=>'var(--green)','label'=>'Tasks Done','id'=>'sb-done','val'=>$stats['tasks_completed_today']],
                     ['icon'=>'bi-list-check','color'=>'var(--blue)','label'=>'Remaining','id'=>'sb-remaining','val'=>$stats['available_tasks']],
                     ['icon'=>'bi-box-seam-fill','color'=>'var(--gold)','label'=>'Packages','id'=>'','val'=>$stats['active_packages']],
-                ] as $row)
+                ] as $r)
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 18px;border-bottom:1px solid var(--border);">
                     <div style="display:flex;align-items:center;gap:10px;">
-                        <div style="width:30px;height:30px;border-radius:8px;background:rgba(0,0,0,0.2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:{{ $row['color'] }};font-size:0.85rem;">
-                            <i class="bi {{ $row['icon'] }}"></i>
+                        <div style="width:30px;height:30px;border-radius:8px;background:rgba(0,0,0,0.2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:{{ $r['color'] }};font-size:0.85rem;">
+                            <i class="bi {{ $r['icon'] }}"></i>
                         </div>
-                        <span style="font-size:0.78rem;color:var(--muted);">{{ $row['label'] }}</span>
+                        <span style="font-size:0.78rem;color:var(--muted);">{{ $r['label'] }}</span>
                     </div>
-                    <span style="font-family:'Syne',sans-serif;font-size:0.9rem;font-weight:800;color:{{ $row['color'] }}" {{ $row['id'] ? 'id='.$row['id'] : '' }}>{{ $row['val'] }}</span>
+                    <span style="font-family:'Syne',sans-serif;font-size:0.9rem;font-weight:800;color:{{ $r['color'] }}" {{ $r['id'] ? 'id='.$r['id'] : '' }}>{{ $r['val'] }}</span>
                 </div>
                 @endforeach
             </div>
@@ -198,50 +218,33 @@
     </div>
 </div>
 
-{{-- CLAIM MODAL --}}
-<div class="modal fade" id="claimModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-body" style="text-align:center;padding:32px 24px;">
-                <div id="cm-waiting">
-                    <div class="cm-timer-ring">
-                        <svg viewBox="0 0 80 80">
-                            <circle class="cm-ring-bg" cx="40" cy="40" r="34"/>
-                            <circle class="cm-ring-fill" id="cm-ring" cx="40" cy="40" r="34"/>
-                        </svg>
-                        <div class="cm-num" id="cm-num">--</div>
-                    </div>
-                    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;margin-bottom:4px;">Watching Ad...</div>
-                    <div style="font-size:0.78rem;color:var(--muted);">Please wait for the timer</div>
-                </div>
-                <div id="cm-ready" style="display:none;">
-                    <i class="bi bi-check-circle-fill" style="font-size:3rem;color:var(--accent);display:block;margin-bottom:12px;"></i>
-                    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;margin-bottom:4px;">Time's up!</div>
-                    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:20px;">Tap below to claim your reward</div>
-                    <button type="button" class="cm-claim-btn" id="cm-claim-btn">
-                        <i class="bi bi-wallet2"></i> Claim $<span id="cm-reward">0.00</span>
-                    </button>
-                </div>
+{{-- ══ AD OVERLAY ══ --}}
+<div id="adOv" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:460px;overflow:hidden;">
+        <div id="adOv-ad" style="width:100%;background:#0a0a14;min-height:80px;display:flex;align-items:center;justify-content:center;overflow:hidden;"></div>
+        <div style="padding:16px 20px 20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <span style="font-size:0.78rem;color:var(--muted);">Watching ad...</span>
+                <span style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--accent);" id="adOv-num">0</span>
+            </div>
+            <div style="height:6px;background:var(--card2);border-radius:99px;overflow:hidden;">
+                <div id="adOv-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:99px;"></div>
             </div>
         </div>
     </div>
 </div>
 
-{{-- SUCCESS MODAL --}}
-<div class="modal fade" id="successModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-body" style="text-align:center;padding:40px 24px;">
-                <i class="bi bi-check-circle-fill" style="font-size:3.5rem;color:var(--accent);display:block;margin-bottom:14px;"></i>
-                <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:6px;">Task Completed!</div>
-                <p style="color:var(--muted);font-size:0.85rem;margin-bottom:16px;">You've earned:</p>
-                <div style="font-family:'Syne',sans-serif;font-size:2.8rem;font-weight:800;color:var(--accent);line-height:1;margin-bottom:4px;">$<span id="earnedAmount">0.00</span></div>
-                <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:24px;">Added to wallet</div>
-                <button type="button" class="cy-hbtn primary" style="width:100%;justify-content:center;" onclick="window.location.reload()">
-                    <i class="bi bi-arrow-clockwise"></i> Continue Tasks
-                </button>
-            </div>
-        </div>
+{{-- ══ SUCCESS OVERLAY ══ --}}
+<div id="sucOv" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:380px;padding:40px 24px;text-align:center;">
+        <i class="bi bi-check-circle-fill" style="font-size:3.5rem;color:var(--accent);display:block;margin-bottom:14px;"></i>
+        <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:6px;">Task Completed!</div>
+        <p style="color:var(--muted);font-size:0.85rem;margin-bottom:16px;">You've earned:</p>
+        <div style="font-family:'Syne',sans-serif;font-size:2.8rem;font-weight:800;color:var(--accent);line-height:1;margin-bottom:4px;">$<span id="earnedAmount">0.00</span></div>
+        <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:24px;">Added to wallet</div>
+        <button onclick="window.location.reload()" style="width:100%;padding:13px;border-radius:10px;background:var(--accent);color:#000;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:700;">
+            <i class="bi bi-arrow-clockwise"></i> Continue Tasks
+        </button>
     </div>
 </div>
 
@@ -249,249 +252,211 @@
 
 @push('scripts')
 <style>
-/* ── PAGE ── */
 .tk-page-grid { display:grid; grid-template-columns:1fr 260px; gap:20px; align-items:start; }
 .tk-side-col  { display:flex; flex-direction:column; gap:14px; }
-@media(max-width:991px) {
-    .tk-page-grid { grid-template-columns:1fr; }
-    .tk-list-col  { order:0; }
-    .tk-side-col  { order:1; }
-}
+@media(max-width:991px){ .tk-page-grid{grid-template-columns:1fr;} .tk-list-col{order:0;} .tk-side-col{order:1;} }
 
-/* ── TASK ITEM ── */
-.tk-item {
-    border-bottom: 1px solid var(--border);
-    transition: background 0.2s;
-}
-.tk-item:last-child { border-bottom: none; }
-.tk-item.task-done  { opacity: 0.3; pointer-events: none; }
-.tk-item.is-ad  { border-left: 3px solid rgba(59,130,246,0.6); }
-.tk-item.is-std { border-left: 3px solid rgba(0,245,212,0.3); }
+.tk-item { border-bottom:1px solid var(--border); }
+.tk-item:last-child { border-bottom:none; }
+.tk-item.task-done  { opacity:0.3; pointer-events:none; }
+.tk-item.is-ad  { border-left:3px solid rgba(59,130,246,0.7); }
+.tk-item.is-std { border-left:3px solid rgba(0,245,212,0.4); }
 
-/* Info row */
-.tk-info-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 14px 16px 10px 14px;
-}
-.tk-ico {
-    width: 36px; height: 36px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.9rem; flex-shrink: 0; border: 1px solid;
-}
+.tk-head { display:flex; align-items:center; gap:11px; padding:12px 14px 8px; }
+.tk-ico  { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.88rem; flex-shrink:0; border:1px solid; }
 .tk-ico.ad  { background:rgba(59,130,246,0.1); color:var(--blue);   border-color:rgba(59,130,246,0.25); }
 .tk-ico.std { background:rgba(0,0,0,0.2);       color:var(--accent); border-color:rgba(255,255,255,0.1); }
-.tk-info { flex:1; min-width:0; }
-.tk-title { font-family:'Syne',sans-serif; font-size:0.85rem; font-weight:700; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tk-info  { flex:1; min-width:0; }
+.tk-title { font-family:'Syne',sans-serif; font-size:0.84rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; }
 .tk-tags  { display:flex; gap:4px; flex-wrap:wrap; }
-.tk-tag   { display:inline-flex; align-items:center; gap:2px; font-size:0.58rem; font-weight:600; padding:1px 6px; border-radius:99px; }
-.tk-tag.pkg { background:rgba(59,130,246,0.1);  color:var(--blue);   border:1px solid rgba(59,130,246,0.2); }
-.tk-tag.ad  { background:rgba(0,245,212,0.08);  color:var(--accent); border:1px solid rgba(0,245,212,0.2); }
-.tk-tag.std { background:rgba(34,197,94,0.08);  color:var(--green);  border:1px solid rgba(34,197,94,0.2); }
-.tk-tag.rem { background:rgba(0,0,0,0.2);       color:var(--muted);  border:1px solid var(--border2); }
+.tk-tag   { font-size:0.58rem; font-weight:600; padding:1px 7px; border-radius:99px; }
+.t-pkg { background:rgba(59,130,246,0.1); color:var(--blue);   border:1px solid rgba(59,130,246,0.2); }
+.t-ad  { background:rgba(0,245,212,0.08); color:var(--accent); border:1px solid rgba(0,245,212,0.2); }
+.t-std { background:rgba(34,197,94,0.08); color:var(--green);  border:1px solid rgba(34,197,94,0.2); }
+.t-rem { background:rgba(0,0,0,0.2);      color:var(--muted);  border:1px solid var(--border2); }
+.tk-reward { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:800; color:var(--gold); flex-shrink:0; }
 
-.tk-reward-badge { display:flex; flex-direction:column; align-items:flex-end; flex-shrink:0; }
-.tk-reward-amt { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:800; color:var(--gold); }
-.tk-duration   { font-size:0.6rem; color:var(--muted); text-align:right; }
-
-/* ── AD CONTENT ── */
-.tk-ad-content {
-    margin: 0 14px 12px 14px;
+/* AD BODY */
+.tk-ad-body {
+    position: relative;
+    margin: 0 14px 12px;
     border-radius: 10px;
     overflow: hidden;
     border: 1px solid var(--border);
+    background: var(--card2);
+    min-height: 60px;
     cursor: pointer;
-    position: relative;
+    /* Block ALL child pointer events — clicks always bubble to this div */
+    -webkit-user-select: none;
+    user-select: none;
 }
-
-/* Banner/Native — show ad as-is */
-.tk-ad-clickable {
-    display: block;
+.tk-ad-body * {
+    pointer-events: none !important;
+}
+.tk-ad-inner {
     width: 100%;
-    cursor: pointer;
-    line-height: 0; /* remove gap under iframe */
+    max-height: 150px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-.tk-ad-clickable iframe { max-width:100% !important; width:100%; display:block; }
-.tk-ad-clickable > div  { max-width:100%; }
+.tk-ad-inner iframe { max-width:100% !important; width:100% !important; max-height:150px !important; border:none; display:block; }
+.tk-ad-inner > div  { max-width:100% !important; }
+.tk-ad-ph { height:70px; display:flex; align-items:center; justify-content:center; color:var(--blue); font-size:2rem; opacity:0.4; }
 
-/* Script-only / smartlink placeholder */
-.tk-ad-ph {
-    height: 80px; display:flex; align-items:center; justify-content:center;
-    background: rgba(59,130,246,0.06);
-    color: var(--blue); font-size: 2rem; opacity: 0.6;
-}
+/* AUTO TASK */
+.tk-auto { display:flex; align-items:center; gap:10px; padding:0 14px 12px 60px; }
+.tk-start { display:inline-flex; align-items:center; gap:5px; padding:8px 16px; border-radius:8px; background:var(--accent); color:#000; border:none; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.8rem; font-weight:700; white-space:nowrap; }
+.tk-start:disabled { opacity:0.4; cursor:not-allowed; }
+.tk-bar  { flex:1; height:4px; background:rgba(0,0,0,0.3); border-radius:99px; overflow:hidden; display:none; }
+.tk-bar.on { display:block; }
+.tk-bar-fill { height:100%; width:0%; background:linear-gradient(90deg,var(--accent2),var(--accent)); border-radius:99px; transition:width 0.4s; }
 
-/* ── AUTO TASK ── */
-.tk-auto-row {
-    display: flex; align-items: center; gap: 10px;
-    padding: 0 14px 12px 60px;
-}
-.tk-start-btn {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 8px 16px; border-radius: 8px;
-    background: var(--accent); color: #000;
-    border: none; cursor: pointer;
-    font-family: 'DM Sans',sans-serif; font-size: 0.8rem; font-weight: 700;
-    transition: opacity 0.2s; white-space: nowrap;
-}
-.tk-start-btn:disabled { opacity:0.4; cursor:not-allowed; }
-.tk-auto-bar { flex:1; height:4px; background:rgba(0,0,0,0.3); border-radius:99px; overflow:hidden; display:none; }
-.tk-auto-bar.on { display:block; }
-.tk-auto-fill { height:100%; width:0%; background:linear-gradient(90deg,var(--accent2),var(--accent)); border-radius:99px; transition:width 0.5s; }
-
-/* ── EMPTY ── */
 .tk-empty { text-align:center; padding:40px 20px; color:var(--muted); }
 .tk-empty i { font-size:2.2rem; display:block; margin-bottom:10px; opacity:0.2; }
 .tk-empty-t { font-family:'Syne',sans-serif; font-size:0.92rem; font-weight:700; margin-bottom:4px; color:var(--text); }
 .tk-empty-s { font-size:0.8rem; }
 .tk-empty-s a { color:var(--accent); }
-
-/* ── CLAIM MODAL ── */
-.cm-timer-ring {
-    position: relative; width: 100px; height: 100px;
-    margin: 0 auto 16px;
-}
-.cm-timer-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.cm-ring-bg   { fill:none; stroke:var(--border2); stroke-width:6; }
-.cm-ring-fill {
-    fill: none; stroke: var(--accent); stroke-width: 6;
-    stroke-linecap: round;
-    stroke-dasharray: 213.6; /* 2π×34 */
-    stroke-dashoffset: 213.6;
-    transition: stroke-dashoffset 1s linear;
-}
-.cm-num {
-    position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Syne',sans-serif; font-size: 1.8rem; font-weight: 800;
-    color: var(--accent);
-}
-.cm-claim-btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 14px 32px; border-radius: 10px;
-    background: var(--accent); color: #000;
-    border: none; cursor: pointer;
-    font-family: 'DM Sans',sans-serif; font-size: 1rem; font-weight: 700;
-    transition: opacity 0.2s; width: 100%; justify-content: center;
-    animation: claimPop 0.3s ease;
-}
-@keyframes claimPop { from{transform:scale(0.9);opacity:0} to{transform:scale(1);opacity:1} }
-.cm-claim-btn:hover { opacity:0.9; }
-.cm-claim-btn:disabled { opacity:0.5; cursor:not-allowed; }
 </style>
 
 <script>
-let _cmState = { tid:null, upid:null, reward:0, duration:0, interval:null };
+var _iv = null;
 
-function tkOpenModal(tid, upid, duration, reward, link) {
-    // Open smartlink in new tab if provided
-    if (link) window.open(link, '_blank');
-
-    // Reset modal
-    _cmState = { tid, upid, reward, duration, interval:null };
-    document.getElementById('cm-waiting').style.display = 'block';
-    document.getElementById('cm-ready').style.display   = 'none';
-    document.getElementById('cm-num').textContent       = duration;
-    document.getElementById('cm-reward').textContent    = parseFloat(reward).toFixed(2);
-
-    // Reset ring
-    const ring = document.getElementById('cm-ring');
-    const circ = 213.6; // 2π×34
-    ring.style.strokeDashoffset = circ;
-
-    // Show modal
-    new bootstrap.Modal(document.getElementById('claimModal')).show();
-
-    // Start timer
-    let elapsed = 0;
-    _cmState.interval = setInterval(() => {
-        elapsed++;
-        const rem = Math.max(duration - elapsed, 0);
-        const pct = elapsed / duration;
-        document.getElementById('cm-num').textContent = rem;
-        ring.style.strokeDashoffset = circ - (circ * pct);
-
-        if (elapsed >= duration) {
-            clearInterval(_cmState.interval);
-            document.getElementById('cm-waiting').style.display = 'none';
-            document.getElementById('cm-ready').style.display   = 'block';
-        }
-    }, 1000);
-
-    // Claim button
-    const btn = document.getElementById('cm-claim-btn');
-    btn.onclick = function() {
-        this.disabled = true;
-        this.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
-        tkSubmit(_cmState.tid, _cmState.upid, _cmState.duration, _cmState.reward);
-    };
+function showOverlay(id) {
+    document.getElementById(id).style.display = 'flex';
+}
+function hideOverlay(id) {
+    document.getElementById(id).style.display = 'none';
 }
 
-function tkSubmit(tid, upid, duration, reward) {
+function startAd(tid, upid, duration, reward) {
+
+    // Clear any previous timer
+    if (_iv) { clearInterval(_iv); _iv = null; }
+
+    // Put ad clone in overlay
+    var adArea = document.getElementById('adOv-ad');
+    adArea.innerHTML = '';
+    var inner = document.querySelector('#tk-' + tid + '-' + upid + ' .tk-ad-inner');
+    if (inner) {
+        var clone = inner.cloneNode(true);
+        clone.style.pointerEvents = 'none';
+        clone.style.maxHeight = '200px';
+        adArea.appendChild(clone);
+    }
+
+    // Reset bar
+    var bar = document.getElementById('adOv-bar');
+    bar.style.transition = 'none';
+    bar.style.width = '0%';
+    bar.offsetWidth; // force reflow
+    bar.style.transition = 'width ' + duration + 's linear';
+    bar.style.width = '100%';
+
+    // Countdown
+    document.getElementById('adOv-num').textContent = duration;
+    showOverlay('adOv');
+
+    var elapsed = 0;
+    _iv = setInterval(function() {
+        elapsed++;
+        var rem = duration - elapsed;
+        document.getElementById('adOv-num').textContent = rem < 0 ? 0 : rem;
+        if (elapsed >= duration) {
+            clearInterval(_iv);
+            _iv = null;
+            hideOverlay('adOv');
+            submitTask(tid, upid, duration, reward);
+        }
+    }, 1000);
+}
+
+function submitTask(tid, upid, duration, reward) {
     fetch('/tasks/auto-verify', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         },
-        body: JSON.stringify({ user_package_id:parseInt(upid), task_id:parseInt(tid), duration:parseInt(duration) })
+        body: JSON.stringify({
+            user_package_id: parseInt(upid),
+            task_id: parseInt(tid),
+            duration: parseInt(duration)
+        })
     })
-    .then(r => r.json())
-    .then(data => {
-        bootstrap.Modal.getInstance(document.getElementById('claimModal'))?.hide();
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
         if (data.success) {
-            document.getElementById(`task-card-${tid}-${upid}`)?.classList.add('task-done');
-            ['sb-earned','stat-earned'].forEach(id => { const el=document.getElementById(id); if(el){const c=parseFloat(el.textContent.replace(/[$,]/g,''))||0; el.textContent='$'+(c+parseFloat(reward)).toFixed(2);} });
-            ['sb-done','stat-done'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=(parseInt(el.textContent)||0)+1; });
-            ['sb-remaining','stat-remaining'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=Math.max((parseInt(el.textContent)||0)-1,0); });
+            var card = document.getElementById('tk-' + tid + '-' + upid);
+            if (card) card.classList.add('task-done');
+            ['sb-earned','stat-earned'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) { var c = parseFloat(el.textContent.replace(/[$,]/g,'')) || 0; el.textContent = '$' + (c + parseFloat(reward)).toFixed(2); }
+            });
+            ['sb-done','stat-done'].forEach(function(id) { var el=document.getElementById(id); if(el) el.textContent=(parseInt(el.textContent)||0)+1; });
+            ['sb-remaining','stat-remaining'].forEach(function(id) { var el=document.getElementById(id); if(el) el.textContent=Math.max((parseInt(el.textContent)||0)-1,0); });
             document.getElementById('earnedAmount').textContent = data.reward || parseFloat(reward).toFixed(2);
-            new bootstrap.Modal(document.getElementById('successModal')).show();
+            showOverlay('sucOv');
         } else {
             alert('Failed: ' + (data.message || 'Error'));
-            const btn = document.getElementById('cm-claim-btn');
-            if (btn) { btn.disabled=false; btn.innerHTML='<i class="bi bi-wallet2"></i> Claim $'+parseFloat(reward).toFixed(2); }
         }
     })
-    .catch(e => alert('Network error: ' + e.message));
+    .catch(function(e) { alert('Network error: ' + e.message); });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    document.body.appendChild(document.getElementById('claimModal'));
-    document.body.appendChild(document.getElementById('successModal'));
+document.addEventListener('DOMContentLoaded', function() {
 
-    // Auto task
-    document.querySelectorAll('.auto-task-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const tid=this.dataset.taskId, upid=this.dataset.userPackageId;
-            const url=this.dataset.taskUrl, reward=this.dataset.reward;
-            const dur=parseInt(this.dataset.requiredDuration);
-            if(!url){alert('Task URL missing.');return;}
-            const tab=window.open(url,'_blank');
-            if(!tab){alert('Popup blocked!');return;}
-            this.disabled=true; this.innerHTML='<i class="bi bi-hourglass-split"></i>';
-            const tb=document.getElementById(`timer-box-${tid}-${upid}`);
-            if(tb)tb.classList.add('on');
-            let e=0;
-            const iv=setInterval(()=>{
-                e++;
-                const b=document.getElementById(`progress-${tid}-${upid}`);
-                if(b)b.style.width=Math.min((e/dur)*100,100)+'%';
-                if(e>=dur){
-                    clearInterval(iv);
-                    fetch('/tasks/auto-verify',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').getAttribute('content')},body:JSON.stringify({user_package_id:parseInt(upid),task_id:parseInt(tid),duration:e})})
-                    .then(r=>r.json()).then(data=>{
-                        if(data.success){
-                            document.getElementById(`task-card-${tid}-${upid}`)?.classList.add('task-done');
-                            ['sb-earned','stat-earned'].forEach(id=>{const el=document.getElementById(id);if(el){const c=parseFloat(el.textContent.replace(/[$,]/g,''))||0;el.textContent='$'+(c+parseFloat(reward)).toFixed(2);}});
-                            ['sb-done','stat-done'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=(parseInt(el.textContent)||0)+1;});
-                            ['sb-remaining','stat-remaining'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=Math.max((parseInt(el.textContent)||0)-1,0);});
-                            document.getElementById('earnedAmount').textContent=data.reward||parseFloat(reward).toFixed(2);
-                            new bootstrap.Modal(document.getElementById('successModal')).show();
-                        }else{alert('Failed: '+data.message);}
-                    });
-                }
-            },1000);
+    // Ad click — listen on the wrapper div
+    document.querySelectorAll('.tk-ad-body').forEach(function(div) {
+        div.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+
+            var tid      = this.dataset.tid;
+            var upid     = this.dataset.upid;
+            var duration = parseInt(this.dataset.duration);
+            var reward   = parseFloat(this.dataset.reward);
+            var link     = this.dataset.link || '';
+
+            // Open new tab immediately inside click handler
+            if (link && link.length > 5) {
+                window.open(link, '_blank');
+            }
+
+            // Start timer overlay
+            startAd(tid, upid, duration, reward);
         });
     });
+
+    // Auto task buttons
+    document.querySelectorAll('.auto-task-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var tid  = this.dataset.taskId;
+            var upid = this.dataset.userPackageId;
+            var url  = this.dataset.taskUrl;
+            var reward  = this.dataset.reward;
+            var dur  = parseInt(this.dataset.requiredDuration);
+            if (!url) { alert('Task URL missing.'); return; }
+            var tab = window.open(url, '_blank');
+            if (!tab) { alert('Popup blocked!'); return; }
+            this.disabled = true;
+            this.innerHTML = '<i class="bi bi-hourglass-split"></i> Running...';
+            var bar = document.getElementById('bar-' + tid + '-' + upid);
+            if (bar) bar.classList.add('on');
+            var elapsed = 0;
+            var iv = setInterval(function() {
+                elapsed++;
+                var fill = document.getElementById('fill-' + tid + '-' + upid);
+                if (fill) fill.style.width = Math.min((elapsed/dur)*100, 100) + '%';
+                if (elapsed >= dur) {
+                    clearInterval(iv);
+                    submitTask(tid, upid, dur, reward);
+                }
+            }, 1000);
+        });
+    });
+
 });
 </script>
 @endpush

@@ -3,21 +3,23 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Services\ReferralService;
 use App\Services\WalletService;
-use App\Models\User;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 
 class RegisterController extends Controller
 {
     protected $redirectTo = '/dashboard';
+
     protected $referralService;
+
     protected $walletService;
 
     public function __construct(ReferralService $referralService, WalletService $walletService)
@@ -47,22 +49,23 @@ class RegisterController extends Controller
      */
     public function register(Request $request)
     {
-        // Validate
         $validator = $this->validator($request->all());
 
+        $referralCode = $request->input('ref');
+        $referrer = null;
+
+        if ($referralCode) {
+            $referrer = User::where('referral_code', $referralCode)->first();
+        }
+
         if ($validator->fails()) {
-            // Get referrer data for redirect
-            $referralCode = $request->input('ref');
-            $referrer = null;
-
-            if ($referralCode) {
-                $referrer = User::where('referral_code', $referralCode)->first();
-            }
-
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput()
-                ->with(compact('referralCode', 'referrer'));
+                ->with([
+                    'referralCode' => $referralCode,
+                    'referrer' => $referrer,
+                ]);
         }
 
         DB::beginTransaction();
@@ -86,11 +89,10 @@ class RegisterController extends Controller
             );
 
             // Login user
-            Auth::guard()->login($user);
+            Auth::login($user);
 
             DB::commit();
 
-            // Check if there's a custom registered response
             if ($response = $this->registered($request, $user)) {
                 return $response;
             }
@@ -101,20 +103,21 @@ class RegisterController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            report($e);
 
-            // Get referrer data for redirect
-            $referralCode = $request->input('ref');
-            $referrer = null;
-
-            if ($referralCode) {
-                $referrer = User::where('referral_code', $referralCode)->first();
-            }
+            \Log::error('Registration failed', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
 
             return redirect()->back()
-                ->with('error', 'Registration failed. Please try again.')
+                ->with('error', $e->getMessage()) // Change to generic message in production
                 ->withInput()
-                ->with(compact('referralCode', 'referrer'));
+                ->with([
+                    'referralCode' => $referralCode,
+                    'referrer' => $referrer,
+                ]);
         }
     }
 
@@ -124,7 +127,7 @@ class RegisterController extends Controller
     protected function validator(array $data)
     {
         return Validator::make($data, [
-            'name' => ['required','string','min:2','max:50','regex:/^[a-zA-Z\s]+$/'],
+            'name' => ['required', 'string', 'min:2', 'max:50', 'regex:/^[a-zA-Z\s]+$/'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
             'ref' => 'nullable|string|exists:users,referral_code',

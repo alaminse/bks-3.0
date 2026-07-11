@@ -23,11 +23,11 @@
             <div class="dep-panel-body">
                 <div class="dep-addr-box">
                     <div class="dep-addr-network">
-                        <i class="bi bi-broadcast"></i> Network: Binance TRC20
-                        <span>TRON (TRC20)</span>
+                        <i class="bi bi-broadcast"></i> Network: Binance BNB
+                        <span>BNB Smart Chain (BEP20)</span>
                     </div>
                     <div class="dep-addr-code" id="walletAddress">
-                        TFDdDrdohNe9Er4uEpr1evCFMFCckm9rba
+                        0xf1076e7ec70b653eac12b9beddb29582065d0239
                     </div>
                     <button class="dep-copy-btn" id="copyBtn" onclick="copyAddress()">
                         <i class="bi bi-clipboard" id="copyIcon"></i>
@@ -37,7 +37,7 @@
                 <div class="dep-warn">
                     <i class="bi bi-exclamation-triangle-fill"></i>
                     <div>
-                        <strong>Warning:</strong> Only send USDT (TRC20) to this address. Sending other tokens may result in permanent loss of funds.
+                        <strong>Warning:</strong> Only send USDT (BEP20) to this address. Sending other tokens may result in permanent loss of funds.
                     </div>
                 </div>
             </div>

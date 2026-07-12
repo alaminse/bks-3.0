@@ -6,6 +6,7 @@
 @stack('scripts')
 
 <script>
+    
 function confirmFormSubmit(formId, opts = {}) {
     Swal.fire({
         title:             opts.title       || 'Are you sure?',

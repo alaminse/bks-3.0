@@ -380,9 +380,12 @@
 
 @push('scripts')
     <script>
-        // Auto refresh if pending items exist
+        $(function () {
+            $('.modal').appendTo('body');
+        });
+
         @if ($stats['pending_count'] > 0)
-            setTimeout(() => location.reload(), 30000); // 30 seconds
+            setTimeout(() => location.reload(), 30000);
         @endif
     </script>
 @endpush

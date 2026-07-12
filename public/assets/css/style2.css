@@ -288,7 +288,7 @@ main.py-6 { background: var(--ad-bg) !important; padding: 1.5rem 0 !important; p
 .table thead th { background: #f8fafc !important; color: var(--ad-muted) !important; font-family: 'Inter', sans-serif !important; font-size: 0.72rem !important; font-weight: 600 !important; letter-spacing: 0.05em !important; text-transform: uppercase !important; border-bottom: 1px solid var(--ad-border) !important; white-space: nowrap; }
 .table tbody tr:hover > * { background: #f8fafc !important; color: var(--ad-text) !important; }
 .table td strong { color: var(--ad-text) !important; }
-.table-responsive { border: 1px solid var(--ad-border); border-radius: 10px; overflow: hidden; }
+.table-responsive { border: 1px solid var(--ad-border); border-radius: 10px; overflow-x: auto; }
 .table-striped > tbody > tr:nth-of-type(odd) > * { background: #fafbfc !important; }
 
 /* ── BADGES ── */
@@ -310,6 +310,7 @@ main.py-6 { background: var(--ad-bg) !important; padding: 1.5rem 0 !important; p
 .alert-primary { border-color: var(--ad-accent) !important; color: #3730a3 !important; background: rgba(99,102,241,0.06) !important; }
 .alert-primary strong { color: #3730a3 !important; font-family: 'Inter', sans-serif !important; font-size: inherit !important; letter-spacing: 0 !important; }
 .alert-primary p { color: #4338ca !important; margin: 0 !important; font-size: 0.85rem !important; }
+
 
 /* ── MODALS ── */
 .modal-content { background: #fff !important; border: 1px solid var(--ad-border) !important; border-radius: 14px !important; color: var(--ad-text) !important; box-shadow: 0 20px 60px rgba(0,0,0,0.15) !important; }

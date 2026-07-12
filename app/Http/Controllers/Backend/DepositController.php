@@ -84,41 +84,80 @@ class DepositController extends Controller
     /**
      * Admin: Deposit approve করুন
      */
+    // public function approve($id)
+    // {
+    //     try {
+    //         $deposit = Deposit::findOrFail($id);
+
+    //         if ($deposit->status !== 'pending') {
+    //             return back()->with('error', 'This deposit has already been processed.');
+    //         }
+
+    //         // Wallet এ টাকা জমা করুন
+    //         app(WalletService::class)->credit(
+    //             userId: $deposit->user_id,
+    //             amount: $deposit->amount,
+    //             type: 'deposit',
+    //             referenceType: 'Deposit',
+    //             referenceId: $deposit->id,
+    //             description: "Deposit approved - {$deposit->reference_number}"
+    //         );
+
+    //         // Deposit status update
+    //         $deposit->update([
+    //             'status' => 'approved',
+    //             'approved_at' => now(),
+    //             'approved_by' => Auth::id()
+    //         ]);
+
+    //         // Optional: Send notification to user
+    //         // event(new DepositApproved($deposit));
+
+    //         return back()->with('success', "Deposit {$deposit->reference_number} approved successfully. {$deposit->amount} USDT credited to user wallet.");
+
+    //     } catch (\Exception $e) {
+    //         return back()->with('error', 'Failed to approve deposit: ' . $e->getMessage());
+    //     }
+    // }
     public function approve($id)
-    {
-        try {
-            $deposit = Deposit::findOrFail($id);
+{
+    try {
+        $deposit = Deposit::findOrFail($id);
 
-            if ($deposit->status !== 'pending') {
-                return back()->with('error', 'This deposit has already been processed.');
-            }
-
-            // Wallet এ টাকা জমা করুন
-            app(WalletService::class)->credit(
-                userId: $deposit->user_id,
-                amount: $deposit->amount,
-                type: 'deposit',
-                referenceType: 'Deposit',
-                referenceId: $deposit->id,
-                description: "Deposit approved - {$deposit->reference_number}"
-            );
-
-            // Deposit status update
-            $deposit->update([
-                'status' => 'approved',
-                'approved_at' => now(),
-                'approved_by' => Auth::id()
-            ]);
-
-            // Optional: Send notification to user
-            // event(new DepositApproved($deposit));
-
-            return back()->with('success', "Deposit {$deposit->reference_number} approved successfully. {$deposit->amount} USDT credited to user wallet.");
-
-        } catch (\Exception $e) {
-            return back()->with('error', 'Failed to approve deposit: ' . $e->getMessage());
+        if ($deposit->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Already processed.'
+            ], 422);
         }
+
+        app(WalletService::class)->credit(
+            userId: $deposit->user_id,
+            amount: $deposit->amount,
+            type: 'deposit',
+            referenceType: 'Deposit',
+            referenceId: $deposit->id,
+            description: "Deposit approved - {$deposit->reference_number}"
+        );
+
+        $deposit->update([
+            'status' => 'approved',
+            'approved_at' => now(),
+            'approved_by' => Auth::id(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Deposit approved.'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Admin: Deposit reject করুন

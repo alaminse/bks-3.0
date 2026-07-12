@@ -358,7 +358,7 @@ $(function() {
     $('.user-status-toggle').on('change', function() {
         const userId = $(this).data('id');
         const status = $(this).is(':checked') ? 'active' : 'inactive';
-        $.post(`/admin/users/${userId}/status`, {
+        $.post(`/bks/users/${userId}/status`, {
             _token: $('meta[name="csrf-token"]').attr('content'),
             status: status
         }).fail(() => { $(this).prop('checked', !$(this).is(':checked')); });
@@ -373,25 +373,25 @@ $(function() {
     $('.approve-withdrawal').on('click', function() {
         const id = $(this).data('id');
         Swal.fire({ title:'Approve withdrawal?', icon:'question', showCancelButton:true, confirmButtonText:'Yes, Approve' })
-            .then(r => { if(r.isConfirmed) ajaxAction(`/admin/withdrawals/${id}/approve`, {}, 'Withdrawal approved!', 'Error approving withdrawal'); });
+            .then(r => { if(r.isConfirmed) ajaxAction(`/bks/withdrawals/${id}/approve`, {}, 'Withdrawal approved!', 'Error approving withdrawal'); });
     });
 
     $('.reject-withdrawal').on('click', function() {
         const id = $(this).data('id');
         Swal.fire({ title:'Reject withdrawal?', input:'text', inputLabel:'Reason for rejection', icon:'warning', showCancelButton:true, confirmButtonText:'Reject' })
-            .then(r => { if(r.isConfirmed && r.value) ajaxAction(`/admin/withdrawals/${id}/reject`, {reason:r.value}, 'Withdrawal rejected', 'Error rejecting withdrawal'); });
+            .then(r => { if(r.isConfirmed && r.value) ajaxAction(`/bks/withdrawals/${id}/reject`, {reason:r.value}, 'Withdrawal rejected', 'Error rejecting withdrawal'); });
     });
 
     $('.approve-deposit').on('click', function() {
         const id = $(this).data('id');
         Swal.fire({ title:'Approve deposit?', icon:'question', showCancelButton:true, confirmButtonText:'Yes, Approve' })
-            .then(r => { if(r.isConfirmed) ajaxAction(`/admin/deposits/${id}/approve`, {}, 'Deposit approved!', 'Error approving deposit'); });
+            .then(r => { if(r.isConfirmed) ajaxAction(`/bks/deposits/${id}/approve`, {}, 'Deposit approved!', 'Error approving deposit'); });
     });
 
     $('.reject-deposit').on('click', function() {
         const id = $(this).data('id');
         Swal.fire({ title:'Reject deposit?', input:'text', inputLabel:'Reason for rejection', icon:'warning', showCancelButton:true, confirmButtonText:'Reject' })
-            .then(r => { if(r.isConfirmed && r.value) ajaxAction(`/admin/deposits/${id}/reject`, {reason:r.value}, 'Deposit rejected', 'Error rejecting deposit'); });
+            .then(r => { if(r.isConfirmed && r.value) ajaxAction(`/bks/deposits/${id}/reject`, {reason:r.value}, 'Deposit rejected', 'Error rejecting deposit'); });
     });
 });
 </script>

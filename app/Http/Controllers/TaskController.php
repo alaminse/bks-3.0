@@ -138,10 +138,9 @@ class TaskController extends Controller
                 ->whereDate('submitted_at', today())
                 ->sum('reward_amount');
 
-            $total = (int) round(((float)$todayEarning + (float)$reward) * 100);
-            $limit = (int) round((float)$userPackage->daily_earning_limit * 100);
+            $total = (float)$todayEarning + (float)$reward;
 
-            if ($total > $limit) {
+            if ($total > (float)$userPackage->daily_earning_limit) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Completing this task would exceed your daily earning limit',

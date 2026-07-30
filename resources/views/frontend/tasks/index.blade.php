@@ -16,6 +16,7 @@
     </div>
 </div>
 
+{{-- ── STATS ROW ── --}}
 <div class="stats-row" style="margin-bottom:20px;">
     <div class="stat-card">
         <div class="stat-card-icon" style="color:var(--accent);"><i class="bi bi-cash-coin"></i></div>
@@ -49,6 +50,7 @@
     </div>
 </div>
 
+{{-- ── MAIN GRID ── --}}
 <div class="tk-page-grid">
     <div class="tk-list-col">
         <div class="s-card">
@@ -64,52 +66,13 @@
                 $upid     = $taskData['user_package_id'];
                 $duration = $taskData['task']->effective_skip_delay ?? 30;
                 $reward   = $taskData['reward'];
-                $adCode   = $isAd ? trim($taskData['task']->adsterra_ad_code ?? '') : '';
                 $taskUrl  = trim($taskData['task']->task_url ?? '');
-
-                // ── Detect ad type ──
-                $isSmartlink  = preg_match('/^https?:\/\/\S+$/m', $adCode) && !str_contains($adCode, '<script') && !str_contains($adCode, '<div');
-                $isPopunder   = str_contains($adCode, 'effectivecpmnetwork.com/1b') || str_contains($adCode, 'effectivecpmnetwork.com/e0');
-                $isNativeBanner = str_contains($adCode, 'effectivecpmnetwork.com/ab');
-                $isBanner     = str_contains($adCode, 'highperformanceformat.com');
-
-                // ── Build srcdoc HTML for iframe ──
-                // Wrap ad code in a self-contained HTML page
-                // This avoids atOptions variable clash and X-Frame-Options issues
-                $srcdocHtml = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>html,body{margin:0;padding:0;background:transparent;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:100%;}</style></head><body>' . $adCode . '</body></html>';
-
-                // Escape for HTML attribute
-                $srcdocEscaped = htmlspecialchars($srcdocHtml, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-
-                // ── Smartlink: extract URL ──
-                $smartlinkUrl = '';
-                if ($isSmartlink) {
-                    preg_match('/https?:\/\/\S+/m', $adCode, $slm);
-                    $smartlinkUrl = trim($slm[0] ?? '');
-                }
-                if (empty($smartlinkUrl) && !empty($taskUrl)) {
-                    $smartlinkUrl = $taskUrl;
-                }
-
-                // ── Ad label ──
-                if ($isSmartlink)    $adTypeLabel = 'Smartlink';
-                elseif ($isPopunder) $adTypeLabel = 'Social Ad';
-                elseif ($isNativeBanner) $adTypeLabel = 'Native Ad';
-                elseif ($isBanner)   $adTypeLabel = 'Banner';
-                else                 $adTypeLabel = 'Ad';
-
-                // ── For display preview: determine banner size ──
-                $bannerH = 100; // default preview height
-                if (str_contains($adCode, "'height' : 250") || str_contains($adCode, '"height" : 250')) $bannerH = 250;
-                elseif (str_contains($adCode, "'height' : 90"))  $bannerH = 90;
-                elseif (str_contains($adCode, "'height' : 60"))  $bannerH = 60;
-                elseif (str_contains($adCode, "'height' : 50"))  $bannerH = 50;
-                elseif (str_contains($adCode, "'height' : 600")) $bannerH = 200; // cap at 200
-                elseif (str_contains($adCode, "'height' : 300")) $bannerH = 200;
+                $adViewUrl = $isAd ? route('ad.view', $tid) : '';
             @endphp
 
             <div class="tk-item {{ $isAd ? 'is-ad' : 'is-std' }}" id="tk-{{ $tid }}-{{ $upid }}">
 
+                {{-- Task header --}}
                 <div class="tk-head">
                     <div class="tk-ico {{ $isAd ? 'ad' : 'std' }}">
                         <i class="bi {{ $isAd ? 'bi-megaphone-fill' : 'bi-play-circle-fill' }}"></i>
@@ -119,7 +82,7 @@
                         <div class="tk-tags">
                             <span class="tk-tag t-pkg">{{ $taskData['package']->name }}</span>
                             <span class="tk-tag {{ $isAd ? 't-ad' : 't-std' }}">
-                                {{ $isAd ? $adTypeLabel.'·'.$duration.'s' : 'Auto' }}
+                                {{ $isAd ? 'Ad · '.$duration.'s' : 'Auto' }}
                             </span>
                             <span class="tk-tag t-rem">{{ $taskData['remaining_tasks'] }} left</span>
                         </div>
@@ -128,39 +91,29 @@
                 </div>
 
                 @if($isAd)
-                {{-- ══ AD TASK ══ --}}
+                {{-- ══ AD TASK: click opens modal ══ --}}
                 <div class="tk-ad-body"
                      data-tid="{{ $tid }}"
                      data-upid="{{ $upid }}"
                      data-duration="{{ $duration }}"
                      data-reward="{{ $reward }}"
-                     data-srcdoc="{{ $srcdocEscaped }}"
-                     data-smartlink="{{ $smartlinkUrl }}"
-                     data-banner-h="{{ $bannerH }}"
-                     data-is-popunder="{{ $isPopunder ? '1' : '0' }}"
-                     data-is-smartlink="{{ $isSmartlink ? '1' : '0' }}">
+                     data-ad-url="{{ $adViewUrl }}">
 
-                    {{-- Preview thumbnail --}}
-                    <div class="tk-ad-preview">
-                        @if($isSmartlink)
-                            <i class="bi bi-link-45deg" style="font-size:2rem;color:var(--accent);opacity:0.5;"></i>
-                            <span style="font-size:0.7rem;color:var(--muted);margin-top:4px">Smartlink Ad</span>
-                        @elseif($isPopunder)
-                            <i class="bi bi-window-stack" style="font-size:2rem;color:var(--blue);opacity:0.5;"></i>
-                            <span style="font-size:0.7rem;color:var(--muted);margin-top:4px">Social Bar Ad</span>
-                        @elseif($isNativeBanner)
-                            <i class="bi bi-card-image" style="font-size:2rem;color:var(--green);opacity:0.5;"></i>
-                            <span style="font-size:0.7rem;color:var(--muted);margin-top:4px">Native Banner</span>
-                        @else
-                            <i class="bi bi-megaphone-fill" style="font-size:2rem;color:var(--blue);opacity:0.5;"></i>
-                            <span style="font-size:0.7rem;color:var(--muted);margin-top:4px">Banner Ad</span>
-                        @endif
-                    </div>
-
-                    {{-- Tap overlay --}}
-                    <div class="tk-ad-click-label">
-                        <i class="bi bi-hand-index-thumb-fill"></i>
-                        Tap to watch &amp; earn ${{ number_format($reward, 2) }}
+                    {{-- Visual preview card --}}
+                    <div class="tk-ad-preview-card">
+                        <div class="tk-ad-preview-icon">
+                            <i class="bi bi-megaphone-fill"></i>
+                        </div>
+                        <div class="tk-ad-preview-info">
+                            <div style="font-size:0.78rem;font-weight:600;color:var(--text);">{{ $taskData['task']->title }}</div>
+                            <div style="font-size:0.65rem;color:var(--muted);margin-top:2px;">
+                                Watch for {{ $duration }}s → Earn
+                                <span style="color:var(--gold);font-weight:700;">${{ number_format($reward,2) }}</span>
+                            </div>
+                        </div>
+                        <div class="tk-ad-play-btn">
+                            <i class="bi bi-play-fill"></i>
+                        </div>
                     </div>
 
                 </div>
@@ -207,10 +160,10 @@
             </div>
             <div style="padding:4px 0;">
                 @foreach([
-                    ['icon'=>'bi-cash-coin','color'=>'var(--accent)','label'=>'Earned Today','id'=>'sb-earned','val'=>'$'.number_format($stats['total_earned_today'],2)],
-                    ['icon'=>'bi-check-circle-fill','color'=>'var(--green)','label'=>'Tasks Done','id'=>'sb-done','val'=>$stats['tasks_completed_today']],
-                    ['icon'=>'bi-list-check','color'=>'var(--blue)','label'=>'Remaining','id'=>'sb-remaining','val'=>$stats['available_tasks']],
-                    ['icon'=>'bi-box-seam-fill','color'=>'var(--gold)','label'=>'Packages','id'=>'','val'=>$stats['active_packages']],
+                    ['icon'=>'bi-cash-coin',       'color'=>'var(--accent)', 'label'=>'Earned Today', 'id'=>'sb-earned',    'val'=>'$'.number_format($stats['total_earned_today'],2)],
+                    ['icon'=>'bi-check-circle-fill','color'=>'var(--green)', 'label'=>'Tasks Done',   'id'=>'sb-done',      'val'=>$stats['tasks_completed_today']],
+                    ['icon'=>'bi-list-check',       'color'=>'var(--blue)',  'label'=>'Remaining',    'id'=>'sb-remaining', 'val'=>$stats['available_tasks']],
+                    ['icon'=>'bi-box-seam-fill',    'color'=>'var(--gold)',  'label'=>'Packages',     'id'=>'',             'val'=>$stats['active_packages']],
                 ] as $r)
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 18px;border-bottom:1px solid var(--border);">
                     <div style="display:flex;align-items:center;gap:10px;">
@@ -230,89 +183,141 @@
     </div>
 </div>
 
-{{-- ══════════════════════════════════════
-     AD MODAL
-══════════════════════════════════════ --}}
-<div id="adModal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.93);align-items:center;justify-content:center;padding:12px;">
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:100%;max-width:420px;overflow:hidden;">
+{{-- ════════════════════════════════════════════
+     AD MODAL — Full ad viewing experience
+════════════════════════════════════════════ --}}
+<div id="adModal"
+     style="display:none;position:fixed;inset:0;z-index:99999;
+            background:rgba(0,0,0,0.95);
+            align-items:center;justify-content:center;padding:12px;">
 
-        {{-- Header --}}
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--card2);">
+    <div class="ad-modal-box">
+
+        {{-- ── TOP: Header ── --}}
+        <div class="adm-header">
             <div style="display:flex;align-items:center;gap:8px;">
                 <div class="ad-pulse-dot"></div>
-                <span style="font-size:0.78rem;font-weight:600;color:var(--muted)">Watching Ad</span>
+                <span style="font-size:0.78rem;font-weight:600;color:var(--muted);">Watching Ad</span>
             </div>
-            <span id="adModal-reward" style="font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:800;color:var(--gold);background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);padding:3px 10px;border-radius:99px;"></span>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span id="adm-reward-badge"
+                      style="font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:800;
+                             color:var(--gold);background:rgba(245,158,11,0.12);
+                             border:1px solid rgba(245,158,11,0.3);
+                             padding:3px 12px;border-radius:99px;"></span>
+            </div>
         </div>
 
-        {{-- ── AD IFRAME (srcdoc) — no X-Frame-Options issue ── --}}
-        <div style="width:100%;background:#0a0a14;position:relative;overflow:hidden;" id="adModal-wrap">
-            <iframe id="adModal-frame"
-                    srcdoc=""
-                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+        {{-- ── MIDDLE: Ad iframe ── --}}
+        <div class="adm-ad-wrap" id="adm-ad-wrap">
+
+            {{-- Spinner shown while ad loads --}}
+            <div id="adm-spinner">
+                <div class="adm-spin-ring"></div>
+                <span>Loading ad...</span>
+            </div>
+
+            {{-- Actual ad iframe — loads /ad-view/{id} from our own domain --}}
+            <iframe id="adm-frame"
+                    src="about:blank"
                     scrolling="no"
-                    style="width:100%;height:160px;border:none;display:block;"
-                    loading="lazy">
+                    allowfullscreen
+                    style="width:100%;height:220px;border:none;display:block;opacity:0;transition:opacity 0.4s;">
             </iframe>
-            {{-- Loading placeholder --}}
-            <div id="adModal-loading" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0a0a14;color:rgba(255,255,255,0.2);gap:8px;">
-                <i class="bi bi-megaphone-fill" style="font-size:2rem;"></i>
-                <span style="font-size:0.7rem;">Loading ad...</span>
-            </div>
         </div>
 
-        {{-- Progress + Close --}}
-        <div style="padding:14px 16px 16px;">
+        {{-- ── BOTTOM: Timer + Close ── --}}
+        <div class="adm-footer">
 
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            {{-- Timer row --}}
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+
                 <div>
-                    <div style="font-size:0.7rem;color:var(--muted);margin-bottom:2px;">Please watch the ad</div>
-                    <div style="font-size:0.75rem;color:var(--muted);">
-                        Close in
-                        <span id="adModal-sec" style="font-family:'Syne',sans-serif;font-weight:800;color:var(--accent);font-size:0.95rem;margin:0 2px;">0</span>s
+                    <div style="font-size:0.7rem;color:var(--muted);margin-bottom:3px;">
+                        <i class="bi bi-eye-fill" style="margin-right:3px;color:var(--accent);"></i>
+                        Watch the complete ad to claim reward
+                    </div>
+                    <div style="font-size:0.8rem;color:var(--text);">
+                        Close button in
+                        <span id="adm-sec"
+                              style="font-family:'Syne',sans-serif;font-weight:900;
+                                     color:var(--accent);font-size:1rem;margin:0 2px;"></span>s
                     </div>
                 </div>
-                {{-- Ring countdown --}}
-                <div style="position:relative;width:50px;height:50px;flex-shrink:0;">
-                    <svg width="50" height="50" viewBox="0 0 50 50" style="transform:rotate(-90deg)">
-                        <circle cx="25" cy="25" r="20" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4"/>
-                        <circle cx="25" cy="25" r="20" fill="none" stroke="var(--accent)" stroke-width="4"
-                            id="adModal-ring"
-                            stroke-dasharray="125.6"
-                            stroke-dashoffset="125.6"
-                            stroke-linecap="round"
-                            style="transition:stroke-dashoffset 1s linear"/>
+
+                {{-- Circular countdown ring --}}
+                <div style="position:relative;width:54px;height:54px;flex-shrink:0;">
+                    <svg width="54" height="54" viewBox="0 0 54 54"
+                         style="transform:rotate(-90deg);position:absolute;top:0;left:0;">
+                        <circle cx="27" cy="27" r="22"
+                                fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="5"/>
+                        <circle cx="27" cy="27" r="22"
+                                fill="none" stroke="var(--accent)" stroke-width="5"
+                                id="adm-ring"
+                                stroke-dasharray="138.2"
+                                stroke-dashoffset="138.2"
+                                stroke-linecap="round"
+                                style="transition:stroke-dashoffset 1s linear;"/>
                     </svg>
                     <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
-                        <span id="adModal-num" style="font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:900;color:var(--accent);">0</span>
+                        <span id="adm-num"
+                              style="font-family:'Syne',sans-serif;font-size:1rem;
+                                     font-weight:900;color:var(--accent);">0</span>
                     </div>
                 </div>
             </div>
 
             {{-- Progress bar --}}
-            <div style="height:4px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;margin-bottom:12px;">
-                <div id="adModal-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#ef4444,var(--gold),var(--accent));border-radius:99px;transition:width 1s linear;"></div>
+            <div style="height:5px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;margin-bottom:14px;">
+                <div id="adm-bar"
+                     style="height:100%;width:0%;border-radius:99px;
+                            background:linear-gradient(90deg,#ef4444,var(--gold),var(--accent));
+                            transition:width 1s linear;">
+                </div>
             </div>
 
-            {{-- Close button --}}
-            <button id="adModal-close" disabled
-                style="width:100%;padding:12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.08);cursor:not-allowed;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:700;background:rgba(255,255,255,0.04);color:var(--muted);transition:all 0.3s;display:flex;align-items:center;justify-content:center;gap:7px;">
-                <i class="bi bi-hourglass-split" id="adModal-close-icon"></i>
-                <span id="adModal-close-txt">Wait <span id="adModal-close-sec">0</span>s</span>
+            {{-- Close / Claim button --}}
+            <button id="adm-close-btn" disabled
+                style="width:100%;padding:14px;border-radius:12px;border:none;
+                       font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:700;
+                       background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.3);
+                       cursor:not-allowed;transition:all 0.4s;
+                       display:flex;align-items:center;justify-content:center;gap:8px;">
+                <i class="bi bi-hourglass-split" id="adm-close-icon"></i>
+                <span id="adm-close-txt">
+                    Wait <span id="adm-close-sec"></span>s
+                </span>
             </button>
+
         </div>
     </div>
 </div>
 
-{{-- SUCCESS OVERLAY --}}
-<div id="sucOv" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:360px;padding:36px 24px;text-align:center;">
-        <i class="bi bi-check-circle-fill" style="font-size:3.5rem;color:var(--accent);display:block;margin-bottom:14px;"></i>
-        <div style="font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:800;margin-bottom:6px;">Task Completed!</div>
-        <p style="color:var(--muted);font-size:0.82rem;margin-bottom:14px;">You earned:</p>
-        <div style="font-family:'Syne',sans-serif;font-size:2.6rem;font-weight:800;color:var(--accent);line-height:1;margin-bottom:4px;">$<span id="earnedAmount">0.00</span></div>
-        <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:22px;">Added to wallet</div>
-        <button onclick="window.location.reload()" style="width:100%;padding:13px;border-radius:10px;background:var(--accent);color:#000;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:700;">
+{{-- ── SUCCESS OVERLAY ── --}}
+<div id="sucOv"
+     style="display:none;position:fixed;inset:0;z-index:99999;
+            background:rgba(0,0,0,0.9);
+            align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;
+                width:100%;max-width:340px;padding:40px 24px;text-align:center;">
+        <div style="width:70px;height:70px;border-radius:50%;background:rgba(167,139,250,0.15);
+                    display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+            <i class="bi bi-check-circle-fill" style="font-size:2.5rem;color:var(--accent);"></i>
+        </div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:4px;">
+            Task Completed!
+        </div>
+        <p style="color:var(--muted);font-size:0.82rem;margin-bottom:16px;">Reward added to your wallet</p>
+        <div style="font-family:'Syne',sans-serif;font-size:3rem;font-weight:900;
+                    color:var(--accent);line-height:1;margin-bottom:4px;">
+            $<span id="earnedAmount">0.00</span>
+        </div>
+        <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.12em;
+                    color:var(--muted);margin-bottom:24px;">USDT · Added to wallet</div>
+        <button onclick="window.location.reload()"
+            style="width:100%;padding:14px;border-radius:12px;
+                   background:var(--accent);color:#000;border:none;cursor:pointer;
+                   font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:700;">
             <i class="bi bi-arrow-clockwise"></i> Continue Tasks
         </button>
     </div>
@@ -322,52 +327,77 @@
 
 @push('scripts')
 <style>
+/* ── Layout ── */
 .tk-page-grid{display:grid;grid-template-columns:1fr 260px;gap:20px;align-items:start;}
 .tk-side-col{display:flex;flex-direction:column;gap:14px;}
-@media(max-width:991px){.tk-page-grid{grid-template-columns:1fr;}.tk-list-col{order:0;}.tk-side-col{order:1;}}
+@media(max-width:991px){
+    .tk-page-grid{grid-template-columns:1fr;}
+    .tk-list-col{order:0;}.tk-side-col{order:1;}
+}
 
+/* ── Task list ── */
 .tk-item{border-bottom:1px solid var(--border);}
 .tk-item:last-child{border-bottom:none;}
-.tk-item.task-done{opacity:0.3;pointer-events:none;}
-.tk-item.is-ad{border-left:3px solid rgba(59,130,246,0.7);}
+.tk-item.task-done{opacity:0.28;pointer-events:none;}
+.tk-item.is-ad{border-left:3px solid rgba(167,139,250,0.6);}
 .tk-item.is-std{border-left:3px solid rgba(0,245,212,0.4);}
 
 .tk-head{display:flex;align-items:center;gap:11px;padding:12px 14px 8px;}
 .tk-ico{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.88rem;flex-shrink:0;border:1px solid;}
-.tk-ico.ad{background:rgba(59,130,246,0.1);color:var(--blue);border-color:rgba(59,130,246,0.25);}
+.tk-ico.ad{background:rgba(167,139,250,0.1);color:var(--accent);border-color:rgba(167,139,250,0.25);}
 .tk-ico.std{background:rgba(0,0,0,0.2);color:var(--accent);border-color:rgba(255,255,255,0.1);}
 .tk-info{flex:1;min-width:0;}
 .tk-title{font-family:'Syne',sans-serif;font-size:0.84rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;}
 .tk-tags{display:flex;gap:4px;flex-wrap:wrap;}
 .tk-tag{font-size:0.58rem;font-weight:600;padding:1px 7px;border-radius:99px;}
 .t-pkg{background:rgba(59,130,246,0.1);color:var(--blue);border:1px solid rgba(59,130,246,0.2);}
-.t-ad{background:rgba(0,245,212,0.08);color:var(--accent);border:1px solid rgba(0,245,212,0.2);}
+.t-ad{background:rgba(167,139,250,0.1);color:var(--accent);border:1px solid rgba(167,139,250,0.2);}
 .t-std{background:rgba(34,197,94,0.08);color:var(--green);border:1px solid rgba(34,197,94,0.2);}
 .t-rem{background:rgba(0,0,0,0.2);color:var(--muted);border:1px solid var(--border2);}
 .tk-reward{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--gold);flex-shrink:0;}
 
-/* AD BODY */
+/* ── Ad body click area ── */
 .tk-ad-body{
-    position:relative;margin:0 14px 12px;border-radius:10px;overflow:hidden;
+    position:relative;margin:0 14px 14px;border-radius:12px;overflow:hidden;
     border:1px solid var(--border);background:var(--card2);
     cursor:pointer;user-select:none;-webkit-user-select:none;
+    transition:border-color 0.2s,transform 0.15s;
 }
+.tk-ad-body:hover{border-color:rgba(167,139,250,0.5);transform:scale(1.01);}
+.tk-ad-body:active{transform:scale(0.99);}
 .tk-ad-body *{pointer-events:none!important;}
-.tk-ad-preview{
-    height:80px;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:2px;
+
+/* Preview card inside ad body */
+.tk-ad-preview-card{
+    display:flex;align-items:center;gap:12px;
+    padding:14px 14px 38px;
 }
-.tk-ad-click-label{
+.tk-ad-preview-icon{
+    width:42px;height:42px;flex-shrink:0;border-radius:10px;
+    background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.2);
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.1rem;color:var(--accent);
+}
+.tk-ad-preview-info{flex:1;min-width:0;}
+.tk-ad-play-btn{
+    width:36px;height:36px;border-radius:50%;flex-shrink:0;
+    background:var(--accent);display:flex;align-items:center;justify-content:center;
+    color:#000;font-size:0.9rem;
+    box-shadow:0 0 12px rgba(167,139,250,0.4);
+}
+
+/* Tap to earn label at bottom of ad card */
+.tk-ad-body::after{
+    content:'▶  Tap to watch & earn';
     position:absolute;bottom:0;left:0;right:0;
     background:linear-gradient(0deg,rgba(0,0,0,0.92) 0%,transparent 100%);
-    color:#fff;font-size:0.72rem;font-weight:600;
-    padding:22px 12px 10px;display:flex;align-items:center;gap:5px;
-    pointer-events:none!important;
+    color:rgba(255,255,255,0.7);font-size:0.7rem;font-weight:600;
+    padding:18px 14px 10px;
+    display:flex;align-items:center;
 }
-.tk-ad-click-label i{color:var(--gold);}
 
-/* AUTO */
-.tk-auto{display:flex;align-items:center;gap:10px;padding:0 14px 12px 60px;}
+/* ── Auto task ── */
+.tk-auto{display:flex;align-items:center;gap:10px;padding:0 14px 14px 60px;}
 .tk-start{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:8px;background:var(--accent);color:#000;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:0.8rem;font-weight:700;white-space:nowrap;}
 .tk-start:disabled{opacity:0.4;cursor:not-allowed;}
 .tk-bar{flex:1;height:4px;background:rgba(0,0,0,0.3);border-radius:99px;overflow:hidden;display:none;}
@@ -380,123 +410,188 @@
 .tk-empty-s{font-size:0.8rem;}
 .tk-empty-s a{color:var(--accent);}
 
-/* Close button enabled */
-#adModal-close.ready{
-    background:var(--accent)!important;color:#000!important;
-    border-color:var(--accent)!important;cursor:pointer!important;
+/* ── AD MODAL ── */
+.ad-modal-box{
+    background:var(--card);
+    border:1px solid rgba(167,139,250,0.2);
+    border-radius:20px;
+    width:100%;max-width:430px;
+    overflow:hidden;
+    box-shadow:0 0 60px rgba(167,139,250,0.12);
+}
+.adm-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 16px;
+    border-bottom:1px solid var(--border);
+    background:var(--card2);
+}
+.adm-ad-wrap{
+    position:relative;
+    background:#0a0a14;
+    min-height:180px;
+    display:flex;align-items:center;justify-content:center;
+}
+.adm-footer{padding:14px 16px 16px;}
+
+/* Spinner */
+#adm-spinner{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:10px;color:rgba(255,255,255,0.25);font-size:0.72rem;z-index:2;
+    background:#0a0a14;
+    transition:opacity 0.4s;
+}
+.adm-spin-ring{
+    width:30px;height:30px;border-radius:50%;
+    border:2px solid rgba(255,255,255,0.08);
+    border-top-color:var(--accent);
+    animation:spin 0.75s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* Close button ready state */
+#adm-close-btn.ready{
+    background:var(--accent) !important;
+    color:#000 !important;
+    cursor:pointer !important;
+    box-shadow:0 0 20px rgba(167,139,250,0.35);
 }
 
 /* Pulse dot */
-.ad-pulse-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);animation:adpulse 1.4s ease-in-out infinite;}
-@keyframes adpulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.82);}}
+.ad-pulse-dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 6px var(--accent);
+    animation:adpulse 1.4s ease-in-out infinite;
+    flex-shrink:0;
+}
+@keyframes adpulse{
+    0%,100%{opacity:1;transform:scale(1);}
+    50%{opacity:0.35;transform:scale(0.8);}
+}
 </style>
 
 <script>
 var _adTimer = null;
+var _currentTid = null;
+var _currentUpid = null;
 
-// ─────────────────────────────────────────
-//  OPEN AD MODAL
-// ─────────────────────────────────────────
-function openAdModal(tid, upid, duration, reward, srcdoc, bannerH) {
+// ════════════════════════════════════════
+//  openAdModal — click এ call হয়
+// ════════════════════════════════════════
+function openAdModal(tid, upid, duration, reward, adUrl) {
 
+    _currentTid  = tid;
+    _currentUpid = upid;
+
+    // Clear old timer
     if (_adTimer) { clearInterval(_adTimer); _adTimer = null; }
 
-    // ── Set iframe srcdoc — this loads ad inside sandboxed iframe ──
-    // srcdoc avoids X-Frame-Options completely because we're not loading a URL
-    var frame = document.getElementById('adModal-frame');
-    var loading = document.getElementById('adModal-loading');
+    // ── Load ad in iframe (our own domain route) ──
+    var frame   = document.getElementById('adm-frame');
+    var spinner = document.getElementById('adm-spinner');
 
-    // Set height based on ad size
-    var h = Math.min(parseInt(bannerH) || 160, 220);
-    frame.style.height = h + 'px';
+    spinner.style.opacity = '1';
+    spinner.style.pointerEvents = 'auto';
+    frame.style.opacity = '0';
+    frame.src = 'about:blank';
 
-    // Show loading
-    loading.style.display = 'flex';
+    // Small delay then load
+    setTimeout(function() {
+        frame.src = adUrl;
+    }, 150);
 
-    // Set srcdoc to load ad
-    frame.srcdoc = srcdoc;
-
-    // Hide loading after ad has time to render
     frame.onload = function() {
-        setTimeout(function() {
-            loading.style.display = 'none';
-        }, 800);
+        if (frame.src && frame.src !== 'about:blank') {
+            setTimeout(function() {
+                spinner.style.opacity = '0';
+                spinner.style.pointerEvents = 'none';
+                frame.style.opacity = '1';
+            }, 700);
+        }
     };
 
-    // ── Reward ──
-    document.getElementById('adModal-reward').textContent = '+$' + parseFloat(reward).toFixed(2);
+    // ── Reward badge ──
+    document.getElementById('adm-reward-badge').textContent = '+$' + parseFloat(reward).toFixed(2);
 
-    // ── Reset bar + ring ──
-    var bar  = document.getElementById('adModal-bar');
-    var ring = document.getElementById('adModal-ring');
-    bar.style.transition  = 'none'; bar.style.width = '0%';
-    ring.style.transition = 'none'; ring.style.strokeDashoffset = '125.6';
-    bar.offsetWidth;
+    // ── Reset progress ──
+    var bar  = document.getElementById('adm-bar');
+    var ring = document.getElementById('adm-ring');
+    bar.style.transition  = 'none'; bar.style.width  = '0%';
+    ring.style.transition = 'none'; ring.style.strokeDashoffset = '138.2';
+    bar.offsetWidth; // force reflow
 
-    // ── Reset countdown ──
-    document.getElementById('adModal-num').textContent = duration;
-    document.getElementById('adModal-sec').textContent = duration;
+    // ── Reset timer display ──
+    document.getElementById('adm-num').textContent      = duration;
+    document.getElementById('adm-sec').textContent      = duration;
+    document.getElementById('adm-close-sec').textContent = duration;
 
     // ── Reset close button ──
-    var closeBtn = document.getElementById('adModal-close');
-    closeBtn.disabled = true;
-    closeBtn.classList.remove('ready');
-    document.getElementById('adModal-close-icon').className = 'bi bi-hourglass-split';
-    document.getElementById('adModal-close-txt').innerHTML =
-        'Wait <span id="adModal-close-sec">' + duration + '</span>s';
+    var btn = document.getElementById('adm-close-btn');
+    btn.disabled = true;
+    btn.classList.remove('ready');
+    btn.style.background = 'rgba(255,255,255,0.06)';
+    btn.style.color = 'rgba(255,255,255,0.3)';
+    btn.style.cursor = 'not-allowed';
+    document.getElementById('adm-close-icon').className = 'bi bi-hourglass-split';
+    document.getElementById('adm-close-txt').innerHTML =
+        'Wait <span id="adm-close-sec">' + duration + '</span>s';
 
     // ── Show modal ──
     document.getElementById('adModal').style.display = 'flex';
 
-    // ── Animate ──
+    // ── Animate bar + ring after short delay ──
     setTimeout(function() {
-        bar.style.transition  = 'width ' + duration + 's linear';
+        bar.style.transition  = 'width '  + duration + 's linear';
         bar.style.width = '100%';
         ring.style.transition = 'stroke-dashoffset ' + duration + 's linear';
         ring.style.strokeDashoffset = '0';
-    }, 80);
+    }, 100);
 
-    // ── Countdown ──
+    // ── Countdown ticker ──
     var elapsed = 0;
     _adTimer = setInterval(function() {
         elapsed++;
         var rem = Math.max(0, duration - elapsed);
 
-        document.getElementById('adModal-num').textContent = rem;
-        document.getElementById('adModal-sec').textContent = rem;
-        var s = document.getElementById('adModal-close-sec');
+        document.getElementById('adm-num').textContent = rem;
+        document.getElementById('adm-sec').textContent = rem;
+        var s = document.getElementById('adm-close-sec');
         if (s) s.textContent = rem;
 
         if (elapsed >= duration) {
-            clearInterval(_adTimer); _adTimer = null;
+            clearInterval(_adTimer);
+            _adTimer = null;
 
-            // Enable close
-            var btn = document.getElementById('adModal-close');
+            // ── Enable close button ──
             btn.disabled = false;
             btn.classList.add('ready');
-            document.getElementById('adModal-close-icon').className = 'bi bi-check-circle-fill';
-            document.getElementById('adModal-close-txt').innerHTML = 'Close &amp; Claim Reward';
+            document.getElementById('adm-close-icon').className = 'bi bi-check-circle-fill';
+            document.getElementById('adm-close-txt').innerHTML = 'Close &amp; Claim $' + parseFloat(reward).toFixed(2);
 
-            // Submit
+            // Auto submit to server
             submitTask(tid, upid, duration, reward);
         }
     }, 1000);
 }
 
-// ─────────────────────────────────────────
-//  CLOSE MODAL
-// ─────────────────────────────────────────
-document.getElementById('adModal-close').addEventListener('click', function() {
+// ════════════════════════════════════════
+//  Close button
+// ════════════════════════════════════════
+document.getElementById('adm-close-btn').addEventListener('click', function() {
     if (this.disabled) return;
-    document.getElementById('adModal').style.display = 'none';
-    // Clear iframe to stop ad
-    document.getElementById('adModal-frame').srcdoc = '';
-    if (_adTimer) { clearInterval(_adTimer); _adTimer = null; }
+    closeAdModal();
 });
 
-// ─────────────────────────────────────────
-//  SUBMIT TASK
-// ─────────────────────────────────────────
+function closeAdModal() {
+    document.getElementById('adModal').style.display = 'none';
+    document.getElementById('adm-frame').src = 'about:blank';
+    if (_adTimer) { clearInterval(_adTimer); _adTimer = null; }
+}
+
+// ════════════════════════════════════════
+//  Submit task → credit wallet
+// ════════════════════════════════════════
 function submitTask(tid, upid, duration, reward) {
     fetch('/tasks/auto-verify', {
         method: 'POST',
@@ -513,59 +608,67 @@ function submitTask(tid, upid, duration, reward) {
     .then(function(r) { return r.json(); })
     .then(function(data) {
         if (data.success) {
+
+            // ── Mark task as done visually ──
             var card = document.getElementById('tk-' + tid + '-' + upid);
             if (card) card.classList.add('task-done');
 
+            // ── Update earned stats in page ──
             ['sb-earned','stat-earned'].forEach(function(id) {
                 var el = document.getElementById(id);
                 if (!el) return;
-                var c = parseFloat(el.textContent.replace(/[$,]/g,'')) || 0;
-                el.textContent = '$' + (c + parseFloat(reward)).toFixed(2);
+                var current = parseFloat(el.textContent.replace(/[$,]/g,'')) || 0;
+                el.textContent = '$' + (current + parseFloat(reward)).toFixed(2);
             });
             ['sb-done','stat-done'].forEach(function(id) {
-                var el = document.getElementById(id); if (el) el.textContent = (parseInt(el.textContent)||0)+1;
+                var el = document.getElementById(id);
+                if (el) el.textContent = (parseInt(el.textContent) || 0) + 1;
             });
             ['sb-remaining','stat-remaining'].forEach(function(id) {
-                var el = document.getElementById(id); if (el) el.textContent = Math.max((parseInt(el.textContent)||0)-1,0);
+                var el = document.getElementById(id);
+                if (el) el.textContent = Math.max((parseInt(el.textContent) || 0) - 1, 0);
             });
 
+            // ── Show success overlay ──
             setTimeout(function() {
-                document.getElementById('adModal').style.display = 'none';
-                document.getElementById('adModal-frame').srcdoc = '';
-                document.getElementById('earnedAmount').textContent = data.reward || parseFloat(reward).toFixed(2);
+                closeAdModal();
+                document.getElementById('earnedAmount').textContent =
+                    data.reward || parseFloat(reward).toFixed(2);
                 document.getElementById('sucOv').style.display = 'flex';
-            }, 600);
+            }, 500);
 
         } else {
-            alert('Failed: ' + (data.message || 'Error'));
+            // Task failed — still allow close
+            alert('Error: ' + (data.message || 'Task submission failed'));
         }
     })
-    .catch(function() { alert('Network error. Please try again.'); });
+    .catch(function() {
+        alert('Network error. Please try again.');
+    });
 }
 
-// ─────────────────────────────────────────
-//  EVENT LISTENERS
-// ─────────────────────────────────────────
+// ════════════════════════════════════════
+//  Event listeners
+// ════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', function() {
 
-    // ── Ad task click ──
+    // ── Ad task: tap opens modal ──
     document.querySelectorAll('.tk-ad-body').forEach(function(div) {
         div.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopImmediatePropagation();
 
-            var tid       = this.dataset.tid;
-            var upid      = this.dataset.upid;
-            var duration  = parseInt(this.dataset.duration);
-            var reward    = parseFloat(this.dataset.reward);
-            var srcdoc    = this.dataset.srcdoc || '';
-            var bannerH   = this.dataset.bannerH || '160';
-
-            openAdModal(tid, upid, duration, reward, srcdoc, bannerH);
+            openAdModal(
+                this.dataset.tid,
+                this.dataset.upid,
+                parseInt(this.dataset.duration),
+                parseFloat(this.dataset.reward),
+                this.dataset.adUrl
+            );
         });
     });
 
-    // ── Auto task ──
+    // ── Auto task: open URL + timer ──
     document.querySelectorAll('.auto-task-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var tid    = this.dataset.taskId;
@@ -573,19 +676,26 @@ document.addEventListener('DOMContentLoaded', function() {
             var url    = this.dataset.taskUrl;
             var reward = this.dataset.reward;
             var dur    = parseInt(this.dataset.requiredDuration);
+
             if (!url) { alert('Task URL missing.'); return; }
             var tab = window.open(url, '_blank');
-            if (!tab) { alert('Popup blocked!'); return; }
+            if (!tab) { alert('Please allow popups for this site.'); return; }
+
             this.disabled = true;
             this.innerHTML = '<i class="bi bi-hourglass-split"></i> Running...';
+
             var bar = document.getElementById('bar-' + tid + '-' + upid);
             if (bar) bar.classList.add('on');
+
             var elapsed = 0;
             var iv = setInterval(function() {
                 elapsed++;
                 var fill = document.getElementById('fill-' + tid + '-' + upid);
-                if (fill) fill.style.width = Math.min((elapsed/dur)*100,100)+'%';
-                if (elapsed >= dur) { clearInterval(iv); submitTask(tid,upid,dur,reward); }
+                if (fill) fill.style.width = Math.min((elapsed / dur) * 100, 100) + '%';
+                if (elapsed >= dur) {
+                    clearInterval(iv);
+                    submitTask(tid, upid, dur, reward);
+                }
             }, 1000);
         });
     });

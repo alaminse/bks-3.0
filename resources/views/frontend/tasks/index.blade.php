@@ -66,13 +66,18 @@
                 $reward   = $taskData['reward'];
                 $adCode   = $isAd ? ($taskData['task']->adsterra_ad_code ?? '') : '';
 
+                // ── Parse ad code ──
                 preg_match_all('/<script[^>]+src=["\']([^"\']+)["\'][^>]*>/i', $adCode, $sm);
                 $adSrcs = $sm[1] ?? [];
+
                 preg_match_all('/<script(?![^>]*src)[^>]*>(.*?)<\/script>/si', $adCode, $im);
                 $adInlines = array_filter($im[1] ?? [], fn($s) => trim($s));
+
                 preg_match_all('/<div[^>]*>.*?<\/div>/si', $adCode, $dm);
                 $adDivs = $dm[0] ?? [];
+                $hasDiv = !empty($adDivs);
 
+                // ── Smartlink / plain URL ──
                 $lines = explode("\n", $adCode);
                 $plainUrls = [];
                 foreach ($lines as $line) {
@@ -82,13 +87,7 @@
                     }
                 }
 
-                $adKey = '';
-                if (preg_match("/['\"]key['\"]\s*:\s*['\"]([a-f0-9]+)['\"]/", $adCode, $km)) {
-                    $adKey = $km[1];
-                }
-
-                $hasDiv = !empty($adDivs);
-
+                // ── adLink for modal iframe fallback ──
                 $taskUrl = trim($taskData['task']->task_url ?? '');
                 if (!empty($taskUrl)) {
                     $adLink = $taskUrl;
@@ -100,6 +99,23 @@
                 } else {
                     $adLink = '';
                 }
+
+                // ── Build modal HTML: inject ad scripts into a blob page ──
+                // We build a self-contained HTML string that runs inside a srcdoc iframe
+                // srcdoc = NO external URL = NO X-Frame-Options issue
+                $modalPageHtml = '<!DOCTYPE html><html><head>'
+                    . '<meta charset="utf-8">'
+                    . '<meta name="viewport" content="width=device-width,initial-scale=1">'
+                    . '<style>*{margin:0;padding:0;box-sizing:border-box;}'
+                    . 'html,body{background:#0a0a14;display:flex;align-items:center;'
+                    . 'justify-content:center;min-height:180px;width:100%;overflow:hidden;}'
+                    . 'iframe{max-width:100%!important;border:none!important;}'
+                    . '</style></head><body>'
+                    . $adCode
+                    . '</body></html>';
+
+                // Escape for use as HTML attribute value
+                $modalPageEsc = htmlspecialchars($modalPageHtml, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
             @endphp
 
             <div class="tk-item {{ $isAd ? 'is-ad' : 'is-std' }}" id="tk-{{ $tid }}-{{ $upid }}">
@@ -120,14 +136,16 @@
                 </div>
 
                 @if($isAd)
+                {{-- ── AD TASK: click area ── --}}
                 <div class="tk-ad-body"
                      id="adb-{{ $tid }}-{{ $upid }}"
                      data-tid="{{ $tid }}"
                      data-upid="{{ $upid }}"
                      data-duration="{{ $duration }}"
                      data-reward="{{ $reward }}"
-                     data-link="{{ $adLink }}">
+                     data-modal-page="{{ $modalPageEsc }}">
 
+                    {{-- Preview (pointer-events:none so click goes to wrapper) --}}
                     <div class="tk-ad-inner" style="pointer-events:none;">
                         @if($hasDiv)
                             @foreach($adDivs as $div){!! $div !!}@endforeach
@@ -136,20 +154,22 @@
                         @endif
                     </div>
 
-                    {{-- Click to start label --}}
                     <div class="tk-ad-click-label">
-                        <i class="bi bi-hand-index-thumb-fill"></i> Tap to watch ad &amp; earn ${{ number_format($reward, 2) }}
+                        <i class="bi bi-hand-index-thumb-fill"></i>
+                        Tap to watch ad &amp; earn ${{ number_format($reward, 2) }}
                     </div>
 
+                    {{-- Page-level ad scripts (for preview rendering) --}}
                     @foreach($adInlines as $il)
                         @if(trim($il))<script>{!! $il !!}</script>@endif
                     @endforeach
                     @foreach($adSrcs as $src)
-                        <script src="{{ $src }}"></script>
+                        <script src="{{ $src }}" async></script>
                     @endforeach
                 </div>
 
                 @else
+                {{-- ── AUTO TASK ── --}}
                 <div class="tk-auto">
                     <button type="button" class="tk-start auto-task-btn"
                         data-task-id="{{ $tid }}"
@@ -213,79 +233,126 @@
 </div>
 
 {{-- ══════════════════════════════════════
-     AD MODAL — countdown + close button
+     AD MODAL
 ══════════════════════════════════════ --}}
-<div id="adModal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:100%;max-width:480px;overflow:hidden;position:relative;">
+<div id="adModal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.93);align-items:center;justify-content:center;padding:14px;">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:100%;max-width:460px;overflow:hidden;">
 
         {{-- Header --}}
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--card2);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--border);background:var(--card2);">
             <div style="display:flex;align-items:center;gap:8px;">
-                <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse-dot 1.5s infinite;box-shadow:0 0 6px var(--accent)"></div>
-                <span style="font-size:0.8rem;font-weight:600;color:var(--muted)">Watching Ad</span>
+                <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);animation:adpulse 1.5s infinite;box-shadow:0 0 6px var(--accent);flex-shrink:0;"></div>
+                <span style="font-size:0.8rem;font-weight:600;color:var(--muted);">Watching Ad</span>
             </div>
-            {{-- Reward badge --}}
-            <span id="adModal-reward" style="font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:800;color:var(--gold);background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);padding:3px 10px;border-radius:99px;"></span>
+            <span id="adModal-reward"
+                  style="font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:800;
+                         color:var(--gold);background:rgba(245,158,11,0.1);
+                         border:1px solid rgba(245,158,11,0.25);padding:3px 10px;border-radius:99px;"></span>
         </div>
 
-        {{-- Ad content area --}}
-        <div id="adModal-content" style="width:100%;min-height:180px;background:#0a0a14;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:16px;">
-            {{-- Ad iframe will be injected here --}}
+        {{-- ── Ad iframe using srcdoc (no external URL = no X-Frame-Options) ── --}}
+        <div style="position:relative;background:#0a0a14;width:100%;min-height:200px;">
+
+            {{-- Loading spinner --}}
+            <div id="adModal-spin"
+                 style="position:absolute;inset:0;display:flex;flex-direction:column;
+                        align-items:center;justify-content:center;gap:10px;
+                        background:#0a0a14;color:rgba(255,255,255,0.25);
+                        font-size:0.72rem;z-index:2;transition:opacity 0.3s;">
+                <div style="width:28px;height:28px;border-radius:50%;
+                            border:2px solid rgba(255,255,255,0.08);
+                            border-top-color:var(--accent);
+                            animation:spin 0.75s linear infinite;"></div>
+                <span>Loading ad...</span>
+            </div>
+
+            {{-- srcdoc iframe: ad HTML injected as attribute — no URL fetch needed ── --}}
+            <iframe id="adModal-frame"
+                    srcdoc=""
+                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+                    scrolling="no"
+                    style="width:100%;height:200px;border:none;display:block;
+                           opacity:0;transition:opacity 0.4s;position:relative;z-index:1;">
+            </iframe>
         </div>
 
-        {{-- Progress section --}}
-        <div style="padding:16px 18px 20px;">
+        {{-- Progress + Close --}}
+        <div style="padding:15px 18px 18px;">
 
-            {{-- Timer + label row --}}
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
                 <div>
-                    <div style="font-size:0.72rem;color:var(--muted);margin-bottom:2px;">Please wait while ad loads</div>
+                    <div style="font-size:0.7rem;color:var(--muted);margin-bottom:3px;">
+                        Watch the full ad to claim your reward
+                    </div>
                     <div style="font-size:0.78rem;color:var(--muted);">
-                        Close button available in
-                        <span id="adModal-sec" style="font-family:'Syne',sans-serif;font-weight:800;color:var(--accent);font-size:1rem;margin:0 2px;">0</span>s
+                        Close in
+                        <span id="adModal-sec"
+                              style="font-family:'Syne',sans-serif;font-weight:900;
+                                     color:var(--accent);font-size:1rem;margin:0 2px;">0</span>s
                     </div>
                 </div>
-                {{-- Big countdown ring --}}
+                {{-- Ring countdown --}}
                 <div style="position:relative;width:52px;height:52px;flex-shrink:0;">
                     <svg width="52" height="52" viewBox="0 0 52 52" style="transform:rotate(-90deg)">
-                        <circle cx="26" cy="26" r="22" fill="none" stroke="var(--border)" stroke-width="4"/>
-                        <circle cx="26" cy="26" r="22" fill="none" stroke="var(--accent)" stroke-width="4"
-                            id="adModal-ring"
-                            stroke-dasharray="138"
-                            stroke-dashoffset="138"
-                            stroke-linecap="round"
-                            style="transition:stroke-dashoffset 1s linear"/>
+                        <circle cx="26" cy="26" r="22" fill="none"
+                                stroke="rgba(255,255,255,0.07)" stroke-width="4"/>
+                        <circle cx="26" cy="26" r="22" fill="none"
+                                stroke="var(--accent)" stroke-width="4"
+                                id="adModal-ring"
+                                stroke-dasharray="138.2"
+                                stroke-dashoffset="138.2"
+                                stroke-linecap="round"
+                                style="transition:stroke-dashoffset 1s linear;"/>
                     </svg>
                     <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
-                        <span id="adModal-num" style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:900;color:var(--accent);">0</span>
+                        <span id="adModal-num"
+                              style="font-family:'Syne',sans-serif;font-size:1rem;
+                                     font-weight:900;color:var(--accent);">0</span>
                     </div>
                 </div>
             </div>
 
-            {{-- Progress bar --}}
-            <div style="height:5px;background:var(--card2);border-radius:99px;overflow:hidden;margin-bottom:14px;">
-                <div id="adModal-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:99px;transition:width 1s linear;"></div>
+            {{-- Bar --}}
+            <div style="height:5px;background:rgba(255,255,255,0.07);border-radius:99px;
+                        overflow:hidden;margin-bottom:14px;">
+                <div id="adModal-bar"
+                     style="height:100%;width:0%;border-radius:99px;
+                            background:linear-gradient(90deg,#ef4444,var(--gold),var(--accent));
+                            transition:width 1s linear;"></div>
             </div>
 
-            {{-- Close button — disabled until timer ends --}}
+            {{-- Close / Claim button --}}
             <button id="adModal-close" disabled
-                style="width:100%;padding:13px;border-radius:10px;border:none;cursor:not-allowed;font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:700;background:var(--card2);color:var(--muted);transition:all 0.3s;display:flex;align-items:center;justify-content:center;gap:6px;">
-                <i class="bi bi-x-circle"></i>
-                <span id="adModal-close-txt">Wait <span id="adModal-close-sec">0</span>s to close</span>
+                style="width:100%;padding:13px;border-radius:11px;
+                       border:1.5px solid rgba(255,255,255,0.08);
+                       cursor:not-allowed;
+                       font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:700;
+                       background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.28);
+                       transition:all 0.35s;
+                       display:flex;align-items:center;justify-content:center;gap:8px;">
+                <i class="bi bi-hourglass-split" id="adModal-close-icon"></i>
+                <span id="adModal-close-txt">Wait <span id="adModal-close-sec">0</span>s</span>
             </button>
         </div>
     </div>
 </div>
 
-{{-- ══ SUCCESS OVERLAY ══ --}}
-<div id="sucOv" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:380px;padding:40px 24px;text-align:center;">
-        <i class="bi bi-check-circle-fill" style="font-size:3.5rem;color:var(--accent);display:block;margin-bottom:14px;"></i>
-        <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:6px;">Task Completed!</div>
-        <p style="color:var(--muted);font-size:0.85rem;margin-bottom:16px;">You've earned:</p>
-        <div style="font-family:'Syne',sans-serif;font-size:2.8rem;font-weight:800;color:var(--accent);line-height:1;margin-bottom:4px;">$<span id="earnedAmount">0.00</span></div>
-        <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:24px;">Added to wallet</div>
-        <button onclick="window.location.reload()" style="width:100%;padding:13px;border-radius:10px;background:var(--accent);color:#000;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:700;">
+{{-- SUCCESS OVERLAY --}}
+<div id="sucOv" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.9);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:18px;width:100%;max-width:360px;padding:40px 24px;text-align:center;">
+        <div style="width:68px;height:68px;border-radius:50%;background:rgba(167,139,250,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+            <i class="bi bi-check-circle-fill" style="font-size:2.4rem;color:var(--accent);"></i>
+        </div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:4px;">Task Completed!</div>
+        <p style="color:var(--muted);font-size:0.82rem;margin-bottom:14px;">Reward added to your wallet</p>
+        <div style="font-family:'Syne',sans-serif;font-size:2.8rem;font-weight:900;color:var(--accent);line-height:1;margin-bottom:4px;">
+            $<span id="earnedAmount">0.00</span>
+        </div>
+        <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-bottom:22px;">USDT · Added to wallet</div>
+        <button onclick="window.location.reload()"
+                style="width:100%;padding:13px;border-radius:11px;background:var(--accent);
+                       color:#000;border:none;cursor:pointer;
+                       font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:700;">
             <i class="bi bi-arrow-clockwise"></i> Continue Tasks
         </button>
     </div>
@@ -295,197 +362,182 @@
 
 @push('scripts')
 <style>
-.tk-page-grid { display:grid; grid-template-columns:1fr 260px; gap:20px; align-items:start; }
-.tk-side-col  { display:flex; flex-direction:column; gap:14px; }
-@media(max-width:991px){ .tk-page-grid{grid-template-columns:1fr;} .tk-list-col{order:0;} .tk-side-col{order:1;} }
+.tk-page-grid{display:grid;grid-template-columns:1fr 260px;gap:20px;align-items:start;}
+.tk-side-col{display:flex;flex-direction:column;gap:14px;}
+@media(max-width:991px){.tk-page-grid{grid-template-columns:1fr;}.tk-list-col{order:0;}.tk-side-col{order:1;}}
 
-.tk-item { border-bottom:1px solid var(--border); }
-.tk-item:last-child { border-bottom:none; }
-.tk-item.task-done  { opacity:0.3; pointer-events:none; }
-.tk-item.is-ad  { border-left:3px solid rgba(59,130,246,0.7); }
-.tk-item.is-std { border-left:3px solid rgba(0,245,212,0.4); }
+.tk-item{border-bottom:1px solid var(--border);}
+.tk-item:last-child{border-bottom:none;}
+.tk-item.task-done{opacity:0.3;pointer-events:none;}
+.tk-item.is-ad{border-left:3px solid rgba(59,130,246,0.7);}
+.tk-item.is-std{border-left:3px solid rgba(0,245,212,0.4);}
 
-.tk-head { display:flex; align-items:center; gap:11px; padding:12px 14px 8px; }
-.tk-ico  { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.88rem; flex-shrink:0; border:1px solid; }
-.tk-ico.ad  { background:rgba(59,130,246,0.1); color:var(--blue);   border-color:rgba(59,130,246,0.25); }
-.tk-ico.std { background:rgba(0,0,0,0.2);       color:var(--accent); border-color:rgba(255,255,255,0.1); }
-.tk-info  { flex:1; min-width:0; }
-.tk-title { font-family:'Syne',sans-serif; font-size:0.84rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; }
-.tk-tags  { display:flex; gap:4px; flex-wrap:wrap; }
-.tk-tag   { font-size:0.58rem; font-weight:600; padding:1px 7px; border-radius:99px; }
-.t-pkg { background:rgba(59,130,246,0.1); color:var(--blue);   border:1px solid rgba(59,130,246,0.2); }
-.t-ad  { background:rgba(0,245,212,0.08); color:var(--accent); border:1px solid rgba(0,245,212,0.2); }
-.t-std { background:rgba(34,197,94,0.08); color:var(--green);  border:1px solid rgba(34,197,94,0.2); }
-.t-rem { background:rgba(0,0,0,0.2);      color:var(--muted);  border:1px solid var(--border2); }
-.tk-reward { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:800; color:var(--gold); flex-shrink:0; }
+.tk-head{display:flex;align-items:center;gap:11px;padding:12px 14px 8px;}
+.tk-ico{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.88rem;flex-shrink:0;border:1px solid;}
+.tk-ico.ad{background:rgba(59,130,246,0.1);color:var(--blue);border-color:rgba(59,130,246,0.25);}
+.tk-ico.std{background:rgba(0,0,0,0.2);color:var(--accent);border-color:rgba(255,255,255,0.1);}
+.tk-info{flex:1;min-width:0;}
+.tk-title{font-family:'Syne',sans-serif;font-size:0.84rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;}
+.tk-tags{display:flex;gap:4px;flex-wrap:wrap;}
+.tk-tag{font-size:0.58rem;font-weight:600;padding:1px 7px;border-radius:99px;}
+.t-pkg{background:rgba(59,130,246,0.1);color:var(--blue);border:1px solid rgba(59,130,246,0.2);}
+.t-ad{background:rgba(0,245,212,0.08);color:var(--accent);border:1px solid rgba(0,245,212,0.2);}
+.t-std{background:rgba(34,197,94,0.08);color:var(--green);border:1px solid rgba(34,197,94,0.2);}
+.t-rem{background:rgba(0,0,0,0.2);color:var(--muted);border:1px solid var(--border2);}
+.tk-reward{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--gold);flex-shrink:0;}
 
-/* AD BODY */
-.tk-ad-body {
-    position: relative;
-    margin: 0 14px 12px;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid var(--border);
-    background: var(--card2);
-    min-height: 80px;
-    cursor: pointer;
-    user-select: none;
-    -webkit-user-select: none;
+.tk-ad-body{
+    position:relative;margin:0 14px 12px;border-radius:10px;overflow:hidden;
+    border:1px solid var(--border);background:var(--card2);min-height:80px;
+    cursor:pointer;user-select:none;-webkit-user-select:none;
+    transition:border-color 0.2s;
 }
-.tk-ad-body * { pointer-events: none !important; }
-.tk-ad-inner {
-    width: 100%;
-    max-height: 120px;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.tk-ad-body:hover{border-color:rgba(59,130,246,0.4);}
+.tk-ad-body *{pointer-events:none!important;}
+.tk-ad-inner{width:100%;max-height:120px;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.tk-ad-inner iframe{max-width:100%!important;width:100%!important;max-height:120px!important;border:none;display:block;}
+.tk-ad-inner > div{max-width:100%!important;}
+.tk-ad-ph{height:70px;display:flex;align-items:center;justify-content:center;color:var(--blue);font-size:2rem;opacity:0.4;}
+.tk-ad-click-label{
+    position:absolute;bottom:0;left:0;right:0;
+    background:linear-gradient(0deg,rgba(0,0,0,0.88) 0%,transparent 100%);
+    color:#fff;font-size:0.72rem;font-weight:600;
+    padding:18px 12px 10px;display:flex;align-items:center;gap:5px;
+    pointer-events:none!important;
 }
-.tk-ad-inner iframe { max-width:100%!important;width:100%!important;max-height:120px!important;border:none;display:block; }
-.tk-ad-inner > div  { max-width:100%!important; }
-.tk-ad-ph { height:70px; display:flex; align-items:center; justify-content:center; color:var(--blue); font-size:2rem; opacity:0.4; }
+.tk-ad-click-label i{color:var(--gold);}
 
-/* Tap label over ad */
-.tk-ad-click-label {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, transparent 100%);
-    color: #fff;
-    font-size: 0.72rem;
-    font-weight: 600;
-    padding: 16px 12px 10px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    pointer-events: none;
+.tk-auto{display:flex;align-items:center;gap:10px;padding:0 14px 12px 60px;}
+.tk-start{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:8px;background:var(--accent);color:#000;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:0.8rem;font-weight:700;white-space:nowrap;}
+.tk-start:disabled{opacity:0.4;cursor:not-allowed;}
+.tk-bar{flex:1;height:4px;background:rgba(0,0,0,0.3);border-radius:99px;overflow:hidden;display:none;}
+.tk-bar.on{display:block;}
+.tk-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:99px;transition:width 0.4s;}
+
+.tk-empty{text-align:center;padding:40px 20px;color:var(--muted);}
+.tk-empty i{font-size:2.2rem;display:block;margin-bottom:10px;opacity:0.2;}
+.tk-empty-t{font-family:'Syne',sans-serif;font-size:0.92rem;font-weight:700;margin-bottom:4px;color:var(--text);}
+.tk-empty-s{font-size:0.8rem;}
+.tk-empty-s a{color:var(--accent);}
+
+/* Close button ready */
+#adModal-close.ready{
+    background:var(--accent)!important;
+    color:#000!important;
+    border-color:var(--accent)!important;
+    cursor:pointer!important;
+    box-shadow:0 0 16px rgba(167,139,250,0.35);
 }
-.tk-ad-click-label i { color: var(--gold); }
 
-/* AUTO TASK */
-.tk-auto { display:flex; align-items:center; gap:10px; padding:0 14px 12px 60px; }
-.tk-start { display:inline-flex; align-items:center; gap:5px; padding:8px 16px; border-radius:8px; background:var(--accent); color:#000; border:none; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.8rem; font-weight:700; white-space:nowrap; }
-.tk-start:disabled { opacity:0.4; cursor:not-allowed; }
-.tk-bar  { flex:1; height:4px; background:rgba(0,0,0,0.3); border-radius:99px; overflow:hidden; display:none; }
-.tk-bar.on { display:block; }
-.tk-bar-fill { height:100%; width:0%; background:linear-gradient(90deg,var(--accent2),var(--accent)); border-radius:99px; transition:width 0.4s; }
-
-.tk-empty { text-align:center; padding:40px 20px; color:var(--muted); }
-.tk-empty i { font-size:2.2rem; display:block; margin-bottom:10px; opacity:0.2; }
-.tk-empty-t { font-family:'Syne',sans-serif; font-size:0.92rem; font-weight:700; margin-bottom:4px; color:var(--text); }
-.tk-empty-s { font-size:0.8rem; }
-.tk-empty-s a { color:var(--accent); }
-
-/* close button enabled state */
-#adModal-close.enabled {
-    background: var(--accent) !important;
-    color: #000 !important;
-    cursor: pointer !important;
-}
-#adModal-close.enabled:hover { opacity: 0.9; }
-
-@keyframes pulse-dot {
-    0%,100% { opacity:1; box-shadow:0 0 4px var(--accent); }
-    50%      { opacity:0.4; box-shadow:0 0 10px var(--accent); }
-}
+@keyframes adpulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+@keyframes spin{to{transform:rotate(360deg);}}
 </style>
 
 <script>
-var _adTimer   = null;
-var _currentTid  = null;
-var _currentUpid = null;
-var _currentDur  = 0;
-var _currentRew  = 0;
+var _adTimer = null;
 
-// ── Open ad modal ──
-function openAdModal(tid, upid, duration, reward, link, adInnerHTML) {
+// ════════════════════════════════════
+//  openAdModal
+// ════════════════════════════════════
+function openAdModal(tid, upid, duration, reward, srcdocHtml) {
 
-    _currentTid  = tid;
-    _currentUpid = upid;
-    _currentDur  = duration;
-    _currentRew  = reward;
-
-    // Clear previous timer
     if (_adTimer) { clearInterval(_adTimer); _adTimer = null; }
 
-    // Inject ad content into modal
-    var content = document.getElementById('adModal-content');
-    content.innerHTML = adInnerHTML || '<div style="color:rgba(255,255,255,0.2);font-size:2rem;text-align:center;padding:30px"><i class="bi bi-megaphone-fill"></i><br><span style="font-size:0.75rem;display:block;margin-top:8px">Ad loading...</span></div>';
+    var frame  = document.getElementById('adModal-frame');
+    var spin   = document.getElementById('adModal-spin');
 
-    // Set reward badge
+    // ── Reset iframe ──
+    // Setting srcdoc injects the full ad HTML directly — no URL fetch, no X-Frame-Options
+    frame.style.opacity = '0';
+    spin.style.opacity  = '1';
+    spin.style.display  = 'flex';
+
+    // Set srcdoc — this runs the ad scripts inside the iframe sandbox
+    frame.srcdoc = srcdocHtml;
+
+    // When iframe loads, hide spinner + show frame
+    frame.onload = function() {
+        setTimeout(function() {
+            spin.style.opacity = '0';
+            setTimeout(function(){ spin.style.display = 'none'; }, 300);
+            frame.style.opacity = '1';
+        }, 800);
+    };
+
+    // ── Reward badge ──
     document.getElementById('adModal-reward').textContent = '+$' + parseFloat(reward).toFixed(2);
 
-    // Reset progress
+    // ── Reset bar + ring ──
     var bar  = document.getElementById('adModal-bar');
     var ring = document.getElementById('adModal-ring');
-    bar.style.transition  = 'none';
-    bar.style.width = '0%';
-    ring.style.transition = 'none';
-    ring.style.strokeDashoffset = '138';
-    // force reflow
-    bar.offsetWidth;
-    ring.getBoundingClientRect();
+    bar.style.transition  = 'none'; bar.style.width = '0%';
+    ring.style.transition = 'none'; ring.style.strokeDashoffset = '138.2';
+    bar.offsetWidth; // force reflow
 
-    // Countdown numbers
-    document.getElementById('adModal-num').textContent      = duration;
-    document.getElementById('adModal-sec').textContent      = duration;
-    document.getElementById('adModal-close-sec').textContent = duration;
+    // ── Reset numbers ──
+    document.getElementById('adModal-num').textContent = duration;
+    document.getElementById('adModal-sec').textContent = duration;
 
-    // Reset close button — disabled
-    var closeBtn = document.getElementById('adModal-close');
-    closeBtn.disabled = true;
-    closeBtn.classList.remove('enabled');
+    // ── Reset close button ──
+    var btn = document.getElementById('adModal-close');
+    btn.disabled = true;
+    btn.classList.remove('ready');
+    document.getElementById('adModal-close-icon').className = 'bi bi-hourglass-split';
     document.getElementById('adModal-close-txt').innerHTML =
-        'Wait <span id="adModal-close-sec">' + duration + '</span>s to close';
+        'Wait <span id="adModal-close-sec">' + duration + '</span>s';
 
-    // Show modal
+    // ── Show modal ──
     document.getElementById('adModal').style.display = 'flex';
 
-    // Start animated bar + ring
+    // ── Animate bar + ring ──
     setTimeout(function() {
-        bar.style.transition  = 'width ' + duration + 's linear';
+        bar.style.transition  = 'width '  + duration + 's linear';
         bar.style.width = '100%';
         ring.style.transition = 'stroke-dashoffset ' + duration + 's linear';
         ring.style.strokeDashoffset = '0';
-    }, 50);
+    }, 80);
 
-    // Countdown ticker
+    // ── Countdown ──
     var elapsed = 0;
     _adTimer = setInterval(function() {
         elapsed++;
-        var rem = duration - elapsed;
-        if (rem < 0) rem = 0;
+        var rem = Math.max(0, duration - elapsed);
 
         document.getElementById('adModal-num').textContent = rem;
         document.getElementById('adModal-sec').textContent = rem;
-
-        var secEl = document.getElementById('adModal-close-sec');
-        if (secEl) secEl.textContent = rem;
+        var s = document.getElementById('adModal-close-sec');
+        if (s) s.textContent = rem;
 
         if (elapsed >= duration) {
-            clearInterval(_adTimer);
-            _adTimer = null;
+            clearInterval(_adTimer); _adTimer = null;
 
             // Enable close button
-            var btn = document.getElementById('adModal-close');
             btn.disabled = false;
-            btn.classList.add('enabled');
+            btn.classList.add('ready');
+            document.getElementById('adModal-close-icon').className = 'bi bi-check-circle-fill';
             document.getElementById('adModal-close-txt').innerHTML =
-                '<i class="bi bi-x-circle"></i> Close & Claim Reward';
+                'Close &amp; Claim $' + parseFloat(reward).toFixed(2);
 
-            // Auto submit task
+            // Submit to server
             submitTask(tid, upid, duration, reward);
         }
     }, 1000);
 }
 
-// ── Close modal ──
+// ════════════════════════════════════
+//  Close button
+// ════════════════════════════════════
 document.getElementById('adModal-close').addEventListener('click', function() {
     if (this.disabled) return;
     document.getElementById('adModal').style.display = 'none';
+    // Clear srcdoc to stop ad scripts
+    document.getElementById('adModal-frame').srcdoc = '';
     if (_adTimer) { clearInterval(_adTimer); _adTimer = null; }
 });
 
-// ── Submit task to server ──
+// ════════════════════════════════════
+//  Submit task → credit wallet
+// ════════════════════════════════════
 function submitTask(tid, upid, duration, reward) {
     fetch('/tasks/auto-verify', {
         method: 'POST',
@@ -506,40 +558,42 @@ function submitTask(tid, upid, duration, reward) {
             var card = document.getElementById('tk-' + tid + '-' + upid);
             if (card) card.classList.add('task-done');
 
-            // Update stat counters
+            // Update counters
             ['sb-earned','stat-earned'].forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) {
-                    var c = parseFloat(el.textContent.replace(/[$,]/g, '')) || 0;
-                    el.textContent = '$' + (c + parseFloat(reward)).toFixed(2);
-                }
+                var el = document.getElementById(id); if (!el) return;
+                var c = parseFloat(el.textContent.replace(/[$,]/g,'')) || 0;
+                el.textContent = '$' + (c + parseFloat(reward)).toFixed(2);
             });
             ['sb-done','stat-done'].forEach(function(id) {
                 var el = document.getElementById(id);
-                if (el) el.textContent = (parseInt(el.textContent) || 0) + 1;
+                if (el) el.textContent = (parseInt(el.textContent)||0)+1;
             });
             ['sb-remaining','stat-remaining'].forEach(function(id) {
                 var el = document.getElementById(id);
-                if (el) el.textContent = Math.max((parseInt(el.textContent) || 0) - 1, 0);
+                if (el) el.textContent = Math.max((parseInt(el.textContent)||0)-1,0);
             });
 
-            // Show success overlay after a short delay
+            // Show success
             setTimeout(function() {
                 document.getElementById('adModal').style.display = 'none';
+                document.getElementById('adModal-frame').srcdoc = '';
                 document.getElementById('earnedAmount').textContent =
                     data.reward || parseFloat(reward).toFixed(2);
                 document.getElementById('sucOv').style.display = 'flex';
-            }, 600);
+            }, 500);
 
         } else {
-            alert('Failed: ' + (data.message || 'Unknown error'));
+            alert('Failed: ' + (data.message || 'Error'));
         }
     })
-    .catch(function(e) {
+    .catch(function() {
         alert('Network error. Please try again.');
     });
 }
 
+// ════════════════════════════════════
+//  Event listeners
+// ════════════════════════════════════
 document.addEventListener('DOMContentLoaded', function() {
 
     // ── Ad task click ──
@@ -548,33 +602,18 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             e.stopImmediatePropagation();
 
-            var tid      = this.dataset.tid;
-            var upid     = this.dataset.upid;
-            var duration = parseInt(this.dataset.duration);
-            var reward   = parseFloat(this.dataset.reward);
-            var link     = this.dataset.link || '';
+            var tid         = this.dataset.tid;
+            var upid        = this.dataset.upid;
+            var duration    = parseInt(this.dataset.duration);
+            var reward      = parseFloat(this.dataset.reward);
+            // Get the pre-built modal page HTML from data attribute
+            var srcdocHtml  = this.dataset.modalPage || '';
 
-            // Get ad inner HTML to show inside modal
-            var inner = this.querySelector('.tk-ad-inner');
-            var adHTML = inner ? inner.innerHTML : '';
-
-            // If there's a link, load it in an iframe inside the modal
-            var modalAdHTML = '';
-            if (link && link.length > 5) {
-                // Show ad in iframe — works in WebView and browser
-                modalAdHTML = '<iframe src="' + link + '" '
-                    + 'style="width:100%;height:200px;border:none;border-radius:8px;" '
-                    + 'sandbox="allow-scripts allow-same-origin allow-popups" '
-                    + 'scrolling="no"></iframe>';
-            } else if (adHTML.trim()) {
-                modalAdHTML = adHTML;
-            }
-
-            openAdModal(tid, upid, duration, reward, link, modalAdHTML);
+            openAdModal(tid, upid, duration, reward, srcdocHtml);
         });
     });
 
-    // ── Auto task buttons (unchanged) ──
+    // ── Auto task ──
     document.querySelectorAll('.auto-task-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var tid    = this.dataset.taskId;
@@ -584,8 +623,6 @@ document.addEventListener('DOMContentLoaded', function() {
             var dur    = parseInt(this.dataset.requiredDuration);
 
             if (!url) { alert('Task URL missing.'); return; }
-
-            // Auto task still opens URL (browser handles it)
             var tab = window.open(url, '_blank');
             if (!tab) { alert('Popup blocked!'); return; }
 
@@ -599,11 +636,8 @@ document.addEventListener('DOMContentLoaded', function() {
             var iv = setInterval(function() {
                 elapsed++;
                 var fill = document.getElementById('fill-' + tid + '-' + upid);
-                if (fill) fill.style.width = Math.min((elapsed / dur) * 100, 100) + '%';
-                if (elapsed >= dur) {
-                    clearInterval(iv);
-                    submitTask(tid, upid, dur, reward);
-                }
+                if (fill) fill.style.width = Math.min((elapsed/dur)*100,100)+'%';
+                if (elapsed >= dur) { clearInterval(iv); submitTask(tid,upid,dur,reward); }
             }, 1000);
         });
     });

@@ -115,7 +115,8 @@
                     . '</body></html>';
 
                 // Escape for use as HTML attribute value
-                $modalPageEsc = htmlspecialchars($modalPageHtml, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $modalPageEsc = $modalPageHtml;
+                // $modalPageEsc = htmlspecialchars($modalPageHtml, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
             @endphp
 
             <div class="tk-item {{ $isAd ? 'is-ad' : 'is-std' }}" id="tk-{{ $tid }}-{{ $upid }}">

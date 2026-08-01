@@ -87,7 +87,7 @@
                     }
                 }
 
-                // ── adLink: the URL that opens in a new tab when the user clicks the ad ──
+                // ── adLink for modal iframe fallback ──
                 $taskUrl = trim($taskData['task']->task_url ?? '');
                 if (!empty($taskUrl)) {
                     $adLink = $taskUrl;
@@ -114,10 +114,9 @@
                     . $adCode
                     . '</body></html>';
 
-                // IMPORTANT: do NOT htmlspecialchars() this manually.
-                // Blade's {{ }} below already escapes once — escaping twice breaks srcdoc rendering
-                // (the ad shows up as literal escaped text instead of executing).
+                // Escape for use as HTML attribute value
                 $modalPageEsc = $modalPageHtml;
+                // $modalPageEsc = htmlspecialchars($modalPageHtml, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
             @endphp
 
             <div class="tk-item {{ $isAd ? 'is-ad' : 'is-std' }}" id="tk-{{ $tid }}-{{ $upid }}">
@@ -145,7 +144,6 @@
                      data-upid="{{ $upid }}"
                      data-duration="{{ $duration }}"
                      data-reward="{{ $reward }}"
-                     data-ad-link="{{ $adLink }}"
                      data-modal-page="{{ $modalPageEsc }}">
 
                     {{-- Preview (pointer-events:none so click goes to wrapper) --}}
@@ -256,18 +254,6 @@
         {{-- ── Ad iframe using srcdoc (no external URL = no X-Frame-Options) ── --}}
         <div style="position:relative;background:#0a0a14;width:100%;min-height:200px;">
 
-            {{-- Click gate: user MUST click the ad before the countdown/reward can start --}}
-            <div id="adModal-clickgate"
-                 style="position:absolute;inset:0;z-index:3;cursor:pointer;
-                        display:flex;align-items:center;justify-content:center;
-                        background:rgba(0,0,0,0.55);color:#fff;font-size:0.8rem;
-                        font-weight:700;text-align:center;padding:10px;">
-                <div>
-                    <i class="bi bi-hand-index-thumb-fill" style="font-size:1.4rem;display:block;margin-bottom:6px;color:var(--gold);"></i>
-                    Tap the ad to continue
-                </div>
-            </div>
-
             {{-- Loading spinner --}}
             <div id="adModal-spin"
                  style="position:absolute;inset:0;display:flex;flex-direction:column;
@@ -346,7 +332,7 @@
                        transition:all 0.35s;
                        display:flex;align-items:center;justify-content:center;gap:8px;">
                 <i class="bi bi-hourglass-split" id="adModal-close-icon"></i>
-                <span id="adModal-close-txt">Click the ad first</span>
+                <span id="adModal-close-txt">Wait <span id="adModal-close-sec">0</span>s</span>
             </button>
         </div>
     </div>
@@ -449,35 +435,28 @@
 </style>
 
 <script>
-var _adTimer   = null;
-var _adClicked = false;
-var _currentAdLink = '';
+var _adTimer = null;
 
 // ════════════════════════════════════
 //  openAdModal
-//  Now takes an extra `adLink` param. The countdown does NOT
-//  start automatically — it only starts after the user clicks
-//  the ad via the click-gate overlay (see listener below).
 // ════════════════════════════════════
-function openAdModal(tid, upid, duration, reward, srcdocHtml, adLink) {
+function openAdModal(tid, upid, duration, reward, srcdocHtml) {
 
     if (_adTimer) { clearInterval(_adTimer); _adTimer = null; }
-    _adClicked = false;
-    _currentAdLink = adLink || '';
 
     var frame  = document.getElementById('adModal-frame');
     var spin   = document.getElementById('adModal-spin');
-    var gate   = document.getElementById('adModal-clickgate');
-
-    // Always show the click-gate again for a fresh ad
-    gate.style.display = 'flex';
 
     // ── Reset iframe ──
+    // Setting srcdoc injects the full ad HTML directly — no URL fetch, no X-Frame-Options
     frame.style.opacity = '0';
     spin.style.opacity  = '1';
     spin.style.display  = 'flex';
+
+    // Set srcdoc — this runs the ad scripts inside the iframe sandbox
     frame.srcdoc = srcdocHtml;
 
+    // When iframe loads, hide spinner + show frame
     frame.onload = function() {
         setTimeout(function() {
             spin.style.opacity = '0';
@@ -489,7 +468,7 @@ function openAdModal(tid, upid, duration, reward, srcdocHtml, adLink) {
     // ── Reward badge ──
     document.getElementById('adModal-reward').textContent = '+$' + parseFloat(reward).toFixed(2);
 
-    // ── Reset bar + ring (do NOT animate yet — waiting for click) ──
+    // ── Reset bar + ring ──
     var bar  = document.getElementById('adModal-bar');
     var ring = document.getElementById('adModal-ring');
     bar.style.transition  = 'none'; bar.style.width = '0%';
@@ -505,49 +484,13 @@ function openAdModal(tid, upid, duration, reward, srcdocHtml, adLink) {
     btn.disabled = true;
     btn.classList.remove('ready');
     document.getElementById('adModal-close-icon').className = 'bi bi-hourglass-split';
-    document.getElementById('adModal-close-txt').innerHTML = 'Click the ad first';
-
-    // ── Save state for startAdCountdown() ──
-    var modal = document.getElementById('adModal');
-    modal.dataset.tid      = tid;
-    modal.dataset.upid     = upid;
-    modal.dataset.duration = duration;
-    modal.dataset.reward   = reward;
+    document.getElementById('adModal-close-txt').innerHTML =
+        'Wait <span id="adModal-close-sec">' + duration + '</span>s';
 
     // ── Show modal ──
-    modal.style.display = 'flex';
-}
+    document.getElementById('adModal').style.display = 'flex';
 
-// ════════════════════════════════════
-//  Click-gate: user must click the ad before anything else happens
-// ════════════════════════════════════
-document.getElementById('adModal-clickgate').addEventListener('click', function() {
-    if (_adClicked) return;
-    _adClicked = true;
-
-    // Genuine redirect: open the ad's real landing page in a new tab
-    if (_currentAdLink) {
-        window.open(_currentAdLink, '_blank');
-    }
-
-    // Reveal the ad + start the countdown only now
-    this.style.display = 'none';
-    startAdCountdown();
-});
-
-// ════════════════════════════════════
-//  startAdCountdown — only runs after the click-gate is triggered
-// ════════════════════════════════════
-function startAdCountdown() {
-    var modal    = document.getElementById('adModal');
-    var tid      = modal.dataset.tid;
-    var upid     = modal.dataset.upid;
-    var duration = parseInt(modal.dataset.duration);
-    var reward   = parseFloat(modal.dataset.reward);
-
-    var bar  = document.getElementById('adModal-bar');
-    var ring = document.getElementById('adModal-ring');
-
+    // ── Animate bar + ring ──
     setTimeout(function() {
         bar.style.transition  = 'width '  + duration + 's linear';
         bar.style.width = '100%';
@@ -555,9 +498,7 @@ function startAdCountdown() {
         ring.style.strokeDashoffset = '0';
     }, 80);
 
-    document.getElementById('adModal-close-txt').innerHTML =
-        'Wait <span id="adModal-close-sec">' + duration + '</span>s';
-
+    // ── Countdown ──
     var elapsed = 0;
     _adTimer = setInterval(function() {
         elapsed++;
@@ -572,14 +513,13 @@ function startAdCountdown() {
             clearInterval(_adTimer); _adTimer = null;
 
             // Enable close button
-            var btn = document.getElementById('adModal-close');
             btn.disabled = false;
             btn.classList.add('ready');
             document.getElementById('adModal-close-icon').className = 'bi bi-check-circle-fill';
             document.getElementById('adModal-close-txt').innerHTML =
-                'Close &amp; Claim $' + reward.toFixed(2);
+                'Close &amp; Claim $' + parseFloat(reward).toFixed(2);
 
-            // Submit to server — only reachable if the click-gate was triggered
+            // Submit to server
             submitTask(tid, upid, duration, reward);
         }
     }, 1000);
@@ -667,10 +607,10 @@ document.addEventListener('DOMContentLoaded', function() {
             var upid        = this.dataset.upid;
             var duration    = parseInt(this.dataset.duration);
             var reward      = parseFloat(this.dataset.reward);
+            // Get the pre-built modal page HTML from data attribute
             var srcdocHtml  = this.dataset.modalPage || '';
-            var adLink      = this.dataset.adLink || '';
 
-            openAdModal(tid, upid, duration, reward, srcdocHtml, adLink);
+            openAdModal(tid, upid, duration, reward, srcdocHtml);
         });
     });
 

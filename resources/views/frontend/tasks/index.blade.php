@@ -87,7 +87,7 @@
                     }
                 }
 
-                // ── adLink: the URL that opens in a new tab when the user clicks the ad ──
+                // ── adLink for modal iframe fallback ──
                 $taskUrl = trim($taskData['task']->task_url ?? '');
                 if (!empty($taskUrl)) {
                     $adLink = $taskUrl;
@@ -114,9 +114,9 @@
                     . $adCode
                     . '</body></html>';
 
-                // IMPORTANT: do NOT htmlspecialchars() this manually.
-                // Blade's {{ }} below already escapes once — escaping twice breaks srcdoc rendering
-                // (the ad shows up as literal escaped text instead of executing).
+                // IMPORTANT: do NOT htmlspecialchars() this manually — Blade's
+                // {{ }} below already escapes once. Escaping twice breaks
+                // srcdoc rendering (ad shows as literal text instead of running).
                 $modalPageEsc = $modalPageHtml;
             @endphp
 
@@ -256,18 +256,6 @@
         {{-- ── Ad iframe using srcdoc (no external URL = no X-Frame-Options) ── --}}
         <div style="position:relative;background:#0a0a14;width:100%;min-height:200px;">
 
-            {{-- Click gate: user MUST click the ad before countdown/reward can proceed --}}
-            <div id="adModal-clickgate"
-                 style="position:absolute;inset:0;z-index:3;cursor:pointer;
-                        display:flex;align-items:center;justify-content:center;
-                        background:rgba(0,0,0,0.55);color:#fff;font-size:0.8rem;
-                        font-weight:700;text-align:center;padding:10px;">
-                <div>
-                    <i class="bi bi-hand-index-thumb-fill" style="font-size:1.4rem;display:block;margin-bottom:6px;color:var(--gold);"></i>
-                    Tap the ad to continue
-                </div>
-            </div>
-
             {{-- Loading spinner --}}
             <div id="adModal-spin"
                  style="position:absolute;inset:0;display:flex;flex-direction:column;
@@ -346,7 +334,7 @@
                        transition:all 0.35s;
                        display:flex;align-items:center;justify-content:center;gap:8px;">
                 <i class="bi bi-hourglass-split" id="adModal-close-icon"></i>
-                <span id="adModal-close-txt">Click the ad first</span>
+                <span id="adModal-close-txt">Wait <span id="adModal-close-sec">0</span>s</span>
             </button>
         </div>
     </div>
@@ -449,16 +437,14 @@
 </style>
 
 <script>
-var _adTimer   = null;
-var _adClicked = false;
-var _currentAdLink = '';
+var _adTimer = null;
 
 // ════════════════════════════════════
 //  WebView detection
 //  Android WebViews include "; wv)" in their User-Agent.
 //  iOS WKWebView cannot be reliably detected from JS alone unless
-//  your native app sets a custom UA (e.g. appends "ToptradeApp/1.0") —
-//  if it does, add that token to the iOS check below.
+//  your native app injects a custom UA token (e.g. "ToptradeApp/1.0")
+//  or exposes a message-handler bridge — see openInExternalBrowser().
 // ════════════════════════════════════
 function isProbablyWebView() {
     var ua = navigator.userAgent || '';
@@ -466,7 +452,7 @@ function isProbablyWebView() {
     // Android: standard WebView marker
     if (/; wv\)/.test(ua)) return true;
 
-    // Android: some hybrid frameworks (Cordova/Capacitor) expose this
+    // Hybrid frameworks (Cordova/Capacitor) expose these globals
     if (window.Capacitor || window.cordova) return true;
 
     // iOS: only detectable if your native app injects a custom UA token.
@@ -477,14 +463,18 @@ function isProbablyWebView() {
 }
 
 // ════════════════════════════════════
-//  Escape to the system browser (Android via intent://, or app-provided bridge)
+//  Escape to the system default browser.
+//  Android → rebuilds the URL as an "intent://" link so the OS hands
+//            it to Chrome/the default browser instead of the WebView.
+//  iOS     → requires your native app to expose a bridge
+//            (window.webkit.messageHandlers.openExternal); pure JS
+//            cannot force WKWebView to open Safari on its own.
+//  Anything else → falls back to a normal window.open (new tab).
 // ════════════════════════════════════
 function openInExternalBrowser(url) {
     var ua = navigator.userAgent || '';
 
     if (/Android/i.test(ua)) {
-        // Rebuild the current/target URL as an Android intent so the OS
-        // hands it to the default browser instead of staying in the WebView.
         try {
             var u = new URL(url, window.location.href);
             var intentUrl = 'intent://' + u.host + u.pathname + u.search
@@ -497,42 +487,50 @@ function openInExternalBrowser(url) {
         }
     }
 
-    // iOS or fallback: if your native app exposes a bridge
-    // (e.g. window.webkit.messageHandlers.openExternal), call it here.
     if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.openExternal) {
         window.webkit.messageHandlers.openExternal.postMessage(url);
         return true;
     }
 
-    // Last resort: just try a normal navigation/new-tab (may stay inside the WebView)
+    // Fallback: normal new-tab open (may stay inside the WebView on iOS)
     window.open(url, '_blank');
     return false;
 }
 
 // ════════════════════════════════════
-//  openAdModal
-//  Opens the modal and loads the ad, but the countdown does NOT
-//  start yet — the user must click the click-gate first (see
-//  the click-gate listener below).
+//  openNewTabOrExternal
+//  Use this instead of raw window.open() anywhere a new tab is needed.
+//  Automatically escapes to the system browser when inside a WebView.
 // ════════════════════════════════════
-function openAdModal(tid, upid, duration, reward, srcdocHtml, adLink) {
+function openNewTabOrExternal(url) {
+    if (!url) return null;
+    if (isProbablyWebView()) {
+        openInExternalBrowser(url);
+        return null; // navigation happens at the OS level, no tab handle
+    }
+    return window.open(url, '_blank');
+}
+
+// ════════════════════════════════════
+//  openAdModal
+// ════════════════════════════════════
+function openAdModal(tid, upid, duration, reward, srcdocHtml) {
 
     if (_adTimer) { clearInterval(_adTimer); _adTimer = null; }
-    _adClicked = false;
-    _currentAdLink = adLink || '';
 
     var frame  = document.getElementById('adModal-frame');
     var spin   = document.getElementById('adModal-spin');
-    var gate   = document.getElementById('adModal-clickgate');
-
-    gate.style.display = 'flex'; // always show a fresh gate
 
     // ── Reset iframe ──
+    // Setting srcdoc injects the full ad HTML directly — no URL fetch, no X-Frame-Options
     frame.style.opacity = '0';
     spin.style.opacity  = '1';
     spin.style.display  = 'flex';
+
+    // Set srcdoc — this runs the ad scripts inside the iframe sandbox
     frame.srcdoc = srcdocHtml;
 
+    // When iframe loads, hide spinner + show frame
     frame.onload = function() {
         setTimeout(function() {
             spin.style.opacity = '0';
@@ -544,7 +542,7 @@ function openAdModal(tid, upid, duration, reward, srcdocHtml, adLink) {
     // ── Reward badge ──
     document.getElementById('adModal-reward').textContent = '+$' + parseFloat(reward).toFixed(2);
 
-    // ── Reset bar + ring (not animated yet — waiting for the click) ──
+    // ── Reset bar + ring ──
     var bar  = document.getElementById('adModal-bar');
     var ring = document.getElementById('adModal-ring');
     bar.style.transition  = 'none'; bar.style.width = '0%';
@@ -555,61 +553,18 @@ function openAdModal(tid, upid, duration, reward, srcdocHtml, adLink) {
     document.getElementById('adModal-num').textContent = duration;
     document.getElementById('adModal-sec').textContent = duration;
 
-    // ── Reset close/claim button ──
+    // ── Reset close button ──
     var btn = document.getElementById('adModal-close');
     btn.disabled = true;
     btn.classList.remove('ready');
     document.getElementById('adModal-close-icon').className = 'bi bi-hourglass-split';
-    document.getElementById('adModal-close-txt').innerHTML = 'Click the ad first';
-
-    // ── Save state for the gate handler / claim button ──
-    var modal = document.getElementById('adModal');
-    modal.dataset.tid      = tid;
-    modal.dataset.upid     = upid;
-    modal.dataset.duration = duration;
-    modal.dataset.reward   = reward;
+    document.getElementById('adModal-close-txt').innerHTML =
+        'Wait <span id="adModal-close-sec">' + duration + '</span>s';
 
     // ── Show modal ──
-    modal.style.display = 'flex';
-}
+    document.getElementById('adModal').style.display = 'flex';
 
-// ════════════════════════════════════
-//  Click-gate handler function (bound inside DOMContentLoaded below).
-//  Web (normal browser)  → opens the real ad link in a new tab.
-//  WebView (mobile app)  → escapes to the system default browser.
-//  Either way, the countdown only starts after this click.
-// ════════════════════════════════════
-function handleAdGateClick() {
-    if (_adClicked) return;
-    _adClicked = true;
-
-    var link = _currentAdLink || window.location.href;
-
-    if (isProbablyWebView()) {
-        openInExternalBrowser(link);
-    } else if (link) {
-        window.open(link, '_blank');
-    }
-
-    document.getElementById('adModal-clickgate').style.display = 'none';
-    startAdCountdown();
-}
-
-// ════════════════════════════════════
-//  startAdCountdown
-//  Runs the visual countdown. When it finishes, the modal stays
-//  OPEN — it does NOT auto-close and does NOT auto-submit the
-//  reward. It only enables the "Skip & Claim" button; the reward
-//  is submitted only when the user actually clicks that button.
-// ════════════════════════════════════
-function startAdCountdown() {
-    var modal    = document.getElementById('adModal');
-    var duration = parseInt(modal.dataset.duration);
-    var reward   = parseFloat(modal.dataset.reward);
-
-    var bar  = document.getElementById('adModal-bar');
-    var ring = document.getElementById('adModal-ring');
-
+    // ── Animate bar + ring ──
     setTimeout(function() {
         bar.style.transition  = 'width '  + duration + 's linear';
         bar.style.width = '100%';
@@ -617,9 +572,7 @@ function startAdCountdown() {
         ring.style.strokeDashoffset = '0';
     }, 80);
 
-    document.getElementById('adModal-close-txt').innerHTML =
-        'Wait <span id="adModal-close-sec">' + duration + '</span>s';
-
+    // ── Countdown ──
     var elapsed = 0;
     _adTimer = setInterval(function() {
         elapsed++;
@@ -633,13 +586,15 @@ function startAdCountdown() {
         if (elapsed >= duration) {
             clearInterval(_adTimer); _adTimer = null;
 
-            // Enable the claim button — modal stays open until user clicks it
-            var btn = document.getElementById('adModal-close');
+            // Enable close button
             btn.disabled = false;
             btn.classList.add('ready');
             document.getElementById('adModal-close-icon').className = 'bi bi-check-circle-fill';
             document.getElementById('adModal-close-txt').innerHTML =
-                'Skip &amp; Claim $' + reward.toFixed(2);
+                'Close &amp; Claim $' + parseFloat(reward).toFixed(2);
+
+            // Submit to server
+            submitTask(tid, upid, duration, reward);
         }
     }, 1000);
 }
@@ -705,27 +660,15 @@ function submitTask(tid, upid, duration, reward) {
 // ════════════════════════════════════
 document.addEventListener('DOMContentLoaded', function() {
 
-    // ── Click-gate (bound here so the element always exists) ──
-    var gate = document.getElementById('adModal-clickgate');
-    if (gate) {
-        gate.addEventListener('click', handleAdGateClick);
-    }
-
-    // ── Claim button: only NOW does the reward actually get submitted ──
+    // ── Close button (bound inside DOMContentLoaded so the element always exists) ──
     var closeBtn = document.getElementById('adModal-close');
     if (closeBtn) {
         closeBtn.addEventListener('click', function() {
             if (this.disabled) return;
-
-            var modal    = document.getElementById('adModal');
-            var tid      = modal.dataset.tid;
-            var upid     = modal.dataset.upid;
-            var duration = modal.dataset.duration;
-            var reward   = modal.dataset.reward;
-
-            // submitTask() itself hides the modal, clears the iframe,
-            // and shows the success overlay once the server confirms.
-            submitTask(tid, upid, duration, reward);
+            document.getElementById('adModal').style.display = 'none';
+            // Clear srcdoc to stop ad scripts
+            document.getElementById('adModal-frame').srcdoc = '';
+            if (_adTimer) { clearInterval(_adTimer); _adTimer = null; }
         });
     }
 
@@ -739,12 +682,10 @@ document.addEventListener('DOMContentLoaded', function() {
             var upid        = this.dataset.upid;
             var duration    = parseInt(this.dataset.duration);
             var reward      = parseFloat(this.dataset.reward);
+            // Get the pre-built modal page HTML from data attribute
             var srcdocHtml  = this.dataset.modalPage || '';
-            var adLink      = this.dataset.adLink || '';
 
-            // Always open the modal + load the ad. The WebView-vs-new-tab
-            // decision happens later, when the user taps the click-gate.
-            openAdModal(tid, upid, duration, reward, srcdocHtml, adLink);
+            openAdModal(tid, upid, duration, reward, srcdocHtml);
         });
     });
 
@@ -758,8 +699,13 @@ document.addEventListener('DOMContentLoaded', function() {
             var dur    = parseInt(this.dataset.requiredDuration);
 
             if (!url) { alert('Task URL missing.'); return; }
-            var tab = window.open(url, '_blank');
-            if (!tab) { alert('Popup blocked!'); return; }
+
+            // WebView-aware: escapes to the system default browser
+            // instead of opening a tab inside the app's WebView.
+            var isWv = isProbablyWebView();
+            var tab  = openNewTabOrExternal(url);
+
+            if (!isWv && !tab) { alert('Popup blocked!'); return; }
 
             this.disabled = true;
             this.innerHTML = '<i class="bi bi-hourglass-split"></i> Running...';

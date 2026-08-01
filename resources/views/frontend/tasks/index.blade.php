@@ -256,6 +256,18 @@
         {{-- ── Ad iframe using srcdoc (no external URL = no X-Frame-Options) ── --}}
         <div style="position:relative;background:#0a0a14;width:100%;min-height:200px;">
 
+            {{-- Click gate: user MUST click the ad before the countdown/reward can start --}}
+            <div id="adModal-clickgate"
+                 style="position:absolute;inset:0;z-index:3;cursor:pointer;
+                        display:flex;align-items:center;justify-content:center;
+                        background:rgba(0,0,0,0.55);color:#fff;font-size:0.8rem;
+                        font-weight:700;text-align:center;padding:10px;">
+                <div>
+                    <i class="bi bi-hand-index-thumb-fill" style="font-size:1.4rem;display:block;margin-bottom:6px;color:var(--gold);"></i>
+                    Tap the ad to continue
+                </div>
+            </div>
+
             {{-- Loading spinner --}}
             <div id="adModal-spin"
                  style="position:absolute;inset:0;display:flex;flex-direction:column;
@@ -437,21 +449,28 @@
 </style>
 
 <script>
-var _adTimer = null;
+var _adTimer   = null;
+var _adClicked = false;
+var _currentAdLink = '';
 
 // ════════════════════════════════════
 //  openAdModal
-//  Called the moment the user clicks the ad in the list.
-//  That single click already: (1) redirected a new tab to the
-//  real ad link (done by the caller, see event listener below),
-//  and (2) opens this modal + starts the countdown immediately.
+//  Now takes an extra `adLink` param. The countdown does NOT
+//  start automatically — it only starts after the user clicks
+//  the ad via the click-gate overlay (see listener below).
 // ════════════════════════════════════
-function openAdModal(tid, upid, duration, reward, srcdocHtml) {
+function openAdModal(tid, upid, duration, reward, srcdocHtml, adLink) {
 
     if (_adTimer) { clearInterval(_adTimer); _adTimer = null; }
+    _adClicked = false;
+    _currentAdLink = adLink || '';
 
     var frame  = document.getElementById('adModal-frame');
     var spin   = document.getElementById('adModal-spin');
+    var gate   = document.getElementById('adModal-clickgate');
+
+    // Always show the click-gate again for a fresh ad
+    gate.style.display = 'flex';
 
     // ── Reset iframe ──
     frame.style.opacity = '0';
@@ -470,7 +489,7 @@ function openAdModal(tid, upid, duration, reward, srcdocHtml) {
     // ── Reward badge ──
     document.getElementById('adModal-reward').textContent = '+$' + parseFloat(reward).toFixed(2);
 
-    // ── Reset bar + ring ──
+    // ── Reset bar + ring (do NOT animate yet — waiting for click) ──
     var bar  = document.getElementById('adModal-bar');
     var ring = document.getElementById('adModal-ring');
     bar.style.transition  = 'none'; bar.style.width = '0%';
@@ -486,13 +505,49 @@ function openAdModal(tid, upid, duration, reward, srcdocHtml) {
     btn.disabled = true;
     btn.classList.remove('ready');
     document.getElementById('adModal-close-icon').className = 'bi bi-hourglass-split';
-    document.getElementById('adModal-close-txt').innerHTML =
-        'Wait <span id="adModal-close-sec">' + duration + '</span>s';
+    document.getElementById('adModal-close-txt').innerHTML = 'Click the ad first';
+
+    // ── Save state for startAdCountdown() ──
+    var modal = document.getElementById('adModal');
+    modal.dataset.tid      = tid;
+    modal.dataset.upid     = upid;
+    modal.dataset.duration = duration;
+    modal.dataset.reward   = reward;
 
     // ── Show modal ──
-    document.getElementById('adModal').style.display = 'flex';
+    modal.style.display = 'flex';
+}
 
-    // ── Animate bar + ring, start immediately ──
+// ════════════════════════════════════
+//  Click-gate: user must click the ad before anything else happens
+// ════════════════════════════════════
+document.getElementById('adModal-clickgate').addEventListener('click', function() {
+    if (_adClicked) return;
+    _adClicked = true;
+
+    // Genuine redirect: open the ad's real landing page in a new tab
+    if (_currentAdLink) {
+        window.open(_currentAdLink, '_blank');
+    }
+
+    // Reveal the ad + start the countdown only now
+    this.style.display = 'none';
+    startAdCountdown();
+});
+
+// ════════════════════════════════════
+//  startAdCountdown — only runs after the click-gate is triggered
+// ════════════════════════════════════
+function startAdCountdown() {
+    var modal    = document.getElementById('adModal');
+    var tid      = modal.dataset.tid;
+    var upid     = modal.dataset.upid;
+    var duration = parseInt(modal.dataset.duration);
+    var reward   = parseFloat(modal.dataset.reward);
+
+    var bar  = document.getElementById('adModal-bar');
+    var ring = document.getElementById('adModal-ring');
+
     setTimeout(function() {
         bar.style.transition  = 'width '  + duration + 's linear';
         bar.style.width = '100%';
@@ -500,7 +555,9 @@ function openAdModal(tid, upid, duration, reward, srcdocHtml) {
         ring.style.strokeDashoffset = '0';
     }, 80);
 
-    // ── Countdown ──
+    document.getElementById('adModal-close-txt').innerHTML =
+        'Wait <span id="adModal-close-sec">' + duration + '</span>s';
+
     var elapsed = 0;
     _adTimer = setInterval(function() {
         elapsed++;
@@ -515,13 +572,14 @@ function openAdModal(tid, upid, duration, reward, srcdocHtml) {
             clearInterval(_adTimer); _adTimer = null;
 
             // Enable close button
+            var btn = document.getElementById('adModal-close');
             btn.disabled = false;
             btn.classList.add('ready');
             document.getElementById('adModal-close-icon').className = 'bi bi-check-circle-fill';
             document.getElementById('adModal-close-txt').innerHTML =
-                'Close &amp; Claim $' + parseFloat(reward).toFixed(2);
+                'Close &amp; Claim $' + reward.toFixed(2);
 
-            // Submit to server
+            // Submit to server — only reachable if the click-gate was triggered
             submitTask(tid, upid, duration, reward);
         }
     }, 1000);
@@ -610,12 +668,9 @@ document.addEventListener('DOMContentLoaded', function() {
             var duration    = parseInt(this.dataset.duration);
             var reward      = parseFloat(this.dataset.reward);
             var srcdocHtml  = this.dataset.modalPage || '';
+            var adLink      = this.dataset.adLink || '';
 
-            // Everything happens inside the modal — no new tab.
-            // The ad network script itself renders/runs inside the
-            // modal's iframe (srcdocHtml), and the countdown starts
-            // the moment the modal opens.
-            openAdModal(tid, upid, duration, reward, srcdocHtml);
+            openAdModal(tid, upid, duration, reward, srcdocHtml, adLink);
         });
     });
 

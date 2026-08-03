@@ -101,15 +101,15 @@ class TaskController extends Controller
             }
 
             // Daily limit checks
-            $todayTaskCount = UserTaskSubmission::where('user_id', Auth::id())
-                ->where('user_package_id', $userPackage->id)
-                ->where('status', 'approved')
-                ->whereDate('submitted_at', today())
-                ->count();
+            // $todayTaskCount = UserTaskSubmission::where('user_id', Auth::id())
+            //     ->where('user_package_id', $userPackage->id)
+            //     ->where('status', 'approved')
+            //     ->whereDate('submitted_at', today())
+            //     ->count();
 
-            if ($todayTaskCount >= (int)$userPackage->daily_task_limit) {
-                return response()->json(['success' => false, 'message' => 'You have reached your daily task limit'], 400);
-            }
+            // if ($todayTaskCount >= (int)$userPackage->daily_task_limit) {
+            //     return response()->json(['success' => false, 'message' => 'You have reached your daily task limit'], 400);
+            // }
 
             $alreadySubmitted = UserTaskSubmission::where('user_id', Auth::id())
                 ->where('task_id', $task->id)
